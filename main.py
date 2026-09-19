@@ -20,13 +20,15 @@ from database import SessionLocal, User
 
 app = FastAPI()
 
+# 1. Reverse Proxy ပေါ်တွင် HTTPS Headers များ မှန်ကန်စေရန်
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
+# 2. Browser WASM လည်းရ၊ Tailwind CDN လည်း အပိတ်မခံရစေရန် credentialless သုံးခြင်း
 @app.middleware("http")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    response.headers["Cross-Origin-Embedder-Policy"] = "credentialless"
     return response
 
 SECRET_KEY = os.getenv("SECRET_KEY", "RECAP_STUDIO_SECRET_KEY_PROD_2026")
@@ -42,6 +44,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
+# --- Google OAuth Login ---
 @app.get("/login/google")
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
@@ -155,6 +158,7 @@ async def get_user_data(request: Request):
     db.close()
     return data
 
+# --- AssemblyAI Audio Transcribe ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -184,6 +188,7 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
+# --- Batch TTS (Edge-TTS + Mutagen) ---
 class BatchTTSRequest(BaseModel):
     lines: List[str]
     voice: str = "my-MM-ThihaNeural"
@@ -237,7 +242,6 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         
         audio_bytes = audio_stream.getvalue()
         
-        # mutagen ဖြင့် duration တွက်ချက်ခြင်း (FFmpeg မလိုဘဲ သီးခြားအလုပ်လုပ်သည်)
         try:
             mp3_info = MP3(io.BytesIO(audio_bytes))
             duration_ms = int(mp3_info.info.length * 1000)
