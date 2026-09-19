@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Recap Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #0b0c10; color: #f4f4f5;
+      font-family: 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif;
+      padding: 20px;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 24px;
+    }
+    .header h1 { font-size: 18px; color: #c084fc; display: flex; align-items: center; gap: 8px; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    th { background: rgba(20,22,31,0.8); color: #a1a1aa; font-weight: 600; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
+    .badge-pending { background: rgba(234,179,8,0.15); color: #facc15; }
+    .badge-approved { background: rgba(16,185,129,0.15); color: #34d399; }
+    .badge-rejected { background: rgba(239,68,68,0.15); color: #f87171; }
+
+    .btn-action {
+      border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px;
+      font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-approve { background: #059669; color: #fff; }
+    .btn-reject { background: #dc2626; color: #fff; margin-left: 4px; }
+    .btn-back { background: #272a37; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; }
+
+    .slip-img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
+    
+    #imgModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none;
+      align-items: center; justify-content: center; z-index: 1000;
+    }
+    #imgModal.active { display: flex; }
+    #modalSlipImg { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1><i class="ph-bold ph-shield-check"></i> Admin Payment Dashboard</h1>
+    <a href="/" class="btn-back">← Back to Studio</a>
+  </div>
+
+  <div style="background: #14161f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); padding: 16px; overflow-x: auto;">
+    <h3 style="font-size: 14px; color: #38bdf8; margin-bottom: 8px;">ငွေလွှဲပြေစာ တောင်းဆိုမှုများ (Payment Requests)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User Gmail</th>
+          <th>Package</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Slip</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="requestTableBody">
+        <tr><td colspan="9" style="text-align: center; color: #71717a;">စာရင်း မရှိသေးပါ</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="imgModal" onclick="this.classList.remove('active')">
+    <img id="modalSlipImg" src="" alt="Slip Full">
+  </div>
+
+  <script>
+    function viewBigSlip(url) {
+      document.getElementById('modalSlipImg').src = url;
+      document.getElementById('imgModal').classList.add('active');
+    }
+
+    async function loadRequests() {
+      const res = await fetch("/api/admin/requests");
+      if (!res.ok) return alert("Access Denied: Admin သာ ဝင်ခွင့်ရှိပါသည်");
+      const list = await res.json();
+      const tbody = document.getElementById('requestTableBody');
+      tbody.innerHTML = "";
+
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #71717a;">စာရင်း မရှိသေးပါ</td></tr>`;
+        return;
+      }
+
+      list.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>#${r.id}</td>
+          <td style="font-family: 'JetBrains Mono';">${r.email}</td>
+          <td><b style="color: #fbbf24;">${r.package_type} ပုဒ်</b></td>
+          <td>${r.amount.toLocaleString()} Ks</td>
+          <td>${r.payment_method}</td>
+          <td><img src="${r.slip_url}" class="slip-img" onclick="viewBigSlip('${r.slip_url}')" title="ကြည့်ရန် နှိပ်ပါ"></td>
+          <td style="color: #a1a1aa;">${r.created_at}</td>
+          <td><span class="badge badge-${r.status}">${r.status.toUpperCase()}</span></td>
+          <td>
+            ${r.status === 'pending' ? `
+              <button class="btn-action btn-approve" onclick="approveReq(${r.id})">✓ Approve</button>
+              <button class="btn-action btn-reject" onclick="rejectReq(${r.id})">✕ Reject</button>
+            ` : `<span style="color: #71717a;">ပြီးဆုံးပါပြီ</span>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function approveReq(id) {
+      if (!confirm("အတည်ပြုပြီး User ထံ ပုဒ်ရေ ထည့်သွင်းပေးမည် သေချာပါသလား?")) return;
+      const fd = new FormData();
+      fd.append("req_id", id);
+      const res = await fetch("/api/admin/approve", { method: "POST", body: fd });
+      const data = await res.json();
+      alert(data.message);
+      loadRequests();
+    }
+
+    async function rejectReq(id) {
+      if (!confirm("ငွေလွှဲပြေစာကို ပယ်ဖျက်မည် သေချာပါသလား?")) return;
+      const fd = new FormData();
+      fd.append("req_id", id);
+      const res = await fetch("/api/admin/reject", { method: "POST", body: fd });
+      const data = await res.json();
+      alert(data.message);
+      loadRequests();
+    }
+
+    loadRequests();
+  </script>
+</body>
+</html>
