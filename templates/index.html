@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
+  <!-- Stable FFmpeg WASM v0.11.6 -->
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
   <style>
@@ -156,6 +157,7 @@
 
   <div id="toastContainer"></div>
 
+  <!-- LOGIN GATE -->
   <div id="loginGate">
     <div class="login-box">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
@@ -174,6 +176,7 @@
     </div>
   </div>
 
+  <!-- BUY PACKAGE MODAL -->
   <div id="packageModal" class="modal-overlay">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -210,6 +213,7 @@
     </div>
   </div>
 
+  <!-- Progress Modal -->
   <div id="loadingModal" class="modal-overlay">
     <div class="modal-card">
       <div class="circle-wrap">
@@ -227,6 +231,7 @@
     </div>
   </div>
 
+  <!-- Header -->
   <header class="header">
     <div class="brand">
       <div class="brand-icon">
@@ -257,8 +262,10 @@
     </div>
   </header>
 
+  <!-- Main Container -->
   <main class="container">
 
+    <!-- STEP 1: Video File & Audio Extraction -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -299,6 +306,7 @@
       </button>
     </div>
 
+    <!-- STEP 2: Source Subtitles & Strict Short Prompt -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -322,6 +330,7 @@
       </button>
     </div>
 
+    <!-- STEP 3: Voice, Watermark, Real Video Subtitle Preview Settings -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -352,6 +361,7 @@
         </div>
       </div>
 
+      <!-- Highlight Clip Hook Feature -->
       <div class="highlight-card">
         <div style="text-align: left;">
           <div style="display: flex; align-items: center; gap: 6px; color: #10b981; font-weight: 700; font-size: 13px;">
@@ -366,6 +376,7 @@
         </label>
       </div>
 
+      <!-- Watermark Settings with Opacity Slider -->
       <div class="grid-3" style="background: rgba(11,12,16,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="form-group">
           <label><i class="ph-bold ph-image"></i> Page Logo / Watermark (PNG)</label>
@@ -388,6 +399,7 @@
         </div>
       </div>
 
+      <!-- Subtitle Styling Controls with Vertical Margin & Real Video Canvas Preview -->
       <div id="subStylingSection" style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
@@ -404,7 +416,7 @@
           </div>
         </div>
 
-        <div class="grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div class="grid-4" style="margin-bottom: 12px;">
           <div class="form-group">
             <label>Font Color</label>
             <input type="color" id="subFontColor" value="#ffffff" style="width: 100%; height: 36px; border: none; background: transparent; cursor: pointer;">
@@ -417,21 +429,37 @@
             <label>Border Width</label>
             <input type="number" id="subBorderWidth" value="2" min="1" max="6" class="glass-input" style="text-align: center;">
           </div>
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between;">
+              <label>အမြင့် (Vertical Pos)</label>
+              <span id="subBottomDisplay" style="font-size:10px; color:#38bdf8; font-family:'JetBrains Mono';">10%</span>
+            </div>
+            <input type="range" id="subBottomPos" min="4" max="40" value="10" style="accent-color:#38bdf8; margin-top:8px;">
+          </div>
         </div>
 
+        <!-- ★ REAL VIDEO FRAME SUBTITLE PREVIEW BOX ★ -->
         <div class="form-group" style="margin-top: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <label style="color: #38bdf8; font-weight: 600;"><i class="ph-bold ph-eye"></i> Subtitle Live Preview (စာသားကို နှိပ်၍ စိတ်ကြိုက် ပြင်ရိုက်ကြည့်နိုင်ပါသည်)</label>
-            <span style="font-size: 10px; color: #71717a;">✏️ Click to edit preview text</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="color: #38bdf8; font-weight: 600;">
+              <i class="ph-bold ph-video-camera"></i> Video Frame Subtitle Preview (ဗီဒီယိုပေါ်တွင် လက်တွေ့ကြည့်ရှုခြင်း)
+            </label>
+            <span style="font-size: 10px; color: #71717a;">✏️ Click text to edit</span>
           </div>
-          <div id="subPreviewBox" style="background: linear-gradient(180deg, #1e2230 0%, #0f1117 100%); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 110px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
-            <p id="subPreviewText" contenteditable="true" spellcheck="false" style="font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; padding: 0 16px; outline: none; cursor: text; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.5;">
+
+          <div id="subPreviewBox" style="background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; height: 180px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <!-- Real Uploaded Video as Dynamic Background -->
+            <video id="previewBgVideo" muted loop playsinline style="position: absolute; width: 100%; height: 100%; object-fit: contain; opacity: 0.65; pointer-events: none;"></video>
+            
+            <!-- Real-time Positioned Subtitle Text -->
+            <p id="subPreviewText" contenteditable="true" spellcheck="false" style="position: absolute; bottom: 10%; width: 90%; font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; margin: 0; outline: none; cursor: text; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.4; z-index: 10;">
               အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
             </p>
           </div>
         </div>
       </div>
 
+      <!-- Advanced Feature Toggles with Turbo Speed Option -->
       <div class="toggles">
         <label class="toggle-item" style="color: #10b981; font-weight: 700;">
           <input type="checkbox" id="turboFastCheck" checked>
@@ -460,6 +488,7 @@
       </div>
     </div>
 
+    <!-- STEP 4: Live Subtitle Editor with Multi-Speaker Support -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -473,6 +502,7 @@
       </div>
     </div>
 
+    <!-- STEP 5: Final Export & Thumbnail Generator -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -482,8 +512,11 @@
         <div style="color: #34d399; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px;">
           <i class="ph-fill ph-check-circle" style="font-size: 18px;"></i> ဗီဒီယို ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!
         </div>
+        
         <video id="videoPlayer" controls style="max-height: 480px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;"></video>
-        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 16px;">
           <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
             <i class="ph-bold ph-download-simple"></i> Download Video
           </a>
@@ -494,6 +527,35 @@
             <i class="ph-bold ph-file-text"></i> Download Script (.TXT)
           </button>
         </div>
+
+        <!-- ★ COVER / THUMBNAIL AUTO-GENERATOR SECTION ★ -->
+        <div style="background: rgba(11,12,16,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; text-align: left;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="font-size: 12px; color: #fbbf24; display: flex; align-items: center; gap: 6px;">
+              <i class="ph-bold ph-image-square"></i> Recap Thumbnail / Cover Generator (မျက်နှာဖုံးပုံ ထုတ်ယူရန်)
+            </h4>
+            <span style="font-size: 10px; color: #a1a1aa;">Capture best frame</span>
+          </div>
+
+          <div class="grid-2" style="margin-bottom: 8px;">
+            <div class="form-group">
+              <label>Cover ပေါ်တွင် ရေးမည့် စာသားခေါင်းစဉ်</label>
+              <input type="text" id="thumbTitleInput" class="glass-input" value="အံ့ဩဖွယ် ဇာတ်သိမ်းခန်း">
+            </div>
+            <div class="form-group">
+              <label>Frame ရွေးချယ်ရန် (Video Seek)</label>
+              <input type="range" id="thumbFrameSlider" min="0" max="100" value="25" style="accent-color:#fbbf24; margin-top:8px;" oninput="updateThumbnailPreview()">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+            <button onclick="downloadThumbnail()" class="btn btn-amber" style="padding: 8px 14px; font-size: 11px;">
+              <i class="ph-bold ph-camera"></i> 📸 Thumbnail Image (PNG) ဒေါင်းလုဒ်ဆွဲမည်
+            </button>
+          </div>
+          <canvas id="thumbCanvas" style="display: none;"></canvas>
+        </div>
+
       </div>
     </div>
 
@@ -561,7 +623,8 @@
         size: document.getElementById('subFontSize').value,
         color: document.getElementById('subFontColor').value,
         borderColor: document.getElementById('subBorderColor').value,
-        borderWidth: document.getElementById('subBorderWidth').value
+        borderWidth: document.getElementById('subBorderWidth').value,
+        bottomPos: document.getElementById('subBottomPos').value
       };
       localStorage.setItem("recap_sub_styles", JSON.stringify(styles));
     }
@@ -578,6 +641,10 @@
           if (s.color) document.getElementById('subFontColor').value = s.color;
           if (s.borderColor) document.getElementById('subBorderColor').value = s.borderColor;
           if (s.borderWidth) document.getElementById('subBorderWidth').value = s.borderWidth;
+          if (s.bottomPos) {
+            document.getElementById('subBottomPos').value = s.bottomPos;
+            document.getElementById('subBottomDisplay').innerText = `${s.bottomPos}%`;
+          }
         } catch (e) {}
       }
     }
@@ -673,10 +740,12 @@
       const fColor = document.getElementById('subFontColor').value || '#ffffff';
       const bColor = document.getElementById('subBorderColor').value || '#000000';
       const bWidth = parseFloat(document.getElementById('subBorderWidth').value) || 2;
+      const bottomPos = document.getElementById('subBottomPos').value || 10;
 
       if (p) {
         p.style.fontSize = `${size}px`;
         p.style.color = fColor;
+        p.style.bottom = `${bottomPos}%`;
         p.style.paintOrder = 'stroke fill';
         p.style.webkitTextStroke = `${bWidth * 2}px ${bColor}`;
         p.style.textShadow = `
@@ -804,6 +873,13 @@
         saveStyleSettings();
       });
 
+      const posSlider = document.getElementById('subBottomPos');
+      posSlider.addEventListener('input', (e) => {
+        document.getElementById('subBottomDisplay').innerText = `${e.target.value}%`;
+        updateSubPreview();
+        saveStyleSettings();
+      });
+
       ['subFontColor', 'subBorderColor', 'subBorderWidth'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -842,14 +918,23 @@
       const dropZone = document.getElementById('dropZone');
       const fileInput = document.getElementById('videoFileInput');
       const videoPrev = document.getElementById('inputVideoPreview');
+      const bgVideo = document.getElementById('previewBgVideo');
 
       dropZone.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
         if (fileInput.files.length) {
           selectedVideoFile = fileInput.files[0];
           document.getElementById('videoFileNameDisplay').innerText = `ရွေးချယ်ထားသော ဖိုင်: ${selectedVideoFile.name}`;
-          videoPrev.src = URL.createObjectURL(selectedVideoFile);
+          const vUrl = URL.createObjectURL(selectedVideoFile);
+          
+          videoPrev.src = vUrl;
           videoPrev.classList.remove('hidden');
+
+          // Preview Background တွင် ဗီဒီယို တိုက်ရိုက် ထည့်သွင်းပြသခြင်း
+          if (bgVideo) {
+            bgVideo.src = vUrl;
+            bgVideo.play().catch(()=>{});
+          }
         }
       });
     });
@@ -1027,7 +1112,6 @@ INPUTS:
       return new Uint8Array(out.buffer);
     }
 
-    // Built-in Synthesizer for Copyright-Free BGM
     function generateSyntheticBGM(type, totalDurationSec, sampleRate = 44100) {
       const numSamples = Math.ceil(totalDurationSec * sampleRate);
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1035,7 +1119,7 @@ INPUTS:
       const left = buffer.getChannelData(0);
       const right = buffer.getChannelData(1);
 
-      let baseFreq = 220; // A3
+      let baseFreq = 220;
       if (type === 'suspense') baseFreq = 110;
       if (type === 'action') baseFreq = 164;
 
@@ -1086,7 +1170,6 @@ INPUTS:
           const src = offlineCtx.createBufferSource();
           src.buffer = buf;
 
-          // Auto-Speed 1.12x Cap
           let rate = 1.0;
           if (isAutoSpeedEnabled && originalDurationSec > maxAllowedSec) {
             rate = Math.min(1.12, originalDurationSec / maxAllowedSec);
@@ -1109,7 +1192,6 @@ INPUTS:
         } catch (e) {}
       }
 
-      // Handle BGM (Custom or Library)
       let bgmBuf = null;
       if (bgmFile) {
         try {
@@ -1260,19 +1342,18 @@ INPUTS:
           curV = "vblur";
         }
 
-        // ၄။ 9:16 TikTok / Reels (Turbo Fast Scale Logic)
+        // ၄။ 9:16 TikTok / Reels
         if (isReelsEnabled) {
           const reelsW = isTurboFast ? 720 : 1080;
           const reelsH = isTurboFast ? 1280 : 1920;
           filterParts.push(`[${curV}]split[mainv][bgv];[bgv]scale=${reelsW}:${reelsH}:force_original_aspect_ratio=increase,crop=${reelsW}:${reelsH},boxblur=25[bgblur];[mainv]scale=${reelsW}:-1[fgv];[bgblur][fgv]overlay=(W-w)/2:(H-h)/2[vreels]`);
           curV = "vreels";
         } else if (isTurboFast) {
-          // Standard Video Turbo Downscale to 720p
           filterParts.push(`[${curV}]scale=-2:720[vturboscale]`);
           curV = "vturboscale";
         }
 
-        // ၅။ Watermark Logo with Opacity
+        // ၅။ Watermark Logo
         let inputFiles = ['-i', 'input_orig.mp4', '-i', 'dub_master.wav'];
         if (hasWatermark) {
           inputFiles.push('-i', 'watermark.png');
@@ -1286,7 +1367,6 @@ INPUTS:
           finalArgs.push('-filter_complex', filterParts.join(';'), '-map', `[${curV}]`, '-map', '1:a');
           finalArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency', '-threads', '4', '-c:a', 'aac', '-b:a', '128k', '-shortest', 'output.mp4');
         } else {
-          // Ultra-Fast 2-Second Direct Copy Mode
           finalArgs.push('-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', 'output.mp4');
         }
 
@@ -1328,6 +1408,61 @@ INPUTS:
         hideProgress();
         showToast("Export မအောင်မြင်ပါ: " + err.message + " (Credits မနုတ်ပါခင်ဗျာ)");
       }
+    }
+
+    // ===== THUMBNAIL / COVER GENERATOR LOGIC =====
+    function updateThumbnailPreview() {
+      const player = document.getElementById('videoPlayer');
+      const slider = document.getElementById('thumbFrameSlider');
+      if (player && player.duration) {
+        player.currentTime = (slider.value / 100) * player.duration;
+      }
+    }
+
+    function downloadThumbnail() {
+      const player = document.getElementById('videoPlayer');
+      if (!player || !player.videoWidth) return showToast("ဗီဒီယို မရှိသေးပါ!");
+
+      const canvas = document.getElementById('thumbCanvas');
+      canvas.width = player.videoWidth;
+      canvas.height = player.videoHeight;
+      const ctx = canvas.getContext('2d');
+
+      // Draw current video frame
+      ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
+
+      // Draw Catchy Title Banner
+      const titleText = document.getElementById('thumbTitleInput').value.trim();
+      if (titleText) {
+        const fontSize = Math.max(36, Math.floor(canvas.width / 16));
+        ctx.font = `bold ${fontSize}px 'CustomUserFont', 'Pyidaungsu', sans-serif`;
+        ctx.textAlign = "center";
+
+        // Semi-transparent gradient bar behind title
+        const gradHeight = fontSize * 2.2;
+        const gradY = canvas.height * 0.15;
+        const grad = ctx.createLinearGradient(0, gradY, 0, gradY + gradHeight);
+        grad.addColorStop(0, "rgba(0,0,0,0.85)");
+        grad.addColorStop(1, "rgba(0,0,0,0.4)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, gradY, canvas.width, gradHeight);
+
+        // Text with thick stroke & shadow
+        ctx.lineWidth = Math.max(4, Math.floor(fontSize / 8));
+        ctx.strokeStyle = "#000000";
+        ctx.strokeText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
+
+        ctx.fillStyle = "#facc15"; // Eye-catching Golden Yellow
+        ctx.fillText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
+      }
+
+      // Download snapshot as PNG
+      const imgUrl = canvas.toDataURL("image/png");
+      const a = document.createElement('a');
+      a.href = imgUrl;
+      a.download = "recap_cover_thumbnail.png";
+      a.click();
+      showToast("Cover Thumbnail အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!");
     }
 
     function msToSrt(ms) {
