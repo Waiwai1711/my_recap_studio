@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Recap Studio Pro - AI Dubber & Voice Cloning</title>
+  <title>Recap Studio Pro - AI Dubber & Narrator Auto-Speed</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -92,11 +92,11 @@
   <header class="h-16 border-b border-white/5 bg-surface-900/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
       <div class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
-        <i class="ph-bold ph-waveform text-white text-base md:text-lg"></i>
+        <i class="ph-bold ph-lightning text-white text-base md:text-lg"></i>
       </div>
       <div>
         <h1 class="font-bold text-xs md:text-sm tracking-wide bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">RECAP STUDIO PRO</h1>
-        <p class="text-[9px] md:text-[10px] text-zinc-500 font-mono">Multi-User Ready • AI Dubber</p>
+        <p class="text-[9px] md:text-[10px] text-zinc-500 font-mono">Narrator Auto-Speed Engine</p>
       </div>
     </div>
     <div class="flex items-center gap-1.5">
@@ -247,7 +247,6 @@
 
       <!-- Subtitle Styling Inputs (Font, Size, Color, Margin) -->
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 rounded-xl bg-surface-950/60 border border-white/5 mb-3">
-        <!-- Font Selection -->
         <div class="col-span-2 md:col-span-1">
           <label class="text-xs text-zinc-400 font-medium">Font Family (ဖောင့်)</label>
           <div class="flex items-center gap-1 mt-1">
@@ -277,7 +276,12 @@
         </div>
       </div>
 
+      <!-- Toggles & Narrator Auto-Speed Setting -->
       <div class="flex flex-wrap items-center gap-4 text-xs text-zinc-300 mb-3">
+        <label class="flex items-center gap-2 cursor-pointer text-amber-400 font-medium">
+          <input type="checkbox" id="autoSpeedCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700 text-amber-500">
+          <span>⚡ Narrator Auto-Speed (အသံထက်ရှည်သော Video ကို Auto အမြန်ရစ်မည်)</span>
+        </label>
         <label class="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" id="blurSubCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700 text-brand-500">
           <span>မူရင်းစာတန်း Blur မည်</span>
@@ -324,7 +328,7 @@
     <div class="space-y-4">
       <button id="btnExport" onclick="exportVideo()" 
               class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-sm text-white shadow-xl shadow-emerald-600/20 active:scale-[0.99] transition flex items-center justify-center gap-2">
-        <i class="ph-bold ph-sparkle text-lg"></i> TTS အသံထုတ်ပြီး ဗီဒီယိုနှင့် Subtitle Export ပြုလုပ်မည်
+        <i class="ph-bold ph-lightning text-lg"></i> Narrator Sync ဖြင့် အသံသွင်း ဗီဒီယို Export ပြုလုပ်မည်
       </button>
 
       <div id="resultBox" class="hidden glass-card rounded-2xl p-4 md:p-6 text-center space-y-3">
@@ -719,6 +723,7 @@
       formData.append("burn_sub", document.getElementById('burnSubCheck').checked);
       formData.append("font_size", document.getElementById('fontSizeInput').value);
       formData.append("font_name", document.getElementById('fontNameInput').value.trim() || "Pyidaungsu");
+      formData.append("auto_speed_video", document.getElementById('autoSpeedCheck').checked);
 
       if (savedClonedVoicePath) {
         formData.append("ref_voice_path", savedClonedVoicePath);
