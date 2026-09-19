@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- Stable FFmpeg WASM v0.11.6 -->
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
   <style>
@@ -136,15 +135,14 @@
       cursor: pointer; transition: all 0.2s; background: rgba(11,12,16,0.5);
     }
     .pkg-item.selected { border-color: #38bdf8; background: rgba(56,189,248,0.15); }
-    .pkg-item h4 { font-size: 13px; font-weight: bold; color: #fff; }
-    .pkg-item p { font-size: 11px; color: #38bdf8; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+    .pkg-item h4 { font-size: 14px; font-weight: bold; color: #fff; }
+    .pkg-item p { font-size: 11px; color: #38bdf8; margin-top: 4px; }
 
     #toastContainer { position: fixed; top: 16px; right: 16px; z-index: 110; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
     .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
     .hidden { display: none !important; }
   </style>
 
-  <!-- Dynamic Cue Style for Subtitles inside Video Player -->
   <style id="cueStyleTag"></style>
 </head>
 
@@ -152,26 +150,24 @@
 
   <div id="toastContainer"></div>
 
-  <!-- LOGIN GATE -->
   <div id="loginGate">
     <div class="login-box">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
         <i class="ph-bold ph-lightning" style="font-size: 24px; color: #fff;"></i>
       </div>
-      <h2 id="loginGateTitle" style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
-      <p id="loginGateDesc" style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.6;">
+      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
+      <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.6;">
         AI Video Dubbing နှင့် Auto-Speed Engine အသုံးပြုရန် Google Account ဖြင့် Login ဝင်ပေးပါခင်ဗျာ။
       </p>
-      <a id="btnGoogleLogin" href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700;">
+      <a href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700;">
         <i class="ph-bold ph-google-logo" style="font-size: 18px; color: #ea4335;"></i> Sign in with Google
       </a>
-      <p id="loginGateSubtext" style="font-size: 11px; color: #10b981; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
+      <p style="font-size: 11px; color: #10b981; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
         🎁 နေ့စဉ် အခမဲ့ ၂ ပုဒ် အသုံးပြုခွင့် ရရှိပါမည်
       </p>
     </div>
   </div>
 
-  <!-- BUY PACKAGE MODAL (DYNAMIC LOADED FROM DATABASE) -->
   <div id="packageModal" class="modal-overlay">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -179,9 +175,19 @@
         <button onclick="closePackageModal()" style="background: transparent; border: none; color: #71717a; font-size: 20px; cursor: pointer;">✕</button>
       </div>
 
-      <!-- Packages Grid (Populated Dynamically via API) -->
-      <div id="pkgGridContainer" class="pkg-grid">
-        <div style="grid-column: 1 / -1; font-size: 12px; color: #a1a1aa; padding: 12px;">Package စာရင်းများ ဖတ်ယူနေပါသည်...</div>
+      <div class="pkg-grid">
+        <div class="pkg-item selected" onclick="selectPkg('10', 5000, this)">
+          <h4>၁၀ ပုဒ်</h4>
+          <p>5,000 Ks</p>
+        </div>
+        <div class="pkg-item" onclick="selectPkg('20', 10000, this)">
+          <h4>၂၀ ပုဒ်</h4>
+          <p>10,000 Ks</p>
+        </div>
+        <div class="pkg-item" onclick="selectPkg('30', 15000, this)">
+          <h4>၃၀ ပုဒ်</h4>
+          <p>15,000 Ks</p>
+        </div>
       </div>
 
       <div style="background: rgba(11,12,16,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
@@ -211,7 +217,6 @@
     </div>
   </div>
 
-  <!-- Progress Modal -->
   <div id="loadingModal" class="modal-overlay">
     <div class="modal-card">
       <div class="circle-wrap">
@@ -229,7 +234,6 @@
     </div>
   </div>
 
-  <!-- Header -->
   <header class="header">
     <div class="brand">
       <div class="brand-icon">
@@ -260,10 +264,8 @@
     </div>
   </header>
 
-  <!-- Main Container -->
   <main class="container">
 
-    <!-- STEP 1: Video File & Audio Extraction -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -289,7 +291,6 @@
         <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
-      <!-- Preview Player for Video Sync -->
       <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);"></video>
 
       <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
@@ -297,7 +298,6 @@
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Prompt -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -321,7 +321,6 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice, Subtitle Styling & Render -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -352,7 +351,6 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling Controls with Custom Font File -->
       <div id="subStylingSection" style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
@@ -380,7 +378,6 @@
           </div>
         </div>
 
-        <!-- Subtitle Live Preview Box -->
         <div class="form-group" style="margin-top: 14px;">
           <label style="color: #38bdf8; font-weight: 600;"><i class="ph-bold ph-eye"></i> Subtitle Live Preview (စာတန်းထိုး နမူနာပုံစံ)</label>
           <div id="subPreviewBox" style="background: linear-gradient(180deg, #1e2230 0%, #0f1117 100%); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 100px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
@@ -391,7 +388,6 @@
         </div>
       </div>
 
-      <!-- Toggles Grid (Including Myanmar Subtitle Enable/Disable Toggle) -->
       <div class="toggles">
         <label class="toggle-item" style="color: #38bdf8; font-weight: 600;">
           <input type="checkbox" id="enableSubCheck" checked onchange="toggleSubSection()">
@@ -408,7 +404,6 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Auto-Save -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -422,7 +417,6 @@
       </div>
     </div>
 
-    <!-- STEP 5: Final Export -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -459,6 +453,7 @@
     let selectedFontFile = null;
     let srtContent = "";
     let selectedPackageType = "10";
+    let currentPreviewAudio = null;
 
     function showToast(msg) {
       const c = document.getElementById('toastContainer');
@@ -489,9 +484,8 @@
       document.getElementById('loadingModal').classList.remove('active');
     }
 
-    // Dynamic Package Loading from Backend Database
     async function openPackageModal() {
-      const grid = document.getElementById('pkgGridContainer');
+      const grid = document.querySelector('.pkg-grid');
       try {
         const res = await fetch("/api/packages");
         const pkgs = await res.json();
@@ -503,12 +497,8 @@
             </div>
           `).join("");
           selectedPackageType = String(pkgs[0].credits);
-        } else {
-          grid.innerHTML = `<div style="grid-column: 1 / -1; color: #a1a1aa; font-size: 11px;">Package များ မရှိသေးပါ။</div>`;
         }
-      } catch (e) {
-        grid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; font-size: 11px;">Package များ ဆွဲယူ၍ မရပါ။</div>`;
-      }
+      } catch (e) {}
       document.getElementById('packageModal').classList.add('active');
     }
 
@@ -645,18 +635,6 @@
       try {
         const res = await fetch("/api/user/me");
         const data = await res.json();
-        
-        // Handle Banned User State
-        if (data.banned) {
-          document.getElementById('loginGate').classList.remove('hidden');
-          document.getElementById('loginGateTitle').innerText = "🚫 အကောင့်ပိတ်ပင်ခံထားရပါသည်";
-          document.getElementById('loginGateTitle').style.color = "#ef4444";
-          document.getElementById('loginGateDesc').innerText = "စည်းကမ်းဖောက်ဖျက်မှုကြောင့် ဤအကောင့်အား အသုံးပြုခွင့် ရပ်ဆိုင်းထားပါသည်ခင်ဗျာ။";
-          document.getElementById('btnGoogleLogin').classList.add('hidden');
-          document.getElementById('loginGateSubtext').innerText = "အသေးစိတ်သိရှိလိုပါက Admin ထံ ဆက်သွယ်ပါ";
-          return;
-        }
-
         if (data.logged_in) {
           document.getElementById('loginGate').classList.add('hidden');
           document.getElementById('userProfile').classList.remove('hidden');
@@ -801,11 +779,20 @@
       });
     }
 
+    // ★ စမ်းသပ်ချိန်တွင် ဗီဒီယို မူရင်းအသံ ပိတ်ထားသည့် Preview Function
     async function previewAudioSync(startTimeSec, encodedText) {
-      const text = decodeURIComponent(encodedText);
+      const text = decodeURIComponent(encodedText).trim();
+      if (!text) return showToast("စာသား မရှိသေးပါ!");
+
+      if (currentPreviewAudio) {
+        currentPreviewAudio.pause();
+        currentPreviewAudio = null;
+      }
+
       const vPrev = document.getElementById('inputVideoPreview');
       if (vPrev && !vPrev.classList.contains('hidden')) {
         vPrev.currentTime = startTimeSec;
+        vPrev.muted = true; // ဗီဒီယို မူရင်းအသံကို လုံးဝ ပိတ်ထားမည် (Mute)
         vPrev.play();
       }
 
@@ -815,13 +802,25 @@
       fd.append("pitch", document.getElementById('pitchInput').value);
       fd.append("speed", document.getElementById('speedInput').value);
 
-      const res = await fetch("/api/preview-single-audio", { method: "POST", body: fd });
-      const blob = await res.blob();
-      const a = new Audio(URL.createObjectURL(blob));
-      a.onended = () => { if (vPrev) vPrev.pause(); };
-      a.play();
+      try {
+        const res = await fetch("/api/preview-single-audio", { method: "POST", body: fd });
+        if (!res.ok) throw new Error("Audio preview failed");
+        
+        const blob = await res.blob();
+        currentPreviewAudio = new Audio(URL.createObjectURL(blob));
+
+        currentPreviewAudio.onended = () => {
+          if (vPrev) vPrev.pause();
+        };
+
+        currentPreviewAudio.play();
+      } catch (err) {
+        if (vPrev) vPrev.pause();
+        showToast("စမ်းသပ်အသံ ဖွင့်၍ မရပါ");
+      }
     }
 
+    // Silence Buffer Generator
     function createSilenceWav(durationSec, sampleRate = 24000) {
       const numChannels = 1;
       const bytesPerSample = 2;
@@ -841,7 +840,7 @@
       writeStr(8, 'WAVE');
       writeStr(12, 'fmt ');
       view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true); // PCM
+      view.setUint16(20, 1, true);
       view.setUint16(22, numChannels, true);
       view.setUint32(24, sampleRate, true);
       view.setUint32(28, byteRate, true);
