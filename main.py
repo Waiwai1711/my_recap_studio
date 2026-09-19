@@ -14,13 +14,12 @@ from starlette.middleware.sessions import SessionMiddleware
 import httpx
 import assemblyai as aai
 import edge_tts
-from pydub import AudioSegment
+from mutagen.mp3 import MP3
 
 from database import SessionLocal, User
 
 app = FastAPI()
 
-# 1. Reverse Proxy & WASM Headers
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 @app.middleware("http")
@@ -43,13 +42,11 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
-# --- Native Google OAuth (Authlib လုံးဝမလိုဘဲ တိုက်ရိုက်ခေါ်ယူခြင်း) ---
 @app.get("/login/google")
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
         return JSONResponse(status_code=500, content={"error": "GOOGLE_CLIENT_ID မရှိသေးပါ။ Environment ကို စစ်ဆေးပါ။"})
     
-    # Render HTTPS host ကို အလိုအလျောက် ရယူခြင်း
     host = request.headers.get("x-forwarded-host") or request.headers.get("host")
     proto = request.headers.get("x-forwarded-proto", "https")
     redirect_uri = f"{proto}://{host}/api/auth/google/callback"
@@ -77,7 +74,6 @@ async def auth_google_callback(request: Request):
         proto = request.headers.get("x-forwarded-proto", "https")
         redirect_uri = f"{proto}://{host}/api/auth/google/callback"
 
-    # Token ရယူခြင်း
     async with httpx.AsyncClient() as client:
         token_res = await client.post(
             "https://oauth2.googleapis.com/token",
@@ -95,7 +91,6 @@ async def auth_google_callback(request: Request):
         tokens = token_res.json()
         access_token = tokens.get("access_token")
 
-        # User Info ရယူခြင်း
         user_res = await client.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
             headers={"Authorization": f"Bearer {access_token}"}
@@ -160,7 +155,6 @@ async def get_user_data(request: Request):
     db.close()
     return data
 
-# --- AssemblyAI Transcription ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -190,7 +184,6 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
-# --- Batch Text-To-Speech (Edge-TTS) Generation ---
 class BatchTTSRequest(BaseModel):
     lines: List[str]
     voice: str = "my-MM-ThihaNeural"
@@ -243,9 +236,11 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
                 audio_stream.write(chunk["data"])
         
         audio_bytes = audio_stream.getvalue()
+        
+        # mutagen ဖြင့် duration တွက်ချက်ခြင်း (FFmpeg မလိုဘဲ သီးခြားအလုပ်လုပ်သည်)
         try:
-            pydub_segment = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
-            duration_ms = len(pydub_segment)
+            mp3_info = MP3(io.BytesIO(audio_bytes))
+            duration_ms = int(mp3_info.info.length * 1000)
         except Exception:
             duration_ms = 1000
 
