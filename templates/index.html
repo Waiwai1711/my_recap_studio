@@ -292,7 +292,7 @@
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Prompt -->
+    <!-- STEP 2: Source Subtitles & Strict Short Prompt -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -316,7 +316,7 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice, Subtitle Styling & Advanced Media Controls -->
+    <!-- STEP 3: Voice, Watermark & Advanced Media Controls -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -338,7 +338,7 @@
           <input type="number" id="pitchInput" value="0" min="-50" max="50" class="glass-input" style="text-align: center;">
         </div>
         <div class="form-group">
-          <label>Speed (%)</label>
+          <label>Base Speed (%)</label>
           <input type="number" id="speedInput" value="10" min="-20" max="60" class="glass-input" style="text-align: center;">
         </div>
         <div class="form-group">
@@ -347,7 +347,6 @@
         </div>
       </div>
 
-      <!-- Watermark / Page Logo & Reels Aspect Settings -->
       <div class="grid-2" style="background: rgba(11,12,16,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="form-group">
           <label><i class="ph-bold ph-image"></i> Page Logo / Watermark (PNG ပုံတင်ရန်)</label>
@@ -363,7 +362,6 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling Controls with Custom Font File -->
       <div id="subStylingSection" style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
@@ -401,7 +399,6 @@
         </div>
       </div>
 
-      <!-- Advanced Features Toggles -->
       <div class="toggles">
         <label class="toggle-item" style="color: #38bdf8; font-weight: 600;">
           <input type="checkbox" id="enableSubCheck" checked onchange="toggleSubSection()">
@@ -415,9 +412,9 @@
           <input type="checkbox" id="enableReelsCheck">
           <span>📱 TikTok / Reels 9:16 ဒေါင်လိုက် ပြောင်းလဲမည် (Auto-Blur Fill)</span>
         </label>
-        <label class="toggle-item" style="color: #fbbf24; font-weight: 500;">
+        <label class="toggle-item" style="color: #fbbf24; font-weight: 600;">
           <input type="checkbox" id="autoSpeedCheck" checked>
-          <span>⚡ Narrator Auto-Speed</span>
+          <span>⚡ Dynamic Auto-Speed (အချိန်မီအောင် အသံကို အလိုအလျောက် အမြန်/အနှေးညှိမည်)</span>
         </label>
         <label class="toggle-item">
           <input type="checkbox" id="blurSubCheck" checked>
@@ -772,12 +769,21 @@
       }
     }
 
+    // ★ စာတိုတိုနှင့် အချိန်ကွက်တိကိုက်စေရန် တင်းကျပ်ထားသော Gemini Prompt
     function copyPrompt() {
       if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
-      const header = `You are a professional video dubbing translator. Translate the subtitles into spoken Burmese.\nReturn JSON: {"translations": ["...", "..."]}\nInputs:\n`;
+      const header = `You are a professional movie recap dubber. Translate the following video segments into spoken Burmese.
+CRITICAL RULES:
+1. EXTREMELY SHORT & PUNCHY: Keep each line between 4 to 8 Burmese words only.
+2. DURATION LIMIT: The text MUST fit into the given duration (max 3-4 syllables per second). Never write long sentences.
+3. RECAP TONE: Use exciting, casual Burmese movie recap style.
+4. Output STRICT JSON format only: {"translations": ["...", "..."]}
+
+INPUTS:
+`;
       const inputs = currentSegments.map(s => `[${s.id}] [Max Limit: ${s.duration}s] "${s.text}"`).join("\n");
       navigator.clipboard.writeText(header + inputs);
-      showToast("Prompt ကူးယူပြီးပါပြီ!");
+      showToast("တိုတိုတုတ်တုတ် Recap Prompt ကူးယူပြီးပါပြီ!");
     }
 
     function submitJson() {
@@ -792,7 +798,6 @@
       }
     }
 
-    // Multi-Speaker Selector ပေါင်းစပ်ထားသော Subtitle Editor Render Function
     function renderSubEditor(translations, savedVoices = []) {
       const container = document.getElementById('linesContainer');
       container.innerHTML = "";
@@ -833,7 +838,6 @@
         vPrev.play();
       }
 
-      // စာကြောင်း၏ သီးခြား Voice ရွေးချယ်မှုကို ရယူခြင်း
       let selectedRowVoice = document.getElementById('voiceSelect').value;
       if (btnEl && btnEl.parentElement) {
         const rowSelect = btnEl.parentElement.querySelector('.sub-voice-select');
@@ -903,8 +907,8 @@
       return new Uint8Array(out.buffer);
     }
 
-    // BGM Auto-Ducking Automation ထည့်သွင်းထားသော Master Audio Builder
-    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmVol, isDuckingEnabled) {
+    // ★ အသံထပ်ခြင်း ကင်းဝေးစေပြီး Segment Duration အတိုင်း Auto-Speed ညှိပေးသည့် Master Engine
+    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmVol, isDuckingEnabled, isAutoSpeedEnabled) {
       let totalSec = 10;
       if (segments.length > 0) {
         const last = segments[segments.length - 1];
@@ -923,20 +927,49 @@
         const item = ttsData.audios[i];
         if (!item.audio_b64) continue;
         const seg = segments[i];
+        const nextSeg = segments[i + 1];
+
         const startSec = (seg && typeof seg.start === "number") ? (seg.start / 1000) : (i * 2);
+        const originalDurationSec = item.duration_ms / 1000;
+        
+        // နောက်စာကြောင်း မစတင်မီ ရရှိနိုင်သည့် အချိန်အကန့်အသတ် (Max Available Window)
+        let maxAllowedSec = seg && typeof seg.duration === "number" ? seg.duration : originalDurationSec;
+        if (nextSeg && typeof nextSeg.start === "number") {
+          maxAllowedSec = Math.min(maxAllowedSec, (nextSeg.start / 1000) - startSec - 0.05);
+        }
+        maxAllowedSec = Math.max(0.5, maxAllowedSec);
 
         const bytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
         try {
           const buf = await actx.decodeAudioData(bytes.buffer.slice(0));
           const src = offlineCtx.createBufferSource();
           src.buffer = buf;
-          src.connect(offlineCtx.destination);
-          src.start(startSec);
 
-          speechIntervals.push({ start: startSec, end: startSec + (item.duration_ms / 1000) });
+          // ★ Auto-Speed Logic: စကားပြောချိန်က ဗီဒီယိုထက် ရှည်နေပါက အသံမထပ်စေရန် playbackRate အလိုအလျောက် တင်ပေးခြင်း
+          let rate = 1.0;
+          if (isAutoSpeedEnabled && originalDurationSec > maxAllowedSec) {
+            rate = Math.min(2.0, originalDurationSec / maxAllowedSec);
+          }
+          src.playbackRate.value = rate;
+
+          const actualDuration = buf.duration / rate;
+
+          // ★ Non-Overlap Fade Guard: နောက်စာကြောင်း စချိန်နှင့် ထပ်မသွားစေရန် Fade-Out ပြုလုပ်ပေးခြင်း
+          const gainNode = offlineCtx.createGain();
+          gainNode.gain.setValueAtTime(1.0, startSec);
+          gainNode.gain.setValueAtTime(1.0, Math.max(startSec, startSec + actualDuration - 0.05));
+          gainNode.gain.linearRampToValueAtTime(0.0, startSec + actualDuration);
+
+          src.connect(gainNode);
+          gainNode.connect(offlineCtx.destination);
+          src.start(startSec);
+          src.stop(startSec + actualDuration);
+
+          speechIntervals.push({ start: startSec, end: startSec + actualDuration });
         } catch (e) {}
       }
 
+      // BGM Auto-Ducking
       if (bgmFile) {
         try {
           const bgmBuf = await actx.decodeAudioData(await bgmFile.arrayBuffer());
@@ -946,7 +979,7 @@
           
           const gainNode = offlineCtx.createGain();
           const baseGain = (bgmVol / 100);
-          const duckedGain = baseGain * 0.25; // Ducking ဖြစ်ချိန် အသံ ၇၅% လျှော့ချခြင်း
+          const duckedGain = baseGain * 0.25;
 
           if (isDuckingEnabled && speechIntervals.length > 0) {
             gainNode.gain.setValueAtTime(baseGain, 0);
@@ -986,11 +1019,11 @@
       const isSubEnabled = document.getElementById('enableSubCheck').checked;
       const isDuckingEnabled = document.getElementById('enableDuckingCheck').checked;
       const isReelsEnabled = document.getElementById('enableReelsCheck').checked;
+      const isAutoSpeedEnabled = document.getElementById('autoSpeedCheck').checked;
 
       showProgress("TTS အသံထုတ်ယူနေပါသည်", "ဇာတ်ကောင်အလိုက် Multi-Speaker အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
 
       try {
-        // Multi-Speaker Payload ပြင်ဆင်ခြင်း
         const payloadItems = translations.map((text, idx) => ({
           text: text,
           voice: voiceSelects[idx] ? voiceSelects[idx].value : document.getElementById('voiceSelect').value
@@ -1008,19 +1041,18 @@
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error);
 
-        updateGauge(30, "BGM Auto-Ducking နှင့် အသံချိန်ညှိနေပါသည်...");
+        updateGauge(30, "Auto-Speed နှင့် အသံမထပ်အောင် ချိန်ညှိနေပါသည်...");
 
         const bgmInput = document.getElementById('bgmFile');
         const bgmFile = bgmInput.files.length ? bgmInput.files[0] : null;
         const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 25;
-        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmVol, isDuckingEnabled);
+        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmVol, isDuckingEnabled, isAutoSpeedEnabled);
 
-        updateGauge(50, "ဗီဒီယိုနှင့် Watermark ပြင်ဆင်နေပါသည်...");
+        updateGauge(50, "ဗီဒီယိုနှင့် စာတန်းထိုး ပြင်ဆင်နေပါသည်...");
 
         ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'dub_master.wav', masterWavBytes);
 
-        // Watermark ပုံ ထည့်သွင်းခြင်း
         const wmInput = document.getElementById('watermarkInput');
         let hasWatermark = wmInput.files.length > 0;
         if (hasWatermark) {
@@ -1045,27 +1077,23 @@
         const blurSub = document.getElementById('blurSubCheck').checked;
         const wmPos = document.getElementById('watermarkPosSelect').value;
 
-        // Watermark Overlay Coordinates
-        let wmOverlayCoord = "W-w-20:20"; // top_right
+        let wmOverlayCoord = "W-w-20:20";
         if (wmPos === "top_left") wmOverlayCoord = "20:20";
         if (wmPos === "bottom_right") wmOverlayCoord = "W-w-20:H-h-20";
 
         let filterParts = [];
         let curV = "0:v";
 
-        // ၁။ မူရင်းစာတန်း Blur မည်
         if (blurSub) {
           filterParts.push(`[${curV}]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[vblur]`);
           curV = "vblur";
         }
 
-        // ၂။ 9:16 TikTok / Reels ဒေါင်လိုက် ပြောင်းလဲမည်
         if (isReelsEnabled) {
           filterParts.push(`[${curV}]split[mainv][bgv];[bgv]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30[bgblur];[mainv]scale=1080:-1[fgv];[bgblur][fgv]overlay=(W-w)/2:(H-h)/2[vreels]`);
           curV = "vreels";
         }
 
-        // ၃။ Page Logo / Watermark Overlay ကပ်မည်
         let inputFiles = ['-i', 'input_orig.mp4', '-i', 'dub_master.wav'];
         if (hasWatermark) {
           inputFiles.push('-i', 'watermark.png');
