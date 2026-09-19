@@ -10,7 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- Stable FFmpeg WASM v0.11.6 -->
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
   <style>
@@ -144,7 +143,6 @@
     .hidden { display: none !important; }
   </style>
 
-  <!-- Dynamic Cue Style for Subtitles inside Video Player -->
   <style id="cueStyleTag"></style>
 </head>
 
@@ -152,7 +150,6 @@
 
   <div id="toastContainer"></div>
 
-  <!-- LOGIN GATE -->
   <div id="loginGate">
     <div class="login-box">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
@@ -171,7 +168,6 @@
     </div>
   </div>
 
-  <!-- BUY PACKAGE MODAL -->
   <div id="packageModal" class="modal-overlay">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -221,7 +217,6 @@
     </div>
   </div>
 
-  <!-- Progress Modal -->
   <div id="loadingModal" class="modal-overlay">
     <div class="modal-card">
       <div class="circle-wrap">
@@ -239,7 +234,6 @@
     </div>
   </div>
 
-  <!-- Header -->
   <header class="header">
     <div class="brand">
       <div class="brand-icon">
@@ -270,10 +264,8 @@
     </div>
   </header>
 
-  <!-- Main Container -->
   <main class="container">
 
-    <!-- STEP 1: Video File & Audio Extraction -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -299,7 +291,6 @@
         <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
-      <!-- Preview Player for Video Sync -->
       <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);"></video>
 
       <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
@@ -307,7 +298,6 @@
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Prompt -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -331,7 +321,6 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice, Subtitle Styling & Render -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -362,8 +351,7 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling Controls with Custom Font File -->
-      <div style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
+      <div id="subStylingSection" style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
             <label><i class="ph-bold ph-text-t"></i> Custom Font File (.ttf / .otf - မြန်မာဖောင့်ဖိုင်)</label>
@@ -378,7 +366,7 @@
         <div class="grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label>Font Color</label>
-            <input type="color" id="subFontColor" value="#ffff00" style="width: 100%; height: 36px; border: none; background: transparent; cursor: pointer;">
+            <input type="color" id="subFontColor" value="#ffffff" style="width: 100%; height: 36px; border: none; background: transparent; cursor: pointer;">
           </div>
           <div class="form-group">
             <label>Border Color</label>
@@ -390,11 +378,10 @@
           </div>
         </div>
 
-        <!-- Subtitle Live Preview Box -->
         <div class="form-group" style="margin-top: 14px;">
           <label style="color: #38bdf8; font-weight: 600;"><i class="ph-bold ph-eye"></i> Subtitle Live Preview (စာတန်းထိုး နမူနာပုံစံ)</label>
-          <div id="subPreviewBox" style="background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 90px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px;">
-            <p id="subPreviewText" style="font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffff00; font-weight: bold; text-align: center; padding: 0 16px; user-select: none;">
+          <div id="subPreviewBox" style="background: linear-gradient(180deg, #1e2230 0%, #0f1117 100%); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 100px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
+            <p id="subPreviewText" style="font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; padding: 0 16px; user-select: none; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.5;">
               အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
             </p>
           </div>
@@ -402,6 +389,10 @@
       </div>
 
       <div class="toggles">
+        <label class="toggle-item" style="color: #38bdf8; font-weight: 600;">
+          <input type="checkbox" id="enableSubCheck" checked onchange="toggleSubSection()">
+          <span>💬 မြန်မာစာတန်းထိုး ထည့်သွင်းမည် (Subtitles)</span>
+        </label>
         <label class="toggle-item" style="color: #fbbf24; font-weight: 500;">
           <input type="checkbox" id="autoSpeedCheck" checked>
           <span>⚡ Narrator Auto-Speed (အသံထက်ရှည်သော Video ကို Auto အမြန်ရစ်မည်)</span>
@@ -413,7 +404,6 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Auto-Save -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -427,7 +417,6 @@
       </div>
     </div>
 
-    <!-- STEP 5: Final Export -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -442,7 +431,7 @@
           <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
             <i class="ph-bold ph-download-simple"></i> Download Video
           </a>
-          <button onclick="downloadSRT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px;">
+          <button id="btnDownloadSRT" onclick="downloadSRT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px;">
             <i class="ph-bold ph-subtitles"></i> Download .SRT
           </button>
           <button onclick="downloadScriptTXT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px; color: #fbbf24;">
@@ -524,19 +513,40 @@
       }
     }
 
+    // Toggle Subtitle Styling Section Visibility
+    function toggleSubSection() {
+      const enableSub = document.getElementById('enableSubCheck').checked;
+      const stylingSec = document.getElementById('subStylingSection');
+      if (stylingSec) {
+        stylingSec.style.opacity = enableSub ? "1" : "0.35";
+        stylingSec.style.pointerEvents = enableSub ? "auto" : "none";
+      }
+    }
+
     // Live Subtitle Styling Preview & Dynamic Cue Update
     function updateSubPreview() {
       const p = document.getElementById('subPreviewText');
       const size = document.getElementById('subFontSize').value || 24;
-      const fColor = document.getElementById('subFontColor').value || '#ffff00';
+      const fColor = document.getElementById('subFontColor').value || '#ffffff';
       const bColor = document.getElementById('subBorderColor').value || '#000000';
-      const bWidth = document.getElementById('subBorderWidth').value || 2;
+      const bWidth = parseFloat(document.getElementById('subBorderWidth').value) || 2;
 
       if (p) {
         p.style.fontSize = `${size}px`;
         p.style.color = fColor;
-        p.style.webkitTextStroke = `${bWidth}px ${bColor}`;
-        p.style.textShadow = `-${bWidth}px -${bWidth}px 0 ${bColor}, ${bWidth}px -${bWidth}px 0 ${bColor}, -${bWidth}px ${bWidth}px 0 ${bColor}, ${bWidth}px ${bWidth}px 0 ${bColor}`;
+        p.style.paintOrder = 'stroke fill';
+        p.style.webkitTextStroke = `${bWidth * 2}px ${bColor}`;
+        p.style.textShadow = `
+          -${bWidth}px -${bWidth}px 0 ${bColor},
+           0px -${bWidth}px 0 ${bColor},
+           ${bWidth}px -${bWidth}px 0 ${bColor},
+          -${bWidth}px  0px 0 ${bColor},
+           ${bWidth}px  0px 0 ${bColor},
+          -${bWidth}px  ${bWidth}px 0 ${bColor},
+           0px  ${bWidth}px 0 ${bColor},
+           ${bWidth}px  ${bWidth}px 0 ${bColor},
+           0 2px 8px rgba(0,0,0,0.8)
+        `;
       }
 
       // Update Subtitle Cue styling on the Video Player
@@ -547,7 +557,9 @@
             font-family: 'CustomUserFont', 'Pyidaungsu', sans-serif !important;
             font-size: ${size}px !important;
             color: ${fColor} !important;
-            text-shadow: -${bWidth}px -${bWidth}px 0 ${bColor}, ${bWidth}px -${bWidth}px 0 ${bColor}, -${bWidth}px ${bWidth}px 0 ${bColor}, ${bWidth}px ${bWidth}px 0 ${bColor} !important;
+            paint-order: stroke fill !important;
+            -webkit-text-stroke: ${bWidth * 2}px ${bColor} !important;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.9) !important;
             background-color: transparent !important;
           }
         `;
@@ -635,6 +647,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       checkUserAuth();
       updateSubPreview();
+      toggleSubSection();
 
       ['subFontSize', 'subFontColor', 'subBorderColor', 'subBorderWidth'].forEach(id => {
         const el = document.getElementById(id);
@@ -773,7 +786,7 @@
       a.play();
     }
 
-    // Silence WAV Buffer Generator (အသံတိတ်ကာလ ထုတ်လုပ်ပေးခြင်း)
+    // Silence WAV Generator (အသံနှင့် ဇာတ်လမ်း ကွက်တိကိုက်စေရန် Silence Buffer ထုတ်ပေးခြင်း)
     function createSilenceWav(durationSec, sampleRate = 24000) {
       const numChannels = 1;
       const bytesPerSample = 2;
@@ -815,6 +828,8 @@
       if (!translations.length) return showToast("စာကြောင်းများ မရှိသေးပါ!");
       if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် မရှိပါ!");
       if (!isFFmpegReady) return showToast("FFmpeg Engine အဆင်သင့်မဖြစ်သေးပါ!");
+
+      const isSubEnabled = document.getElementById('enableSubCheck').checked;
 
       showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
 
@@ -870,7 +885,9 @@
         }
 
         srtContent = srtLines.join("\n");
-        ffmpeg.FS('writeFile', 'subs.srt', new TextEncoder().encode(srtContent));
+        if (isSubEnabled) {
+          ffmpeg.FS('writeFile', 'subs.srt', new TextEncoder().encode(srtContent));
+        }
 
         ffmpeg.FS('writeFile', 'audio_concat.txt', concatAudioList);
         await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'audio_concat.txt', '-c', 'copy', 'dub_full.mp3');
@@ -894,34 +911,31 @@
           
           if (videoFilter) {
             filterComplex = `${videoFilter};` + filterComplex;
-            finalArgs = [
-              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3', '-i', 'subs.srt',
-              '-filter_complex', filterComplex,
-              '-map', '[v_out]', '-map', '[finala]', '-map', '3:s',
-              '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-c:s', 'mov_text', '-shortest', 'output.mp4'
-            ];
+            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3'];
+            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
+            finalArgs.push('-filter_complex', filterComplex, '-map', '[v_out]', '-map', '[finala]');
+            if (isSubEnabled) { finalArgs.push('-map', '3:s', '-c:s', 'mov_text'); }
+            finalArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4');
           } else {
-            finalArgs = [
-              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3', '-i', 'subs.srt',
-              '-filter_complex', filterComplex,
-              '-map', '0:v', '-map', '[finala]', '-map', '3:s',
-              '-c:v', 'copy', '-c:a', 'aac', '-c:s', 'mov_text', '-shortest', 'output.mp4'
-            ];
+            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3'];
+            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
+            finalArgs.push('-filter_complex', filterComplex, '-map', '0:v', '-map', '[finala]');
+            if (isSubEnabled) { finalArgs.push('-map', '3:s', '-c:s', 'mov_text'); }
+            finalArgs.push('-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4');
           }
         } else {
           if (videoFilter) {
-            finalArgs = [
-              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'subs.srt',
-              '-filter_complex', videoFilter,
-              '-map', '[v_out]', '-map', '1:a', '-map', '2:s',
-              '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-c:s', 'mov_text', '-shortest', 'output.mp4'
-            ];
+            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3'];
+            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
+            finalArgs.push('-filter_complex', videoFilter, '-map', '[v_out]', '-map', '1:a');
+            if (isSubEnabled) { finalArgs.push('-map', '2:s', '-c:s', 'mov_text'); }
+            finalArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4');
           } else {
-            finalArgs = [
-              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'subs.srt',
-              '-map', '0:v', '-map', '1:a', '-map', '2:s',
-              '-c:v', 'copy', '-c:a', 'aac', '-c:s', 'mov_text', '-shortest', 'output.mp4'
-            ];
+            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3'];
+            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
+            finalArgs.push('-map', '0:v', '-map', '1:a');
+            if (isSubEnabled) { finalArgs.push('-map', '2:s', '-c:s', 'mov_text'); }
+            finalArgs.push('-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4');
           }
         }
 
@@ -936,19 +950,21 @@
         player.innerHTML = "";
         player.src = videoUrl;
 
-        // Web Player ပေါ်တွင် Subtitle ချက်ချင်း ပေါ်လာစေရန် Track ထည့်သွင်းပေးခြင်း
-        const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
-        const vttUrl = URL.createObjectURL(vttBlob);
-        const track = document.createElement('track');
-        track.kind = 'subtitles';
-        track.label = 'Burmese';
-        track.srclang = 'my';
-        track.src = vttUrl;
-        track.default = true;
-        player.appendChild(track);
+        // Subtitle Toggle ဖွင့်ထားမှသာ Web Player ထဲတွင် Subtitle Track ထည့်သွင်းပြသပေးခြင်း
+        if (isSubEnabled) {
+          const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
+          const vttUrl = URL.createObjectURL(vttBlob);
+          const track = document.createElement('track');
+          track.kind = 'subtitles';
+          track.label = 'Burmese';
+          track.srclang = 'my';
+          track.src = vttUrl;
+          track.default = true;
+          player.appendChild(track);
 
-        if (player.textTracks && player.textTracks[0]) {
-          player.textTracks[0].mode = "showing";
+          if (player.textTracks && player.textTracks[0]) {
+            player.textTracks[0].mode = "showing";
+          }
         }
 
         document.getElementById('downloadBtn').href = videoUrl;
