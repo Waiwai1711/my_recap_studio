@@ -19,7 +19,7 @@ import assemblyai as aai
 import edge_tts
 from mutagen.mp3 import MP3
 
-from database import SessionLocal, User, PaymentRequest
+from database import SessionLocal, User, PaymentRequest, Package
 
 app = FastAPI()
 
@@ -38,8 +38,8 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8881875491:AAGTyx6m3-LnsOWSdRKtfuwJ8nEioIjn3Hk")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "5750529400")
 ADMIN_EMAIL = "waiphyo171104@gmail.com"
 
 BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "https://my-recap-studio.onrender.com").rstrip("/")
@@ -51,7 +51,7 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
-# Telegram Bot Alert (Direct Action URL Method - Webhook မလိုပါ)
+# Telegram Bot Alert (Direct Action Link)
 async def send_telegram_payment_alert(req_id: int, user_email: str, package_type: str, amount: int, payment_method: str, photo_path: str):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return None
@@ -95,34 +95,22 @@ async def send_telegram_payment_alert(req_id: int, user_email: str, package_type
         pass
     return None
 
-# Webhook မလိုဘဲ Telegram ခလုတ်မှတစ်ဆင့် တိုက်ရိုက် အတည်ပြုပေးသော API
+# Telegram Quick Action
 @app.get("/api/quick-action", response_class=HTMLResponse)
 async def quick_action(action: str, id: int, key: str):
     if key != SECRET_KEY:
-        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden: လုံခြုံရေးကုဒ် မှားယွင်းနေပါသည်။</h2>", status_code=403)
+        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden</h2>", status_code=403)
 
     db = SessionLocal()
     pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == id).first()
     if not pay_req:
         db.close()
-        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>တောင်းဆိုမှု ရှာမတွေ့ပါ သို့မဟုတ် ပျက်ပြယ်သွားပါပြီ။</h2>")
+        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>တောင်းဆိုမှု ရှာမတွေ့ပါ။</h2>")
 
     if pay_req.status != "pending":
         status_text = pay_req.status.upper()
         db.close()
-        return HTMLResponse(f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Status</title></head>
-        <body style="background:#0b0c10; color:#f4f4f5; display:flex; align-items:center; justify-content:center; height:90vh; font-family:sans-serif; text-align:center; margin:0; padding:16px;">
-          <div style="background:#14161f; padding:28px 20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); max-width:360px; width:100%;">
-            <h2 style="color:#facc15; margin-bottom:12px; font-size:20px;">ပြီးဆုံးပြီး ဖြစ်ပါသည်</h2>
-            <p style="color:#a1a1aa; font-size:13px; line-height:1.6;">ဤငွေလွှဲပြေစာသည် <b>{status_text}</b> ပြုလုပ်ပြီးသား ဖြစ်ပါသည်။</p>
-            <p style="color:#71717a; font-size:11px; margin-top:20px;">Telegram သို့ ပြန်သွားနိုင်ပါပြီ</p>
-          </div>
-        </body>
-        </html>
-        """)
+        return HTMLResponse(f"<h2 style='color:#facc15; text-align:center; margin-top:50px;'>ဤပြေစာသည် {status_text} ပြုလုပ်ပြီးသား ဖြစ်ပါသည်။</h2>")
 
     target_user = db.query(User).filter(User.email == pay_req.user_email).first()
 
@@ -166,6 +154,15 @@ async def serve_admin(request: Request):
     if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
         return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden: Admin သာ ဝင်ရောက်ခွင့်ရှိပါသည်။</h2>", status_code=403)
     return FileResponse(os.path.join("templates", "admin.html"))
+
+# Public Packages Endpoint (User Web မှ ဒိုင်းနမစ် ဖတ်ယူရန်)
+@app.get("/api/packages")
+async def get_public_packages():
+    db = SessionLocal()
+    pkgs = db.query(Package).filter(Package.is_active == True).order_by(Package.credits.asc()).all()
+    result = [{"id": p.id, "name": p.name, "credits": p.credits, "price": p.price_mmk} for p in pkgs]
+    db.close()
+    return result
 
 @app.get("/login/google")
 async def login_google(request: Request):
@@ -231,7 +228,8 @@ async def auth_google_callback(request: Request):
             daily_credits_left=2,
             package_credits=0,
             last_reset_date=date.today(),
-            is_admin=is_admin
+            is_admin=is_admin,
+            is_banned=False
         )
         db.add(user)
         db.commit()
@@ -239,7 +237,12 @@ async def auth_google_callback(request: Request):
         if is_admin and not user.is_admin:
             user.is_admin = True
             db.commit()
+    
+    is_banned = user.is_banned
     db.close()
+
+    if is_banned:
+        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>ဤအကောင့်သည် ပိတ်ပင် (Ban) ခံထားရပါသည်ခင်ဗျာ။</h2>", status_code=403)
 
     res = RedirectResponse(url="/")
     res.set_cookie(key="user_email", value=email, httponly=True, max_age=86400 * 30, samesite="lax")
@@ -259,9 +262,9 @@ async def get_user_data(request: Request):
 
     db = SessionLocal()
     user = db.query(User).filter(User.email == user_email).first()
-    if not user:
+    if not user or user.is_banned:
         db.close()
-        return JSONResponse(status_code=401, content={"logged_in": False})
+        return JSONResponse(status_code=401, content={"logged_in": False, "banned": getattr(user, 'is_banned', False)})
 
     today = date.today()
     if user.last_reset_date != today:
@@ -294,8 +297,15 @@ async def submit_payment(
     if not user_email:
         return JSONResponse(status_code=401, content={"error": "Login အရင်ဝင်ပေးပါ"})
 
-    amounts = {"10": 5000, "20": 10000, "30": 15000}
-    amount = amounts.get(package_type, 5000)
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == user_email).first()
+    if not user or user.is_banned:
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "ဤအကောင့်သည် အသုံးပြုခွင့် ပိတ်ပင်ခံထားရပါသည်"})
+
+    # Dynamic package price search
+    pkg = db.query(Package).filter(Package.credits == int(package_type)).first()
+    amount = pkg.price_mmk if pkg else (int(package_type) * 500)
 
     ext = os.path.splitext(slip.filename)[1] or ".jpg"
     slip_filename = f"slip_{uuid.uuid4().hex[:10]}{ext}"
@@ -304,7 +314,6 @@ async def submit_payment(
     with open(slip_path, "wb") as buffer:
         shutil.copyfileobj(slip.file, buffer)
 
-    db = SessionLocal()
     pay_req = PaymentRequest(
         user_email=user_email,
         package_type=package_type,
@@ -325,95 +334,187 @@ async def submit_payment(
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
 
-# ================= ADMIN APIS (USERS, REQUESTS & POS) =================
+# ================= ADMIN APIS (FINANCE, USERS, CLAWBACK & PACKAGES) =================
+
+def verify_admin(request: Request):
+    user_email = request.cookies.get("user_email")
+    return user_email and (user_email.strip().lower() == ADMIN_EMAIL.lower())
+
+@app.get("/api/admin/finance/summary")
+async def get_finance_summary(request: Request):
+    if not verify_admin(request):
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    db = SessionLocal()
+    approved_reqs = db.query(PaymentRequest).filter(PaymentRequest.status == "approved").all()
+    pending_count = db.query(PaymentRequest).filter(PaymentRequest.status == "pending").count()
+    users_count = db.query(User).count()
+
+    total_revenue = sum(r.amount for r in approved_reqs if r.amount)
+    
+    today = date.today()
+    today_revenue = sum(r.amount for r in approved_reqs if r.created_at and r.created_at.date() == today and r.amount)
+
+    # Method breakdown
+    methods = {}
+    for r in approved_reqs:
+        m = r.payment_method.split(" ")[0]
+        methods[m] = methods.get(m, 0) + (r.amount or 0)
+
+    db.close()
+    return {
+        "total_revenue": total_revenue,
+        "today_revenue": today_revenue,
+        "total_orders": len(approved_reqs),
+        "pending_orders": pending_count,
+        "total_users": users_count,
+        "methods": methods
+    }
 
 @app.get("/api/admin/users")
 async def get_all_users(request: Request):
-    user_email = request.cookies.get("user_email")
-    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
+    if not verify_admin(request):
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
     db = SessionLocal()
     users = db.query(User).order_by(User.id.desc()).all()
-    result = []
-    for u in users:
-        result.append({
-            "id": u.id,
-            "email": u.email,
-            "name": u.name,
-            "avatar": u.avatar,
-            "daily_credits": u.daily_credits_left,
-            "package_credits": u.package_credits,
-            "is_admin": u.is_admin
-        })
+    result = [{
+        "id": u.id,
+        "email": u.email,
+        "name": u.name,
+        "avatar": u.avatar,
+        "daily_credits": u.daily_credits_left,
+        "package_credits": u.package_credits,
+        "is_admin": u.is_admin,
+        "is_banned": u.is_banned,
+        "created_at": u.created_at.strftime("%Y-%m-%d") if u.created_at else ""
+    } for u in users]
     db.close()
     return result
 
-# POS System: Admin ကိုယ်တိုင် User ထံသို့ ပုဒ်ရေ တိုက်ရိုက်သွင်းပေးသည့် API
-@app.post("/api/admin/pos/topup")
-async def pos_topup(
+# ပုဒ်ရေ အတိုး/အနုတ် လုပ်ဆောင်ပေးသည့် API
+@app.post("/api/admin/users/adjust-credits")
+async def adjust_credits(
     request: Request,
-    user_email: str = Form(...),
-    credits: int = Form(...),
-    note: str = Form("")
+    email: str = Form(...),
+    action_type: str = Form(...),  # 'add' or 'deduct'
+    amount: int = Form(...)
 ):
-    admin_cookie = request.cookies.get("user_email")
-    if not admin_cookie or admin_cookie.strip().lower() != ADMIN_EMAIL.lower():
+    if not verify_admin(request):
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
-    clean_email = user_email.strip().lower()
-    if credits <= 0:
-        return JSONResponse(status_code=400, content={"error": "Credits ပမာဏ အနည်းဆုံး ၁ ပုဒ် ဖြစ်ရပါမည်"})
-
     db = SessionLocal()
-    target_user = db.query(User).filter(User.email == clean_email).first()
-    if not target_user:
+    user = db.query(User).filter(User.email == email.strip().lower()).first()
+    if not user:
         db.close()
-        return JSONResponse(status_code=404, content={"error": f"'{clean_email}' ဖြင့် အကောင့်ဖွင့်ထားသော User မရှိသေးပါ"})
+        return JSONResponse(status_code=404, content={"error": "User ရှာမတွေ့ပါ"})
 
-    target_user.package_credits += credits
+    if action_type == "add":
+        user.package_credits += amount
+        msg = f"{user.email} ထံသို့ {amount} ပုဒ် ထည့်ပေးပြီးပါပြီ!"
+    else:
+        user.package_credits = max(0, user.package_credits - amount)
+        msg = f"{user.email} ထံမှ {amount} ပုဒ် ပြန်နုတ်ပြီးပါပြီ (လက်ကျန်: {user.package_credits} ပုဒ်)!"
 
-    pos_record = PaymentRequest(
-        user_email=clean_email,
-        package_type=str(credits),
-        amount=0,
-        payment_method=f"POS Direct Top-up ({note.strip() or 'Manual'})",
-        slip_url="",
-        status="approved"
-    )
-    db.add(pos_record)
     db.commit()
     db.close()
+    return {"status": "success", "message": msg}
 
-    return {"status": "success", "message": f"{clean_email} ထံသို့ {credits} ပုဒ် အောင်မြင်စွာ ထည့်သွင်းပေးပြီးပါပြီ!"}
+# User Account Ban / Unban လုပ်ဆောင်သည့် API
+@app.post("/api/admin/users/toggle-ban")
+async def toggle_ban_user(request: Request, email: str = Form(...)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
+    clean_email = email.strip().lower()
+    if clean_email == ADMIN_EMAIL.lower():
+        return JSONResponse(status_code=400, content={"error": "Admin အကောင့်ကို Ban ၍ မရပါ"})
+
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == clean_email).first()
+    if not user:
+        db.close()
+        return JSONResponse(status_code=404, content={"error": "User ရှာမတွေ့ပါ"})
+
+    user.is_banned = not user.is_banned
+    status = "Ban လိုက်ပါပြီ" if user.is_banned else "Ban မှ ပြန်လည်ဖွင့်ပေးလိုက်ပါပြီ"
+    db.commit()
+    db.close()
+    return {"status": "success", "message": f"{clean_email} အား {status}"}
+
+# Package Settings CRUD APIs
+@app.get("/api/admin/packages")
+async def admin_get_packages(request: Request):
+    if not verify_admin(request):
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+    db = SessionLocal()
+    pkgs = db.query(Package).order_by(Package.credits.asc()).all()
+    res = [{"id": p.id, "name": p.name, "credits": p.credits, "price": p.price_mmk, "is_active": p.is_active} for p in pkgs]
+    db.close()
+    return res
+
+@app.post("/api/admin/packages/save")
+async def save_package(
+    request: Request,
+    pkg_id: int = Form(0),
+    name: str = Form(...),
+    credits: int = Form(...),
+    price: int = Form(...)
+):
+    if not verify_admin(request):
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    db = SessionLocal()
+    if pkg_id > 0:
+        pkg = db.query(Package).filter(Package.id == pkg_id).first()
+        if pkg:
+            pkg.name = name.strip()
+            pkg.credits = credits
+            pkg.price_mmk = price
+    else:
+        new_pkg = Package(name=name.strip(), credits=credits, price_mmk=price, is_active=True)
+        db.add(new_pkg)
+
+    db.commit()
+    db.close()
+    return {"status": "success", "message": "Package သိမ်းဆည်းပြီးပါပြီ!"}
+
+@app.post("/api/admin/packages/delete")
+async def delete_package(request: Request, pkg_id: int = Form(...)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+    db = SessionLocal()
+    pkg = db.query(Package).filter(Package.id == pkg_id).first()
+    if pkg:
+        db.delete(pkg)
+        db.commit()
+    db.close()
+    return {"status": "success", "message": "Package ဖျက်ပြီးပါပြီ"}
+
+# Requests and Clawback
 @app.get("/api/admin/requests")
 async def get_admin_requests(request: Request):
-    user_email = request.cookies.get("user_email")
-    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
+    if not verify_admin(request):
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
     db = SessionLocal()
     requests_list = db.query(PaymentRequest).order_by(PaymentRequest.id.desc()).all()
-    result = []
-    for r in requests_list:
-        result.append({
-            "id": r.id,
-            "email": r.user_email,
-            "package_type": r.package_type,
-            "amount": r.amount,
-            "payment_method": r.payment_method,
-            "slip_url": r.slip_url,
-            "status": r.status,
-            "created_at": r.created_at.strftime("%Y-%m-%d %H:%M")
-        })
+    result = [{
+        "id": r.id,
+        "email": r.user_email,
+        "package_type": r.package_type,
+        "amount": r.amount,
+        "payment_method": r.payment_method,
+        "slip_url": r.slip_url,
+        "status": r.status,
+        "created_at": r.created_at.strftime("%Y-%m-%d %H:%M")
+    } for r in requests_list]
     db.close()
     return result
 
 @app.post("/api/admin/approve")
 async def approve_request(request: Request, req_id: int = Form(...)):
-    user_email = request.cookies.get("user_email")
-    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
+    if not verify_admin(request):
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
     db = SessionLocal()
@@ -432,8 +533,7 @@ async def approve_request(request: Request, req_id: int = Form(...)):
 
 @app.post("/api/admin/reject")
 async def reject_request(request: Request, req_id: int = Form(...)):
-    user_email = request.cookies.get("user_email")
-    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
+    if not verify_admin(request):
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
     db = SessionLocal()
@@ -443,6 +543,27 @@ async def reject_request(request: Request, req_id: int = Form(...)):
         db.commit()
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာကို ပယ်ဖျက်လိုက်ပါပြီ"}
+
+# မှားယွင်း Approve မိသော ပြေစာမှ ပုဒ်ရေအား အလိုအလျောက် ပြန်နုတ်၍ ပယ်ဖျက်သည့် API (Clawback)
+@app.post("/api/admin/clawback")
+async def clawback_request(request: Request, req_id: int = Form(...)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    db = SessionLocal()
+    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
+    if not pay_req or pay_req.status != "approved":
+        db.close()
+        return JSONResponse(status_code=400, content={"error": "Approved ဖြစ်ထားသော ပြေစာသာ Clawback လုပ်၍ ရပါမည်"})
+
+    target_user = db.query(User).filter(User.email == pay_req.user_email).first()
+    if target_user:
+        target_user.package_credits = max(0, target_user.package_credits - int(pay_req.package_type))
+    
+    pay_req.status = "rejected"
+    db.commit()
+    db.close()
+    return {"status": "success", "message": f"ပြေစာ #{req_id} ကို ပယ်ဖျက်ပြီး ပုဒ်ရေ {pay_req.package_type} ခုအား အောင်မြင်စွာ ပြန်လည်နုတ်ယူပြီးပါပြီ!"}
 
 # ================= AUDIO & TTS APIS =================
 
@@ -489,9 +610,9 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
 
     db = SessionLocal()
     user = db.query(User).filter(User.email == user_email).first()
-    if not user:
+    if not user or user.is_banned:
         db.close()
-        return JSONResponse(status_code=401, content={"error": "User မရှိပါ။"})
+        return JSONResponse(status_code=403, content={"error": "ဤအကောင့်သည် ပိတ်ပင် (Ban) ခံထားရပါသည်"})
 
     is_admin_user = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
 
