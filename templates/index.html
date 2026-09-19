@@ -16,42 +16,29 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: #0b0c10;
-      color: #f4f4f5;
+      background-color: #0b0c10; color: #f4f4f5;
       font-family: 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      min-height: 100vh; display: flex; flex-direction: column;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0b0c10; }
     ::-webkit-scrollbar-thumb { background: #272a37; border-radius: 4px; }
 
-    /* Login Gate Modal (Login မဝင်ရသေးပါက ပေါ်နေမည့် Screen) */
     #loginGate {
       position: fixed; inset: 0; z-index: 999;
-      background: rgba(11, 12, 16, 0.95);
-      backdrop-filter: blur(20px);
-      display: flex; align-items: center; justify-content: center;
-      padding: 16px;
+      background: rgba(11, 12, 16, 0.95); backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
     }
     .login-box {
-      background: #14161f;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 24px;
-      padding: 36px 28px;
-      max-width: 400px; width: 100%;
-      text-align: center;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      background: #14161f; border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px; padding: 36px 28px; max-width: 400px; width: 100%;
+      text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
     }
 
     .header {
-      height: 64px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(20, 22, 31, 0.85);
-      backdrop-filter: blur(12px);
-      position: sticky; top: 0; z-index: 40;
-      padding: 0 20px;
+      height: 64px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(20, 22, 31, 0.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 40; padding: 0 20px;
       display: flex; align-items: center; justify-content: space-between;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
@@ -61,21 +48,18 @@
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
     }
-    .brand h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; color: #fff; }
+    .brand h1 { font-size: 14px; font-weight: 700; color: #fff; }
     .brand p { font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace; }
 
     .container {
-      max-width: 900px; width: 100%;
-      margin: 0 auto; padding: 24px 16px;
-      display: flex; flex-direction: column; gap: 20px;
+      max-width: 900px; width: 100%; margin: 0 auto;
+      padding: 24px 16px; display: flex; flex-direction: column; gap: 20px;
     }
 
     .glass-card {
-      background: rgba(20, 22, 31, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px; padding: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      background: rgba(20, 22, 31, 0.75); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px;
+      padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
 
     .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -86,7 +70,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: bold; font-family: 'JetBrains Mono', monospace;
     }
-    .card-title h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.8px; color: #e4e4e7; }
+    .card-title h2 { font-size: 13px; font-weight: 600; color: #e4e4e7; }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -96,30 +80,24 @@
     .form-group label { font-size: 11px; font-weight: 500; color: #a1a1aa; }
 
     .glass-input {
-      background: rgba(11, 12, 16, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #f4f4f5; padding: 10px 12px;
-      border-radius: 10px; font-size: 12px; outline: none; width: 100%;
+      background: rgba(11, 12, 16, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f4f4f5; padding: 10px 12px; border-radius: 10px; font-size: 12px;
+      outline: none; width: 100%;
     }
     .glass-input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
     textarea.glass-input { resize: none; font-family: 'JetBrains Mono', monospace; line-height: 1.5; }
 
     .dropzone {
-      border: 2px dashed rgba(255, 255, 255, 0.15);
-      background: rgba(11, 12, 16, 0.4);
-      border-radius: 12px; padding: 24px 16px;
-      text-align: center; cursor: pointer;
+      border: 2px dashed rgba(255, 255, 255, 0.15); background: rgba(11, 12, 16, 0.4);
+      border-radius: 12px; padding: 24px 16px; text-align: center; cursor: pointer;
       display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
     .dropzone:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
-    .dropzone i { font-size: 26px; color: #71717a; }
-    .dropzone p { font-size: 12px; color: #d4d4d8; font-weight: 500; }
 
     .btn {
       border: none; border-radius: 12px; font-size: 12px; font-weight: 600;
-      cursor: pointer; padding: 12px 16px;
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      text-decoration: none;
+      cursor: pointer; padding: 10px 16px; display: inline-flex; align-items: center;
+      justify-content: center; gap: 8px; text-decoration: none; transition: all 0.2s;
     }
     .btn-blue { background: linear-gradient(135deg, #2563eb, #0284c7); color: #fff; width: 100%; }
     .btn-purple { background: #9333ea; color: #fff; width: 100%; margin-top: 12px; }
@@ -127,31 +105,40 @@
       background: linear-gradient(135deg, #059669, #0d9488);
       color: #fff; width: 100%; padding: 16px; font-size: 14px;
     }
+    .btn-amber { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; }
     .btn-ghost { background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 6px 12px; border-radius: 8px; }
 
     .toggles { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #d4d4d8; }
     .toggle-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
-    /* Modal */
+    /* Modal Overlay */
     .modal-overlay {
-      position: fixed; inset: 0; z-index: 100;
-      background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center;
+      position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
       padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
     }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal-card {
       background: #14161f; border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 24px; padding: 24px; max-width: 340px; width: 100%;
-      text-align: center;
+      border-radius: 24px; padding: 24px; max-width: 440px; width: 100%; text-align: center;
     }
     .circle-wrap { position: relative; width: 100px; height: 100px; margin: 12px auto; }
     .circle-progress {
-      stroke-dasharray: 283; stroke-dashoffset: 283;
-      transition: stroke-dashoffset 0.25s; transform: rotate(-90deg); transform-origin: 50% 50%;
+      stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.25s;
+      transform: rotate(-90deg); transform-origin: 50% 50%;
     }
     .circle-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .circle-text .percent { font-size: 20px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
+
+    /* Package Selection Grid */
+    .pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+    .pkg-item {
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 6px;
+      cursor: pointer; transition: all 0.2s; background: rgba(11,12,16,0.5);
+    }
+    .pkg-item.selected { border-color: #38bdf8; background: rgba(56,189,248,0.15); }
+    .pkg-item h4 { font-size: 14px; font-weight: bold; color: #fff; }
+    .pkg-item p { font-size: 11px; color: #38bdf8; margin-top: 4px; }
 
     #toastContainer { position: fixed; top: 16px; right: 16px; z-index: 110; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
     .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
@@ -163,22 +150,74 @@
 
   <div id="toastContainer"></div>
 
-  <!-- LOGIN GATE: Login မဝင်ရသေးပါက ဤ Card သာ ပေါ်နေမည် -->
+  <!-- LOGIN GATE -->
   <div id="loginGate">
     <div class="login-box">
-      <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; box-shadow: 0 0 20px rgba(14,165,233,0.4);">
+      <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
         <i class="ph-bold ph-lightning" style="font-size: 24px; color: #fff;"></i>
       </div>
       <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
       <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.6;">
-        AI Narrator Auto-Speed နှင့် Video Dubbing ပြုလုပ်ရန် Google Account ဖြင့် Login ဝင်ပေးပါခင်ဗျာ။
+        AI Video Dubbing နှင့် Auto-Speed Engine အသုံးပြုရန် Google Account ဖြင့် Login ဝင်ပေးပါခင်ဗျာ။
       </p>
-      <a href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 15px rgba(255,255,255,0.15);">
+      <a href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700;">
         <i class="ph-bold ph-google-logo" style="font-size: 18px; color: #ea4335;"></i> Sign in with Google
       </a>
       <p style="font-size: 11px; color: #10b981; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
         🎁 နေ့စဉ် အခမဲ့ ၂ ပုဒ် အသုံးပြုခွင့် ရရှိပါမည်
       </p>
+    </div>
+  </div>
+
+  <!-- BUY PACKAGE MODAL -->
+  <div id="packageModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-size: 15px; font-weight: bold; color: #fbbf24;">💎 Package ဝယ်ယူရန်</h3>
+        <button onclick="closePackageModal()" style="background: transparent; border: none; color: #71717a; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+
+      <div class="pkg-grid">
+        <div class="pkg-item selected" onclick="selectPkg('10', 5000, this)">
+          <h4>၁၀ ပုဒ်</h4>
+          <p>5,000 Ks</p>
+        </div>
+        <div class="pkg-item" onclick="selectPkg('20', 10000, this)">
+          <h4>၂၀ ပုဒ်</h4>
+          <p>10,000 Ks</p>
+        </div>
+        <div class="pkg-item" onclick="selectPkg('30', 15000, this)">
+          <h4>၃၀ ပုဒ်</h4>
+          <p>15,000 Ks</p>
+        </div>
+      </div>
+
+      <!-- Payment Account Details -->
+      <div style="background: rgba(11,12,16,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
+        <p style="color: #38bdf8; font-weight: bold; margin-bottom: 4px;">ငွေလွှဲရမည့် အကောင့်များ -</p>
+        <p>• KPay / WavePay / AYA Pay</p>
+        <p>• Name: <b style="color: #fff;">Wai Phyo Aung</b></p>
+        <p>• Phone: <b style="color: #10b981; font-family: 'JetBrains Mono', monospace;">09799437346</b></p>
+      </div>
+
+      <!-- Slip Upload Form -->
+      <div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
+        <div class="form-group">
+          <label>ငွေလွှဲခဲ့သည့် App ရွေးပါ</label>
+          <select id="payMethodSelect" class="glass-input">
+            <option value="KPay">KPay</option>
+            <option value="WavePay">WavePay</option>
+            <option value="AYAPay">AYA Pay</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ငွေလွှဲပြေစာ (Slip ပုံတင်ပေးပါ)</label>
+          <input type="file" id="slipFileInput" accept="image/*" class="glass-input" style="padding: 6px 10px;">
+        </div>
+        <button onclick="submitSlip()" class="btn btn-amber" style="width: 100%; margin-top: 8px;">
+          <i class="ph-bold ph-paper-plane-tilt"></i> ပြေစာတင်သွင်းမည်
+        </button>
+      </div>
     </div>
   </div>
 
@@ -208,22 +247,35 @@
       </div>
       <div>
         <h1>RECAP STUDIO PRO</h1>
-        <p>100% Client-Side FFmpeg Engine</p>
+        <p>100% Client-Side Engine</p>
       </div>
     </div>
 
-    <!-- User Profile Header -->
-    <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 10px;">
-      <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" src="" alt="Avatar">
-      <div style="text-align: left;">
-        <p id="userName" style="font-size: 12px; font-weight: bold; color: #e4e4e7;">User</p>
-        <p style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">Free: <span id="userDailyCredits">0</span></p>
+    <!-- Header Actions -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button onclick="openPackageModal()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
+        <i class="ph-bold ph-crown"></i> Buy Package
+      </button>
+
+      <a id="btnAdminLink" href="/admin" class="btn hidden" style="background: rgba(147, 51, 234, 0.2); color: #c084fc; border: 1px solid rgba(147, 51, 234, 0.4); padding: 6px 10px; font-size: 11px;">
+        <i class="ph-bold ph-gear"></i> Admin Panel
+      </a>
+
+      <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 8px;">
+        <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" src="" alt="Avatar">
+        <div style="text-align: left;">
+          <p id="userName" style="font-size: 11px; font-weight: bold; color: #e4e4e7;">User</p>
+          <div style="display: flex; gap: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace;">
+            <span style="color: #10b981;">Daily: <b id="userDailyCredits">0</b></span>
+            <span style="color: #fbbf24;">Pkg: <b id="userPkgCredits">0</b></span>
+          </div>
+        </div>
+        <a href="/api/auth/logout" title="Logout" style="color: #ef4444; margin-left: 6px; font-size: 16px;"><i class="ph-bold ph-sign-out"></i></a>
       </div>
-      <a href="/api/auth/logout" title="Logout" style="color: #ef4444; margin-left: 8px; font-size: 16px;"><i class="ph-bold ph-sign-out"></i></a>
     </div>
   </header>
 
-  <!-- Main Content (Login ဝင်ပြီးမှသာ အသုံးပြုနိုင်မည်) -->
+  <!-- Main Container -->
   <main class="container">
 
     <!-- STEP 1: Video File & Audio Extraction -->
@@ -370,6 +422,7 @@
     let currentSegments = [];
     let selectedVideoFile = null;
     let srtContent = "";
+    let selectedPackageType = "10";
 
     function showToast(msg) {
       const c = document.getElementById('toastContainer');
@@ -400,17 +453,43 @@
       document.getElementById('loadingModal').classList.remove('active');
     }
 
-    // စစဝင်ခြင်းတွင် FFmpeg Engine အား အလိုအလျောက် Preload လုပ်ပေးသော Function
+    function openPackageModal() { document.getElementById('packageModal').classList.add('active'); }
+    function closePackageModal() { document.getElementById('packageModal').classList.remove('active'); }
+
+    function selectPkg(type, amount, el) {
+      selectedPackageType = type;
+      document.querySelectorAll('.pkg-item').forEach(item => item.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    async function submitSlip() {
+      const fileInput = document.getElementById('slipFileInput');
+      if (!fileInput.files.length) return showToast("ကျေးဇူးပြု၍ ငွေလွှဲပြေစာ ပုံရွေးချယ်ပေးပါခင်ဗျာ");
+
+      const fd = new FormData();
+      fd.append("package_type", selectedPackageType);
+      fd.append("payment_method", document.getElementById('payMethodSelect').value);
+      fd.append("slip", fileInput.files[0]);
+
+      try {
+        const res = await fetch("/api/payment/submit", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        closePackageModal();
+        showToast(data.message);
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
     async function initFFmpegOnStart() {
       if (isFFmpegReady) return;
-      showProgress("FFmpeg Engine ဒေါင်းလုဒ်ဆွဲနေပါသည်", "Browser ထဲတွင် အလုပ်လုပ်နိုင်ရန် Engine အား ကြိုတင်ပြင်ဆင်နေပါသည်...");
-      
+      showProgress("FFmpeg Engine ဒေါင်းလုဒ်ဆွဲနေပါသည်", "Browser ထဲတွင် Engine အား ကြိုတင်ပြင်ဆင်နေပါသည်...");
       try {
         ffmpeg = new FFmpeg();
         ffmpeg.on('progress', ({ progress }) => {
-          if (progress > 0 && progress <= 1) {
-            updateGauge(progress * 100, "Device ပေါ်တွင် ဗီဒီယို Render ပြုလုပ်နေပါသည်...");
-          }
+          if (progress > 0 && progress <= 1) updateGauge(progress * 100, "Render ပြုလုပ်နေပါသည်...");
         });
 
         const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
@@ -420,16 +499,14 @@
         });
 
         isFFmpegReady = true;
-        updateGauge(100, "FFmpeg Engine အဆင်သင့်ဖြစ်ပါပြီ!");
+        updateGauge(100, "အဆင်သင့်ဖြစ်ပါပြီ!");
         setTimeout(hideProgress, 600);
-        showToast("⚡ FFmpeg Engine အဆင်သင့်ဖြစ်ပါပြီ!");
       } catch (err) {
         hideProgress();
-        showToast("FFmpeg Engine Load လုပ်၍မရပါ: " + err.message);
+        showToast("FFmpeg Load မရပါ: " + err.message);
       }
     }
 
-    // Login စစ်ဆေးခြင်း
     async function checkUserAuth() {
       try {
         const res = await fetch("/api/user/me");
@@ -439,13 +516,16 @@
           document.getElementById('userProfile').classList.remove('hidden');
           document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
           document.getElementById('userName').innerText = data.name;
-          document.getElementById('userDailyCredits').innerText = `${data.daily_credits} ပုဒ်`;
-          
-          // Login အောင်မြင်ပြီးသည်နှင့် FFmpeg Engine ကို ချက်ချင်း Download ဆွဲယူခြင်း
+          document.getElementById('userDailyCredits').innerText = data.daily_credits;
+          document.getElementById('userPkgCredits').innerText = data.package_credits;
+
+          if (data.is_admin) {
+            document.getElementById('btnAdminLink').classList.remove('hidden');
+          }
+
           await initFFmpegOnStart();
         } else {
           document.getElementById('loginGate').classList.remove('hidden');
-          document.getElementById('userProfile').classList.add('hidden');
         }
       } catch (e) {
         document.getElementById('loginGate').classList.remove('hidden');
@@ -468,14 +548,10 @@
       });
     });
 
-    // STEP 1: Video မှ Audio ခွဲထုတ်ခြင်း
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!");
-      if (!isFFmpegReady) {
-        await initFFmpegOnStart();
-        if (!isFFmpegReady) return showToast("FFmpeg Engine အဆင်သင့်မဖြစ်သေးပါ!");
-      }
+      if (!isFFmpegReady) await initFFmpegOnStart();
       localStorage.setItem('assemblyai_key', apiKey);
 
       try {
@@ -550,7 +626,6 @@
       new Audio(URL.createObjectURL(blob)).play();
     }
 
-    // STEP 5: Final Export
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const translations = Array.from(inputs).map(i => i.value);
