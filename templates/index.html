@@ -58,7 +58,6 @@
     .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
     .hidden { display: none !important; }
   </style>
-  <style id="cueStyleTag"></style>
 </head>
 
 <body>
@@ -68,7 +67,7 @@
   <div id="loginGate">
     <div class="login-box">
       <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">RECAP STUDIO PRO</h2>
-      <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px;">AI Video Dubbing နှင့် Auto-Speed Engine အသုံးပြုရန် Login ဝင်ပါ</p>
+      <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px;">AI Video Dubbing အသုံးပြုရန် Login ဝင်ပါ</p>
       <a href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700;">
         <i class="ph-bold ph-google-logo" style="color: #ea4335;"></i> Sign in with Google
       </a>
@@ -79,25 +78,18 @@
   <div id="historyModal" class="modal-overlay">
     <div class="modal-card" style="text-align:left;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-        <h3 style="font-size:14px; color:#38bdf8; font-weight:bold;">📁 Project History & Referral</h3>
+        <h3 style="font-size:14px; color:#38bdf8; font-weight:bold;">📁 History & Referral</h3>
         <button onclick="closeModal('historyModal')" style="background:none; border:none; color:#71717a; font-size:20px; cursor:pointer;">✕</button>
       </div>
-
-      <!-- Referral Card -->
       <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:12px; margin-bottom:14px;">
         <p style="font-size:12px; color:#10b981; font-weight:bold; margin-bottom:4px;">🎁 Referral Program (မိတ်ဆက်ဆုကြေး)</p>
-        <p style="font-size:11px; color:#a1a1aa; margin-bottom:8px;">သူငယ်ချင်းကို Link ပေး၍ အကောင့်ဖွင့်စေပါက နှစ်ဦးစလုံး အခမဲ့ ၁ ပုဒ်စီ ရရှိပါမည်။</p>
-        <div style="display:flex; gap:6px;">
+        <div style="display:flex; gap:6px; margin-top:6px;">
           <input type="text" id="referralLinkInput" readonly class="glass-input" style="font-size:10px; font-family:'JetBrains Mono';">
           <button onclick="copyReferralLink()" class="btn btn-ghost" style="padding:6px 10px; font-size:11px;">Copy</button>
         </div>
       </div>
-
-      <!-- History List -->
       <h4 style="font-size:12px; color:#e4e4e7; margin-bottom:8px;">ယခင်ဖန်တီးခဲ့သော မှတ်တမ်းများ:</h4>
-      <div id="historyListContainer" style="max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
-        <p style="font-size:11px; color:#71717a;">မှတ်တမ်း မရှိသေးပါ</p>
-      </div>
+      <div id="historyListContainer" style="max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;"></div>
     </div>
   </div>
 
@@ -114,8 +106,8 @@
           <span style="font-size: 8px; color: #71717a;">Processing</span>
         </div>
       </div>
-      <h3 id="modalTitle" style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-top: 6px;">စတင်လုပ်ဆောင်နေပါသည်</h3>
-      <p id="modalStatus" style="font-size: 11px; color: #a1a1aa; margin-top: 4px; font-family: 'JetBrains Mono';">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
+      <h3 id="modalTitle" style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-top: 6px;">လုပ်ဆောင်နေပါသည်</h3>
+      <p id="modalStatus" style="font-size: 11px; color: #a1a1aa; margin-top: 4px; font-family: 'JetBrains Mono';">ခေတ္တစောင့်ဆိုင်းပါ...</p>
     </div>
   </div>
 
@@ -128,12 +120,8 @@
         <p style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono';">Client-Side Engine</p>
       </div>
     </div>
-
     <div style="display: flex; align-items: center; gap: 10px;">
-      <button onclick="openHistoryModal()" class="btn btn-ghost" style="padding: 6px 12px; font-size: 11px;">
-        <i class="ph-bold ph-clock-counter-clockwise"></i> History & Ref
-      </button>
-
+      <button onclick="openHistoryModal()" class="btn btn-ghost" style="padding: 6px 12px; font-size: 11px;">History & Ref</button>
       <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 8px;">
         <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #38bdf8;" src="">
         <div style="text-align: left;">
@@ -146,53 +134,33 @@
 
   <!-- MAIN -->
   <main class="container">
-
-    <!-- STEP 1: Video File & Audio Extraction -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left"><span class="badge-num">1</span><h2>INPUT VIDEO & DIARIZATION</h2></div>
       </div>
-
       <div class="grid-2">
-        <div class="form-group">
-          <label>AssemblyAI API Key</label>
-          <input type="password" id="apiKey" placeholder="AssemblyAI Key..." class="glass-input">
-        </div>
-        <div class="form-group">
-          <label>Background Music (BGM)</label>
-          <input type="file" id="bgmFile" accept="audio/*" class="glass-input" style="padding: 6px 10px;">
-        </div>
+        <div class="form-group"><label>AssemblyAI API Key</label><input type="password" id="apiKey" placeholder="Key..." class="glass-input"></div>
+        <div class="form-group"><label>Background Music</label><input type="file" id="bgmFile" accept="audio/*" class="glass-input" style="padding:6px;"></div>
       </div>
-
       <input type="file" id="videoFileInput" accept="video/*" class="glass-input" style="padding: 10px; margin-bottom: 8px;">
-      <video id="inputVideoPreview" controls class="hidden" style="max-height: 220px; width: 100%; border-radius: 12px; margin-bottom: 8px;"></video>
-
-      <button onclick="startExtractAndTranscribe()" class="btn btn-blue">
-        <i class="ph-bold ph-waveform"></i> အသံခွဲထုတ်ပြီး ဇာတ်ကောင်ခွဲမည် (Transcribe & Diarize)
-      </button>
+      <video id="inputVideoPreview" controls class="hidden" style="max-height: 200px; width: 100%; border-radius: 12px; margin-bottom: 8px;"></video>
+      <button onclick="startExtractAndTranscribe()" class="btn btn-blue"><i class="ph-bold ph-waveform"></i> Transcribe & Diarize (အသံဖြင့်ဇာတ်ကောင်ခွဲမည်)</button>
     </div>
 
-    <!-- STEP 2: Translation & Direct Gemini AI -->
     <div class="glass-card">
       <div class="card-title">
-        <div class="card-title-left"><span class="badge-num">2</span><h2>RECAP TRANSLATION & PROMPT</h2></div>
-        <div style="display: flex; gap: 6px;">
-          <button onclick="directGeminiTranslate()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
-            <i class="ph-bold ph-sparkle"></i> Direct Gemini (💎 Premium)
-          </button>
-          <button onclick="copyPrompt()" class="btn btn-ghost">Copy Prompt</button>
-        </div>
+        <div class="card-title-left"><span class="badge-num">2</span><h2>GEMINI AUTO-TRANSLATE</h2></div>
+        <button onclick="directGeminiTranslate()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">✨ Direct Gemini (💎 Premium)</button>
       </div>
-
-      <textarea id="sourceText" readonly rows="3" class="glass-input" placeholder="Transcribed lines..." style="margin-bottom: 8px;"></textarea>
-      <textarea id="jsonInput" rows="3" class="glass-input" style="color: #c084fc; margin-bottom: 8px;" placeholder='{"translations": ["..."]}'></textarea>
+      <textarea id="sourceText" readonly rows="2" class="glass-input" placeholder="Transcribed..." style="margin-bottom: 8px;"></textarea>
+      <textarea id="jsonInput" rows="2" class="glass-input" style="color: #c084fc; margin-bottom: 8px;" placeholder='{"translations": ["..."]}'></textarea>
       <button onclick="submitJson()" class="btn btn-purple">Submit Translation</button>
     </div>
 
-    <!-- STEP 3: Voice, Logo Preset & Video Subtitle Preview -->
+    <!-- VOICE CLONE & STYLING SETTINGS -->
     <div class="glass-card">
       <div class="card-title">
-        <div class="card-title-left"><span class="badge-num">3</span><h2>STYLING & REAL PREVIEW</h2></div>
+        <div class="card-title-left"><span class="badge-num">3</span><h2>VOICE CLONE & STYLING</h2></div>
       </div>
 
       <div class="grid-3" style="margin-bottom: 12px;">
@@ -204,88 +172,79 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Channel Logo Preset</label>
-          <select id="logoPresetSelect" class="glass-input" onchange="applyLogoPreset(this.value)">
-            <option value="">-- ရွေးချယ်ပါ --</option>
-          </select>
+          <label>Logo Preset</label>
+          <select id="logoPresetSelect" class="glass-input"><option value="">-- ရွေးချယ်ပါ --</option></select>
         </div>
         <div class="form-group">
           <label>Logo အသစ်တင်ရန်</label>
-          <input type="file" id="logoUploadInput" accept="image/*" class="glass-input" style="padding:6px 10px;" onchange="saveNewLogoPreset()">
+          <input type="file" id="logoUploadInput" accept="image/*" class="glass-input" style="padding:6px;" onchange="saveNewLogoPreset()">
         </div>
       </div>
 
-      <!-- Real Video Subtitle Preview Box -->
-      <div style="background:#000; border:1px solid rgba(255,255,255,0.15); border-radius:12px; height:180px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+      <!-- VOICE CLONE SECTION -->
+      <div style="background: rgba(147, 51, 234, 0.1); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 14px;">
+        <p style="font-size: 12px; color: #c084fc; font-weight: bold; margin-bottom: 4px;">🎙️ Custom Voice Clone (ကိုယ်ပိုင်အသံထည့်ရန်)</p>
+        <div class="grid-2">
+          <input type="text" id="cloneNameInput" placeholder="Voice Name (ဥပမာ- ကိုကိုအသံ)" class="glass-input">
+          <input type="file" id="cloneAudioInput" accept="audio/*" class="glass-input" style="padding:6px;">
+        </div>
+        <button onclick="uploadVoiceClone()" class="btn btn-purple" style="margin-top:8px; font-size:11px; padding:6px;">Save Voice Clone</button>
+      </div>
+
+      <div style="background:#000; border:1px solid rgba(255,255,255,0.15); border-radius:12px; height:160px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;">
         <video id="previewBgVideo" muted loop playsinline style="position:absolute; width:100%; height:100%; object-fit:contain; opacity:0.6; pointer-events:none;"></video>
-        <p id="subPreviewText" contenteditable="true" style="position:absolute; bottom:10%; width:90%; font-size:24px; color:#fff; font-weight:bold; text-align:center; outline:none; text-shadow:0 2px 6px #000;">
+        <p id="subPreviewText" contenteditable="true" style="position:absolute; bottom:10%; width:90%; font-size:22px; color:#fff; font-weight:bold; text-align:center; outline:none; text-shadow:0 2px 6px #000;">
           အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
         </p>
       </div>
     </div>
 
-    <!-- STEP 4: Live Multi-Speaker Editor -->
+    <!-- LIVE EDITOR WITH VOICE CLASSIFIER BUTTON -->
     <div class="glass-card">
       <div class="card-title">
-        <div class="card-title-left"><span class="badge-num">4</span><h2>SUBTITLE EDITOR</h2></div>
+        <div class="card-title-left"><span class="badge-num">4</span><h2>SUBTITLE EDITOR & VOICE CLASSIFIER</h2></div>
+        <button onclick="autoClassifyVoices()" class="btn btn-ghost" style="font-size:11px;"><i class="ph-bold ph-microphone"></i> 🎙️ Auto-Classify Voices</button>
       </div>
-      <div id="linesContainer" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
+      <div id="linesContainer" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto;">
         <p style="text-align:center; color:#71717a; font-size:12px;">စာကြောင်းများ မရှိသေးပါ</p>
       </div>
     </div>
 
-    <!-- STEP 5: Export, Cliffhanger Splitter & Telegram Cloud -->
+    <!-- STEP 5: EXPORT & CLIFFHANGER -->
     <div>
-      <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
-        <i class="ph-bold ph-lightning"></i> Render & Export Video
-      </button>
-
+      <button onclick="startClientExport()" class="btn btn-green"><i class="ph-bold ph-lightning"></i> Render & Export Video</button>
       <div id="resultBox" class="glass-card hidden" style="text-align: center; margin-top: 16px;">
-        <video id="videoPlayer" controls style="max-height: 440px; width: 100%; border-radius: 12px; margin-bottom: 12px;"></video>
-        
+        <video id="videoPlayer" controls style="max-height: 400px; width: 100%; border-radius: 12px; margin-bottom: 12px;"></video>
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px;">
           <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">Download Full Video</a>
-          
-          <!-- CLIFFHANGER SMART SPLITTER BUTTON -->
-          <button id="btnCliffhangerSplit" onclick="splitCliffhangerHalf()" class="btn btn-purple" style="width: auto;">
-            <i class="ph-bold ph-scissors"></i> 5-Min+ Cliffhanger ဖြင့် တစ်ဝက်ပိုင်းမည်
-          </button>
-
-          <!-- DIRECT TELEGRAM CLOUD SYNC -->
-          <button onclick="sendToTelegramCloud()" class="btn btn-amber" style="width: auto;">
-            <i class="ph-bold ph-paper-plane-tilt"></i> Send to Telegram Cloud
-          </button>
+          <button onclick="splitCliffhangerHalf()" class="btn btn-purple" style="width: auto;"><i class="ph-bold ph-scissors"></i> 5-Min+ Cliffhanger တစ်ဝက်ပိုင်းမည်</button>
+          <button onclick="sendToTelegramCloud()" class="btn btn-amber" style="width: auto;"><i class="ph-bold ph-paper-plane-tilt"></i> Send to Telegram</button>
         </div>
-
         <div id="splitLinksContainer" style="display:flex; justify-content:center; gap:8px;"></div>
       </div>
     </div>
-
   </main>
 
   <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
-    let ffmpeg = null, isFFmpegReady = false, currentSegments = [], selectedVideoFile = null, srtContent = "", isUserPremium = false;
+    let ffmpeg = null, isFFmpegReady = false, currentSegments = [], selectedVideoFile = null, isUserPremium = false;
 
     function showToast(msg) {
       const c = document.getElementById('toastContainer'), t = document.createElement('div');
       t.className = 'toast'; t.innerText = msg; c.appendChild(t);
       setTimeout(() => t.remove(), 3500);
     }
-
     function showProgress(title, status) {
       document.getElementById('modalTitle').innerText = title;
       document.getElementById('modalStatus').innerText = status;
       document.getElementById('loadingModal').classList.add('active');
     }
-
     function updateGauge(percent, status) {
       const ring = document.getElementById('gaugeRing'), circ = 2 * Math.PI * 45;
       ring.style.strokeDashoffset = circ - (percent / 100) * circ;
       document.getElementById('modalPercent').innerText = `${Math.round(percent)}%`;
       if (status) document.getElementById('modalStatus').innerText = status;
     }
-
     function hideProgress() { document.getElementById('loadingModal').classList.remove('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -312,8 +271,7 @@
       try {
         ffmpeg = createFFmpeg({ log: false, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
         ffmpeg.setProgress(({ ratio }) => { if (ratio > 0 && ratio <= 1) updateGauge(ratio * 100, "Rendering..."); });
-        await ffmpeg.load();
-        isFFmpegReady = true;
+        await ffmpeg.load(); isFFmpegReady = true;
       } catch (e) {}
     }
 
@@ -322,104 +280,77 @@
       try {
         const res = await fetch("/api/history");
         const items = await res.json();
-        const c = document.getElementById('historyListContainer');
-        if (items.length) {
-          c.innerHTML = items.map(it => `
-            <div style="background:rgba(255,255,255,0.05); padding:8px 10px; border-radius:8px; display:flex; justify-content:space-between; font-size:11px;">
-              <span>🎬 ${it.title} (${it.duration}s)</span>
-              <span style="color:#71717a; font-family:'JetBrains Mono';">${it.created_at}</span>
-            </div>
-          `).join("");
-        }
+        document.getElementById('historyListContainer').innerHTML = items.length ? items.map(it => `
+          <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:8px; display:flex; justify-content:space-between; font-size:11px;">
+            <span>🎬 ${it.title} (${it.duration}s)</span><span style="color:#71717a;">${it.created_at}</span>
+          </div>`).join("") : '<p style="font-size:11px; color:#71717a;">မှတ်တမ်း မရှိသေးပါ</p>';
       } catch (e) {}
     }
-
     function copyReferralLink() {
-      const el = document.getElementById('referralLinkInput');
-      el.select(); navigator.clipboard.writeText(el.value);
-      showToast("Referral Link ကူးယူပြီးပါပြီ!");
+      const el = document.getElementById('referralLinkInput'); el.select();
+      navigator.clipboard.writeText(el.value); showToast("Referral Link ကူးယူပြီးပါပြီ!");
     }
 
     async function loadLogoPresets() {
-      try {
-        const res = await fetch("/api/logos");
-        const logos = await res.json();
-        const sel = document.getElementById('logoPresetSelect');
-        sel.innerHTML = '<option value="">-- ရွေးချယ်ပါ --</option>' + logos.map(l => `<option value="${l.url}">${l.name}</option>`).join("");
-      } catch (e) {}
+      const res = await fetch("/api/logos"); const logos = await res.json();
+      document.getElementById('logoPresetSelect').innerHTML = '<option value="">-- ရွေးချယ်ပါ --</option>' + logos.map(l => `<option value="${l.url}">${l.name}</option>`).join("");
     }
-
     async function saveNewLogoPreset() {
-      const fileInput = document.getElementById('logoUploadInput');
-      if (!fileInput.files.length) return;
-      const name = prompt("Logo အမည် ပေးပါ (ဥပမာ- Movie Channel):", "My Logo");
-      if (!name) return;
-
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("file", fileInput.files[0]);
+      const f = document.getElementById('logoUploadInput').files[0]; if (!f) return;
+      const name = prompt("Logo အမည် ပေးပါ:", "My Logo"); if (!name) return;
+      const fd = new FormData(); fd.append("name", name); fd.append("file", f);
       await fetch("/api/logos/upload", { method: "POST", body: fd });
-      showToast("Logo Preset အသစ် သိမ်းဆည်းပြီးပါပြီ!");
-      loadLogoPresets();
+      showToast("Logo Preset သိမ်းဆည်းပြီးပါပြီ!"); loadLogoPresets();
     }
 
-    // Video Selection
+    // VOICE CLONE UPLOAD
+    async function uploadVoiceClone() {
+      const name = document.getElementById('cloneNameInput').value.trim();
+      const f = document.getElementById('cloneAudioInput').files[0];
+      if (!name || !f) return showToast("အမည်နှင့် အသံဖိုင် ထည့်ပါ!");
+      const fd = new FormData(); fd.append("name", name); fd.append("audio", f);
+      const res = await fetch("/api/voice/clone", { method: "POST", body: fd });
+      const d = await res.json(); showToast(d.message || d.error);
+    }
+
     document.getElementById('videoFileInput').addEventListener('change', (e) => {
       if (e.target.files.length) {
-        selectedVideoFile = e.target.files[0];
-        const url = URL.createObjectURL(selectedVideoFile);
-        const v = document.getElementById('inputVideoPreview');
-        v.src = url; v.classList.remove('hidden');
-        document.getElementById('previewBgVideo').src = url;
-        document.getElementById('previewBgVideo').play().catch(()=>{});
+        selectedVideoFile = e.target.files[0]; const url = URL.createObjectURL(selectedVideoFile);
+        document.getElementById('inputVideoPreview').src = url; document.getElementById('inputVideoPreview').classList.remove('hidden');
+        document.getElementById('previewBgVideo').src = url; document.getElementById('previewBgVideo').play().catch(()=>{});
       }
     });
 
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် Video ရွေးပါ!");
-      await initFFmpegOnStart();
-
-      showProgress("Extracting & Diarizing...", "အသံလှိုင်းမှ ဇာတ်ကောင်ခွဲခြားနေပါသည်...");
-      updateGauge(20);
+      await initFFmpegOnStart(); showProgress("Diarizing...", "အသံလှိုင်းမှ ဇာတ်ကောင်ခွဲခြားနေပါသည်..."); updateGauge(20);
 
       ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(selectedVideoFile));
       await ffmpeg.run('-i', 'in.mp4', '-vn', '-acodec', 'libmp3lame', '-b:a', '96k', 'out.mp3');
       const audioBlob = new Blob([ffmpeg.FS('readFile', 'out.mp3').buffer], { type: 'audio/mp3' });
 
-      const fd = new FormData();
-      fd.append("api_key", apiKey);
-      fd.append("audio", audioBlob, "audio.mp3");
-
+      const fd = new FormData(); fd.append("api_key", apiKey); fd.append("audio", audioBlob, "audio.mp3");
       const res = await fetch("/api/transcribe-audio", { method: "POST", body: fd });
-      const data = await res.json();
-      currentSegments = data.segments;
-      document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) [Speaker ${s.speaker}] ${s.text}`).join("\n");
-      hideProgress();
-      showToast(`ဇာတ်ကောင်ခွဲ စာကြောင်း ${currentSegments.length} ခု ရရှိပါပြီ!`);
+      const data = await res.json(); currentSegments = data.segments;
+      document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] [Speaker ${s.speaker}] ${s.text}`).join("\n");
+      hideProgress(); showToast(`ဇာတ်ကောင်ခွဲ စာကြောင်း ${currentSegments.length} ခု ရရှိပါပြီ!`);
     }
 
     async function directGeminiTranslate() {
       if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
-      if (!isUserPremium) return showToast("💎 Direct Gemini သည် Premium User များသာ အသုံးပြုနိုင်ပါသည်!");
-
-      showProgress("Gemini Translating...", "Recap စတိုင် ဘာသာပြန်နေပါသည်...");
-      updateGauge(50);
+      if (!isUserPremium) return showToast("💎 Direct Gemini သည် Premium User များသာ ဖြစ်ပါသည်!");
+      showProgress("Gemini Translating...", "ဘာသာပြန်နေပါသည်..."); updateGauge(50);
 
       const res = await fetch("/api/translate/gemini-direct", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ segments: currentSegments })
       });
       const data = await res.json();
       if (res.ok) {
         document.getElementById('jsonInput').value = JSON.stringify(data, null, 2);
-        renderSubEditor(data.translations);
-        hideProgress();
-        showToast("Gemini ဖြင့် အောင်မြင်စွာ ဘာသာပြန်ပြီးပါပြီ!");
-      } else {
-        hideProgress(); showToast(data.error);
-      }
+        renderSubEditor(data.translations); hideProgress(); showToast("Gemini ဖြင့် ဘာသာပြန်ပြီးပါပြီ!");
+      } else { hideProgress(); showToast(data.error); }
     }
 
     function renderSubEditor(translations) {
@@ -427,12 +358,12 @@
       currentSegments.forEach((s, i) => {
         const div = document.createElement('div');
         div.style.cssText = "display:flex; gap:6px; align-items:center; background:rgba(0,0,0,0.4); padding:6px; border-radius:6px;";
-        const isNilar = s.speaker === 'B';
+        const isB = s.speaker === 'B';
         div.innerHTML = `
           <span style="font-size:10px; width:55px; color:#38bdf8;">[${s.id}] Spk ${s.speaker}</span>
-          <select class="sub-voice-select" style="background:#14161f; color:#a78bfa; border:1px solid #333; font-size:11px; padding:2px 4px; border-radius:4px;">
-            <option value="my-MM-ThihaNeural" ${!isNilar?'selected':''}>Thiha (ကျား)</option>
-            <option value="my-MM-NilarNeural" ${isNilar?'selected':''}>Nilar (မ)</option>
+          <select class="sub-voice-select" style="background:#14161f; color:#a78bfa; border:1px solid #333; font-size:11px; padding:2px; border-radius:4px;">
+            <option value="my-MM-ThihaNeural" ${!isB?'selected':''}>Thiha (ကျား)</option>
+            <option value="my-MM-NilarNeural" ${isB?'selected':''}>Nilar (မ)</option>
           </select>
           <input type="text" class="sub-input" value="${translations[i]||''}" style="flex:1; background:transparent; border:none; color:#fff; font-size:12px; outline:none;">
         `;
@@ -440,20 +371,25 @@
       });
     }
 
-    function submitJson() {
-      try {
-        const trans = JSON.parse(document.getElementById('jsonInput').value).translations;
-        renderSubEditor(trans);
-        showToast("စာကြောင်းများ ထည့်သွင်းပြီးပါပြီ!");
-      } catch (e) { showToast("JSON Format မှားနေပါသည်"); }
+    // ★ AUTO-CLASSIFY VOICES BUTTON FUNCTION ★
+    function autoClassifyVoices() {
+      const selects = document.querySelectorAll('.sub-voice-select');
+      selects.forEach((sel, idx) => {
+        const seg = currentSegments[idx];
+        if (seg && seg.speaker === 'B') {
+          sel.value = "my-MM-NilarNeural";
+        } else {
+          sel.value = "my-MM-ThihaNeural";
+        }
+      });
+      showToast("အသံ Speaker အလိုက် အလိုအလျောက် ခွဲခြားသတ်မှတ်ပြီးပါပြီ!");
     }
 
-    function copyPrompt() {
-      if (!currentSegments.length) return;
-      const text = `Translate into short punchy Burmese movie recap lines (4-8 words, fit duration):\n` +
-        currentSegments.map(s => `[${s.id}] [${s.duration}s] "${s.text}"`).join("\n");
-      navigator.clipboard.writeText(text);
-      showToast("Prompt ကူးယူပြီးပါပြီ!");
+    function submitJson() {
+      try {
+        renderSubEditor(JSON.parse(document.getElementById('jsonInput').value).translations);
+        showToast("စာကြောင်းများ ထည့်သွင်းပြီးပါပြီ!");
+      } catch (e) { showToast("JSON Format မှားနေပါသည်"); }
     }
 
     async function startClientExport() {
@@ -462,27 +398,21 @@
       const trans = Array.from(inputs).map(i => i.value);
       if (!trans.length || !selectedVideoFile) return showToast("စာသားနှင့် ဗီဒီယို ပြည့်စုံစွာ ထည့်ပါ!");
 
-      showProgress("Rendering Video...", "TTS အသံနှင့် ဗီဒီယို ပေါင်းစပ်နေပါသည်...");
-      updateGauge(30);
-
+      showProgress("Rendering...", "TTS အသံနှင့် ဗီဒီယို ပေါင်းစပ်နေပါသည်..."); updateGauge(30);
       const items = trans.map((t, idx) => ({ text: t, voice: voices[idx] ? voices[idx].value : "my-MM-ThihaNeural" }));
       const ttsRes = await fetch("/api/tts/batch-generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, pitch: 0, speed: 5 })
       });
-      const ttsData = await ttsRes.json();
+      await ttsRes.json();
 
-      updateGauge(60, "FFmpeg ဖြင့် ပေါင်းစပ်နေပါသည်...");
+      updateGauge(70, "FFmpeg Processing...");
       ffmpeg.FS('writeFile', 'in_v.mp4', await fetchFile(selectedVideoFile));
-      
-      // Full Export Execution
       await ffmpeg.run('-i', 'in_v.mp4', '-c:v', 'copy', '-an', 'out_v.mp4');
 
       const outBlob = new Blob([ffmpeg.FS('readFile', 'out_v.mp4').buffer], { type: 'video/mp4' });
       const videoUrl = URL.createObjectURL(outBlob);
-      const player = document.getElementById('videoPlayer');
-      player.src = videoUrl;
+      const player = document.getElementById('videoPlayer'); player.src = videoUrl;
 
       document.getElementById('downloadBtn').href = videoUrl;
       document.getElementById('resultBox').classList.remove('hidden');
@@ -490,66 +420,37 @@
       fetch("/api/credits/consume", { method: "POST" });
       fetch("/api/history/record", { method: "POST", body: new URLSearchParams({ title: selectedVideoFile.name, duration: player.duration || 0 }) });
 
-      hideProgress();
-      showToast("Export ပြီးဆုံးပါပြီ!");
+      hideProgress(); showToast("Export ပြီးဆုံးပါပြီ!");
     }
 
-    // ★ CLIFFHANGER SMART SPLITTER (5-MIN+ DURATION HALF SPLIT) ★
     async function splitCliffhangerHalf() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.duration) return showToast("ဗီဒီယို အရင် Render လုပ်ပါ!");
+      if (player.duration < 300) return showToast("၅ မိနစ် (စက္ကန့် ၃၀၀) ကျော်သော ဗီဒီယိုများအတွက်သာ ဖြစ်ပါသည်!");
 
-      if (player.duration < 300) {
-        return showToast("ဤ Feature သည် ၅ မိနစ် (စက္ကန့် ၃၀၀) ကျော်သော ဗီဒီယိုများအတွက်သာ ဖြစ်ပါသည်ခင်ဗျာ!");
-      }
-
-      showProgress("Cliffhanger Splitting...", "အလှည့်အပြောင်း နေရာမှ တစ်ဝက်စီ အလိုအလျောက် ပိုင်းဖြတ်နေပါသည်...");
-      updateGauge(30);
-
+      showProgress("Splitting...", "တစ်ဝက်ပိုင်းဖြတ်နေပါသည်..."); updateGauge(40);
       const halfTime = Math.floor(player.duration / 2);
 
-      try {
-        // Part 1
-        await ffmpeg.run('-ss', '0', '-i', 'out_v.mp4', '-t', `${halfTime}`, '-c', 'copy', 'part1.mp4');
-        const p1Blob = new Blob([ffmpeg.FS('readFile', 'part1.mp4').buffer], { type: 'video/mp4' });
+      await ffmpeg.run('-ss', '0', '-i', 'out_v.mp4', '-t', `${halfTime}`, '-c', 'copy', 'part1.mp4');
+      await ffmpeg.run('-ss', `${halfTime}`, '-i', 'out_v.mp4', '-c', 'copy', 'part2.mp4');
 
-        // Part 2
-        await ffmpeg.run('-ss', `${halfTime}`, '-i', 'out_v.mp4', '-c', 'copy', 'part2.mp4');
-        const p2Blob = new Blob([ffmpeg.FS('readFile', 'part2.mp4').buffer], { type: 'video/mp4' });
+      const p1 = new Blob([ffmpeg.FS('readFile', 'part1.mp4').buffer], { type: 'video/mp4' });
+      const p2 = new Blob([ffmpeg.FS('readFile', 'part2.mp4').buffer], { type: 'video/mp4' });
 
-        const c = document.getElementById('splitLinksContainer');
-        c.innerHTML = `
-          <a href="${URL.createObjectURL(p1Blob)}" download="recap_part1_cliffhanger.mp4" class="btn btn-purple" style="font-size:11px;">
-            📥 Part 1 (အစမှ ${Math.floor(halfTime/60)}:00 ထိ)
-          </a>
-          <a href="${URL.createObjectURL(p2Blob)}" download="recap_part2_cliffhanger.mp4" class="btn btn-purple" style="font-size:11px;">
-            📥 Part 2 (${Math.floor(halfTime/60)}:00 မှ အဆုံးထိ)
-          </a>
-        `;
-
-        hideProgress();
-        showToast("Cliffhanger Part 1 & Part 2 ခွဲထုတ်ပြီးပါပြီ!");
-      } catch (e) {
-        hideProgress(); showToast("ခွဲထုတ်၍ မရပါ: " + e.message);
-      }
+      document.getElementById('splitLinksContainer').innerHTML = `
+        <a href="${URL.createObjectURL(p1)}" download="recap_part1.mp4" class="btn btn-purple" style="font-size:11px;">📥 Part 1</a>
+        <a href="${URL.createObjectURL(p2)}" download="recap_part2.mp4" class="btn btn-purple" style="font-size:11px;">📥 Part 2</a>
+      `;
+      hideProgress(); showToast("Cliffhanger Part 1 & 2 ခွဲထုတ်ပြီးပါပြီ!");
     }
 
     async function sendToTelegramCloud() {
-      const player = document.getElementById('videoPlayer');
-      if (!player.src) return showToast("ဗီဒီယို မရှိသေးပါ!");
-
-      showProgress("Sending to Telegram...", "Cloud သို့ ပို့နေပါသည်...");
+      showProgress("Telegram သို့ ပို့နေပါသည်...", "ခေတ္တစောင့်ပါ...");
       const videoData = ffmpeg.FS('readFile', 'out_v.mp4');
       const blob = new Blob([videoData.buffer], { type: 'video/mp4' });
-
-      const fd = new FormData();
-      fd.append("video", blob, "recap.mp4");
-      fd.append("caption", "Recap Studio Pro Cloud Export");
-
+      const fd = new FormData(); fd.append("video", blob, "recap.mp4");
       const res = await fetch("/api/telegram/send-video", { method: "POST", body: fd });
-      const d = await res.json();
-      hideProgress();
-      showToast(d.message || d.error);
+      const d = await res.json(); hideProgress(); showToast(d.message || d.error);
     }
 
     window.addEventListener('DOMContentLoaded', checkUserAuth);
