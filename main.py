@@ -2,16 +2,15 @@ import os
 import io
 import base64
 import uuid
-import asyncio
 from datetime import date
-from pydantic import BaseModel
 from typing import List
+from pydantic import BaseModel
 
-from fastapi import FastAPI, UploadFile, File, Form, Request, Response
+from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
-from authlib.integrations.starlette_integration import OAuth
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from authlib.integrations.starlette_integration import OAuth
 import assemblyai as aai
 import edge_tts
 from pydub import AudioSegment
@@ -20,7 +19,10 @@ from database import SessionLocal, User
 
 app = FastAPI()
 
-# FFmpeg.wasm (SharedArrayBuffer) အတွက် မဖြစ်မနေ လိုအပ်သော Security Headers
+# 1. Render.com HTTPS Reverse Proxy အတွက် Header ညှိယူခြင်း
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
+# 2. Browser ပေါ်တွင် Multi-threaded FFmpeg.wasm အလုပ်လုပ်နိုင်ရန် လိုအပ်သော Security Headers
 @app.middleware("http")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -28,7 +30,7 @@ async def add_wasm_security_headers(request: Request, call_next):
     response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     return response
 
-SECRET_KEY = os.getenv("SECRET_KEY", "RECAP_STUDIO_SUPER_SECRET_KEY_2026")
+SECRET_KEY = os.getenv("SECRET_KEY", "RECAP_STUDIO_SECRET_KEY_PROD_2026")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
@@ -55,7 +57,7 @@ async def serve_home():
 @app.get("/login/google")
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
-        return JSONResponse(status_code=500, content={"error": "Google Client ID မထည့်ရသေးပါ။ .env ဖိုင်ကို စစ်ဆေးပါ။"})
+        return JSONResponse(status_code=500, content={"error": "Google Client ID မထည့်ရသေးပါ။ Environment Variable ကို စစ်ဆေးပါ။"})
     redirect_uri = request.url_for('auth_google_callback')
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -107,7 +109,6 @@ async def get_user_data(request: Request):
         db.close()
         return JSONResponse(status_code=401, content={"logged_in": False})
 
-    # နေ့စဥ် Reset စစ်ဆေးခြင်း
     today = date.today()
     if user.last_reset_date != today:
         user.daily_credits_left = 2
@@ -125,7 +126,7 @@ async def get_user_data(request: Request):
     db.close()
     return data
 
-# --- AssemblyAI Transcription Endpoint (Client မှ ခွဲထုတ်ပေးလိုက်သော Audio သေးသေးလေးကိုသာ လက်ခံခြင်း) ---
+# --- AssemblyAI Transcription (Client Device မှ ခွဲထုတ်ပေးလိုက်သော Audio သေးသေးလေးကိုသာ လက်ခံခြင်း) ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -155,7 +156,7 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
-# --- Batch Text-To-Speech (Edge-TTS) Generation for Client ---
+# --- Batch Text-To-Speech (Edge-TTS) Generation ---
 class BatchTTSRequest(BaseModel):
     lines: List[str]
     voice: str = "my-MM-ThihaNeural"
@@ -166,20 +167,20 @@ class BatchTTSRequest(BaseModel):
 async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
     user_email = request.cookies.get("user_email")
     if not user_email:
-        return JSONResponse(status_code=401, content={"error": "Export ပြုလုပ်ရန် Gmail ဖြင့် အရင် Login ဝင်ပေးပါခင်ဗျာ။"})
+        return JSONResponse(status_code=401, content={"error": "Export ပြုလုပ်ရန် Google ဖြင့် အရင် Login ဝင်ပေးပါခင်ဗျာ။"})
 
     db = SessionLocal()
     user = db.query(User).filter(User.email == user_email).first()
     if not user:
         db.close()
-        return JSONResponse(status_code=401, content={"error": "User မတွေ့ရှိပါ။"})
+        return JSONResponse(status_code=401, content={"error": "User မရှိပါ။"})
 
     today = date.today()
     if user.last_reset_date != today:
         user.daily_credits_left = 2
         user.last_reset_date = today
 
-    # Credit ဖြတ်တောက်ခြင်း
+    # Credit စစ်ဆေးခြင်းနှင့် နုတ်ယူခြင်း
     if user.daily_credits_left > 0:
         user.daily_credits_left -= 1
     elif user.package_credits > 0:
