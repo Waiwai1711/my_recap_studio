@@ -4,6 +4,8 @@ import json
 import base64
 import uuid
 import shutil
+import re
+import secrets
 from datetime import date, datetime
 from typing import List, Optional
 from urllib.parse import urlencode
@@ -19,10 +21,9 @@ import assemblyai as aai
 import edge_tts
 from mutagen.mp3 import MP3
 
-from database import SessionLocal, User, PaymentRequest, Package
+from database import SessionLocal, User, PaymentRequest, Package, ProjectHistory, LogoPreset
 
 app = FastAPI()
-
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 @app.middleware("http")
@@ -37,6 +38,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8881875491:AAGTyx6m3-LnsOWSdRKtfuwJ8nEioIjn3Hk")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "5750529400")
@@ -46,131 +48,28 @@ BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "https://my-recap-studio.onrender.co
 
 TEMP_DIR = "temp_audios"
 SLIPS_DIR = "uploaded_slips"
+LOGOS_DIR = "user_logos"
 os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(SLIPS_DIR, exist_ok=True)
+os.makedirs(LOGOS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
-
-# Telegram Bot Alert
-async def send_telegram_payment_alert(req_id: int, user_email: str, package_type: str, amount: int, payment_method: str, photo_path: str):
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        return None
-    try:
-        caption = (
-            f"🔔 *ငွေလွှဲပြေစာ အသစ်ရောက်ရှိပါသည်!*\n\n"
-            f"🆔 Req ID: `#{req_id}`\n"
-            f"👤 User: `{user_email}`\n"
-            f"📦 Package: *{package_type} ပုဒ်*\n"
-            f"💰 ပမာဏ: *{amount:,} Ks*\n"
-            f"💳 Method: *{payment_method}*\n\n"
-            f"အောက်ပါခလုတ်ကို နှိပ်၍ တိုက်ရိုက် အတည်ပြုနိုင်ပါသည် 👇"
-        )
-        approve_url = f"{BASE_URL}/api/quick-action?action=approve&id={req_id}&key={SECRET_KEY}"
-        reject_url = f"{BASE_URL}/api/quick-action?action=reject&id={req_id}&key={SECRET_KEY}"
-
-        inline_keyboard = {
-            "inline_keyboard": [
-                [
-                    {"text": "✅ Approve (ခွင့်ပြုမည်)", "url": approve_url},
-                    {"text": "❌ Reject (ပယ်ဖျက်မည်)", "url": reject_url}
-                ]
-            ]
-        }
-        async with httpx.AsyncClient() as client:
-            if photo_path and os.path.exists(photo_path):
-                with open(photo_path, "rb") as f:
-                    res = await client.post(
-                        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto",
-                        data={
-                            "chat_id": TELEGRAM_CHAT_ID,
-                            "caption": caption,
-                            "parse_mode": "Markdown",
-                            "reply_markup": json.dumps(inline_keyboard)
-                        },
-                        files={"photo": f}
-                    )
-                    if res.status_code == 200:
-                        return res.json().get("result", {}).get("message_id")
-    except Exception:
-        pass
-    return None
-
-# Telegram Quick Action
-@app.get("/api/quick-action", response_class=HTMLResponse)
-async def quick_action(action: str, id: int, key: str):
-    if key != SECRET_KEY:
-        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden</h2>", status_code=403)
-
-    db = SessionLocal()
-    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == id).first()
-    if not pay_req:
-        db.close()
-        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>တောင်းဆိုမှု ရှာမတွေ့ပါ။</h2>")
-
-    if pay_req.status != "pending":
-        status_text = pay_req.status.upper()
-        db.close()
-        return HTMLResponse(f"<h2 style='color:#facc15; text-align:center; margin-top:50px;'>ဤပြေစာသည် {status_text} ပြုလုပ်ပြီးသား ဖြစ်ပါသည်။</h2>")
-
-    target_user = db.query(User).filter(User.email == pay_req.user_email).first()
-
-    if action == "approve":
-        if target_user:
-            target_user.package_credits += int(pay_req.package_type)
-        pay_req.status = "approved"
-        title = "✅ အောင်မြင်ပါပြီ!"
-        desc = f"<b>{pay_req.user_email}</b> ထံသို့ Package <b>{pay_req.package_type} ပုဒ်</b> ထည့်သွင်းပေးပြီးပါပြီ။"
-        color = "#10b981"
-    else:
-        pay_req.status = "rejected"
-        title = "❌ ပယ်ဖျက်လိုက်ပါပြီ"
-        desc = f"ငွေလွှဲပြေစာ <b>#{id}</b> ကို ပယ်ဖျက်လိုက်ပါပြီ။"
-        color = "#ef4444"
-
-    db.commit()
-    db.close()
-
-    return HTMLResponse(f"""
-    <!DOCTYPE html>
-    <html>
-    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Action Completed</title></head>
-    <body style="background:#0b0c10; color:#f4f4f5; display:flex; align-items:center; justify-content:center; height:90vh; font-family:sans-serif; text-align:center; margin:0; padding:16px;">
-      <div style="background:#14161f; padding:28px 20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); max-width:360px; width:100%;">
-        <h2 style="color:{color}; margin-bottom:12px; font-size:20px;">{title}</h2>
-        <p style="color:#a1a1aa; font-size:13px; line-height:1.6;">{desc}</p>
-        <p style="color:#71717a; font-size:11px; margin-top:20px;">Telegram သို့ ပြန်သွားနိုင်ပါပြီ</p>
-      </div>
-    </body>
-    </html>
-    """)
+app.mount("/logos", StaticFiles(directory=LOGOS_DIR), name="logos")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
-@app.get("/admin", response_class=HTMLResponse)
-async def serve_admin(request: Request):
-    user_email = request.cookies.get("user_email")
-    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
-        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden: Admin သာ ဝင်ရောက်ခွင့်ရှိပါသည်။</h2>", status_code=403)
-    return FileResponse(os.path.join("templates", "admin.html"))
-
-@app.get("/api/packages")
-async def get_public_packages():
-    db = SessionLocal()
-    pkgs = db.query(Package).filter(Package.is_active == True).order_by(Package.credits.asc()).all()
-    result = [{"id": p.id, "name": p.name, "credits": p.credits, "price": p.price_mmk} for p in pkgs]
-    db.close()
-    return result
-
 @app.get("/login/google")
-async def login_google(request: Request):
+async def login_google(request: Request, ref: Optional[str] = None):
     if not GOOGLE_CLIENT_ID:
         return JSONResponse(status_code=500, content={"error": "GOOGLE_CLIENT_ID မရှိသေးပါ။"})
     
     host = request.headers.get("x-forwarded-host") or request.headers.get("host")
     redirect_uri = f"https://{host}/api/auth/google/callback"
     request.session["oauth_redirect_uri"] = redirect_uri
+    if ref:
+        request.session["referral_code"] = ref
 
     params = {
         "client_id": GOOGLE_CLIENT_ID,
@@ -220,15 +119,28 @@ async def auth_google_callback(request: Request):
     is_admin = (email.strip().lower() == ADMIN_EMAIL.lower())
     
     if not user:
+        ref_code = request.session.get("referral_code")
+        new_ref_id = secrets.token_hex(4).upper()
+        bonus_credits = 0
+
+        # Referral စစ်ဆေးခြင်း
+        if ref_code:
+            referrer = db.query(User).filter(User.referral_code == ref_code).first()
+            if referrer and referrer.email != email:
+                referrer.package_credits += 1  # ဖိတ်ခေါ်သူအား ၁ ပုဒ် ဘောနပ်စ်ပေးခြင်း
+                bonus_credits = 1              # အသစ်ဝင်သူအား ၁ ပုဒ် ဘောနပ်စ်ပေးခြင်း
+
         user = User(
             email=email,
             name=user_info.get("name", "User"),
             avatar=user_info.get("picture", ""),
             daily_credits_left=2,
-            package_credits=0,
+            package_credits=bonus_credits,
             last_reset_date=date.today(),
             is_admin=is_admin,
-            is_banned=False
+            is_banned=False,
+            referral_code=new_ref_id,
+            referred_by=ref_code
         )
         db.add(user)
         db.commit()
@@ -236,12 +148,15 @@ async def auth_google_callback(request: Request):
         if is_admin and not user.is_admin:
             user.is_admin = True
             db.commit()
+        if not user.referral_code:
+            user.referral_code = secrets.token_hex(4).upper()
+            db.commit()
     
     is_banned = user.is_banned
     db.close()
 
     if is_banned:
-        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>ဤအကောင့်သည် ပိတ်ပင် (Ban) ခံထားရပါသည်ခင်ဗျာ။</h2>", status_code=403)
+        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>အကောင့်ပိတ်ပင်ခံထားရပါသည်</h2>", status_code=403)
 
     res = RedirectResponse(url="/")
     res.set_cookie(key="user_email", value=email, httponly=True, max_age=86400 * 30, samesite="lax")
@@ -263,15 +178,19 @@ async def get_user_data(request: Request):
     user = db.query(User).filter(User.email == user_email).first()
     if not user or user.is_banned:
         db.close()
-        return JSONResponse(status_code=401, content={"logged_in": False, "banned": getattr(user, 'is_banned', False)})
+        return JSONResponse(status_code=401, content={"logged_in": False})
 
     today = date.today()
-    if user.last_reset_date != today:
+    if user.last_reset_date.date() if isinstance(user.last_reset_date, datetime) else user.last_reset_date != today:
         user.daily_credits_left = 2
-        user.last_reset_date = today
+        user.last_reset_date = datetime.utcnow()
         db.commit()
 
     is_admin = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
+    is_premium = is_admin or (user.package_credits > 0)
+
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    ref_link = f"https://{host}/login/google?ref={user.referral_code}"
 
     data = {
         "logged_in": True,
@@ -280,333 +199,106 @@ async def get_user_data(request: Request):
         "avatar": user.avatar,
         "daily_credits": user.daily_credits_left,
         "package_credits": user.package_credits,
-        "is_admin": is_admin
+        "is_admin": is_admin,
+        "is_premium": is_premium,
+        "referral_code": user.referral_code,
+        "referral_link": ref_link
     }
     db.close()
     return data
 
-@app.post("/api/payment/submit")
-async def submit_payment(
-    request: Request,
-    package_type: str = Form(...),
-    payment_method: str = Form(...),
-    slip: UploadFile = File(...)
-):
+# History APIs
+@app.get("/api/history")
+async def get_history(request: Request):
     user_email = request.cookies.get("user_email")
     if not user_email:
-        return JSONResponse(status_code=401, content={"error": "Login အရင်ဝင်ပေးပါ"})
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
     db = SessionLocal()
-    user = db.query(User).filter(User.email == user_email).first()
-    if not user or user.is_banned:
-        db.close()
-        return JSONResponse(status_code=403, content={"error": "ဤအကောင့်သည် အသုံးပြုခွင့် ပိတ်ပင်ခံထားရပါသည်"})
-
-    pkg = db.query(Package).filter(Package.credits == int(package_type)).first()
-    amount = pkg.price_mmk if pkg else (int(package_type) * 500)
-
-    ext = os.path.splitext(slip.filename)[1] or ".jpg"
-    slip_filename = f"slip_{uuid.uuid4().hex[:10]}{ext}"
-    slip_path = os.path.join(SLIPS_DIR, slip_filename)
-    
-    with open(slip_path, "wb") as buffer:
-        shutil.copyfileobj(slip.file, buffer)
-
-    pay_req = PaymentRequest(
-        user_email=user_email,
-        package_type=package_type,
-        amount=amount,
-        payment_method=payment_method,
-        slip_url=f"/slips/{slip_filename}",
-        status="pending"
-    )
-    db.add(pay_req)
-    db.commit()
-    db.refresh(pay_req)
-
-    t_msg_id = await send_telegram_payment_alert(pay_req.id, user_email, package_type, amount, payment_method, slip_path)
-    if t_msg_id:
-        pay_req.telegram_msg_id = t_msg_id
-        db.commit()
-
-    db.close()
-    return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
-
-# ================= ADMIN APIS & TELEGRAM DAILY DIGEST =================
-
-def verify_admin(request: Request):
-    user_email = request.cookies.get("user_email")
-    return user_email and (user_email.strip().lower() == ADMIN_EMAIL.lower())
-
-@app.get("/api/admin/finance/summary")
-async def get_finance_summary(request: Request):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    db = SessionLocal()
-    approved_reqs = db.query(PaymentRequest).filter(PaymentRequest.status == "approved").all()
-    pending_count = db.query(PaymentRequest).filter(PaymentRequest.status == "pending").count()
-    users_count = db.query(User).count()
-
-    total_revenue = sum(r.amount for r in approved_reqs if r.amount)
-    
-    today = date.today()
-    today_revenue = sum(r.amount for r in approved_reqs if r.created_at and r.created_at.date() == today and r.amount)
-
-    methods = {}
-    for r in approved_reqs:
-        m = r.payment_method.split(" ")[0]
-        methods[m] = methods.get(m, 0) + (r.amount or 0)
-
-    db.close()
-    return {
-        "total_revenue": total_revenue,
-        "today_revenue": today_revenue,
-        "total_orders": len(approved_reqs),
-        "pending_orders": pending_count,
-        "total_users": users_count,
-        "methods": methods
-    }
-
-# Telegram နေ့စဉ် အစီရင်ခံစာ ပို့ပေးသည့် API
-@app.post("/api/admin/telegram/daily-digest")
-async def send_daily_digest(request: Request):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-    
-    db = SessionLocal()
-    today = date.today()
-    approved_today = db.query(PaymentRequest).filter(PaymentRequest.status == "approved").all()
-    today_revenue = sum(r.amount for r in approved_today if r.created_at and r.created_at.date() == today and r.amount)
-    pending_count = db.query(PaymentRequest).filter(PaymentRequest.status == "pending").count()
-    users_count = db.query(User).count()
-    db.close()
-
-    msg = (
-        f"📊 *DAILY REVENUE & SUMMARY DIGEST*\n\n"
-        f"📅 Date: `{today}`\n"
-        f"💰 ယနေ့ ရောင်းရငွေ: *{today_revenue:,} Ks*\n"
-        f"⏳ Pending ပြေစာ: *{pending_count} စောင်*\n"
-        f"👥 စုစုပေါင်း User: *{users_count} ဦး*\n"
-    )
-
-    try:
-        async with httpx.AsyncClient() as client:
-            await client.post(
-                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
-                data={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "Markdown"}
-            )
-        return {"status": "success", "message": "Daily digest ပို့ပြီးပါပြီ"}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-@app.get("/api/admin/users")
-async def get_all_users(request: Request):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    db = SessionLocal()
-    users = db.query(User).order_by(User.id.desc()).all()
-    result = [{
-        "id": u.id,
-        "email": u.email,
-        "name": u.name,
-        "avatar": u.avatar,
-        "daily_credits": u.daily_credits_left,
-        "package_credits": u.package_credits,
-        "is_admin": u.is_admin,
-        "is_banned": u.is_banned,
-        "created_at": u.created_at.strftime("%Y-%m-%d") if u.created_at else ""
-    } for u in users]
-    db.close()
-    return result
-
-@app.post("/api/admin/users/adjust-credits")
-async def adjust_credits(
-    request: Request,
-    email: str = Form(...),
-    action_type: str = Form(...),
-    amount: int = Form(...)
-):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    db = SessionLocal()
-    user = db.query(User).filter(User.email == email.strip().lower()).first()
-    if not user:
-        db.close()
-        return JSONResponse(status_code=404, content={"error": "User ရှာမတွေ့ပါ"})
-
-    if action_type == "add":
-        user.package_credits += amount
-        msg = f"{user.email} ထံသို့ {amount} ပုဒ် ထည့်ပေးပြီးပါပြီ!"
-    else:
-        user.package_credits = max(0, user.package_credits - amount)
-        msg = f"{user.email} ထံမှ {amount} ပုဒ် ပြန်နုတ်ပြီးပါပြီ (လက်ကျန်: {user.package_credits} ပုဒ်)!"
-
-    db.commit()
-    db.close()
-    return {"status": "success", "message": msg}
-
-@app.post("/api/admin/users/toggle-ban")
-async def toggle_ban_user(request: Request, email: str = Form(...)):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    clean_email = email.strip().lower()
-    if clean_email == ADMIN_EMAIL.lower():
-        return JSONResponse(status_code=400, content={"error": "Admin အကောင့်ကို Ban ၍ မရပါ"})
-
-    db = SessionLocal()
-    user = db.query(User).filter(User.email == clean_email).first()
-    if not user:
-        db.close()
-        return JSONResponse(status_code=404, content={"error": "User ရှာမတွေ့ပါ"})
-
-    user.is_banned = not user.is_banned
-    status = "Ban လိုက်ပါပြီ" if user.is_banned else "Ban မှ ပြန်လည်ဖွင့်ပေးလိုက်ပါပြီ"
-    db.commit()
-    db.close()
-    return {"status": "success", "message": f"{clean_email} အား {status}"}
-
-@app.get("/api/admin/packages")
-async def admin_get_packages(request: Request):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-    db = SessionLocal()
-    pkgs = db.query(Package).order_by(Package.credits.asc()).all()
-    res = [{"id": p.id, "name": p.name, "credits": p.credits, "price": p.price_mmk, "is_active": p.is_active} for p in pkgs]
+    items = db.query(ProjectHistory).filter(ProjectHistory.user_email == user_email).order_by(ProjectHistory.id.desc()).limit(15).all()
+    res = [{
+        "id": it.id,
+        "title": it.title,
+        "duration": it.duration_sec,
+        "created_at": it.created_at.strftime("%Y-%m-%d %H:%M")
+    } for it in items]
     db.close()
     return res
 
-@app.post("/api/admin/packages/save")
-async def save_package(
-    request: Request,
-    pkg_id: int = Form(0),
-    name: str = Form(...),
-    credits: int = Form(...),
-    price: int = Form(...)
-):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    db = SessionLocal()
-    if pkg_id > 0:
-        pkg = db.query(Package).filter(Package.id == pkg_id).first()
-        if pkg:
-            pkg.name = name.strip()
-            pkg.credits = credits
-            pkg.price_mmk = price
-    else:
-        new_pkg = Package(name=name.strip(), credits=credits, price_mmk=price, is_active=True)
-        db.add(new_pkg)
-
-    db.commit()
-    db.close()
-    return {"status": "success", "message": "Package သိမ်းဆည်းပြီးပါပြီ!"}
-
-@app.post("/api/admin/packages/delete")
-async def delete_package(request: Request, pkg_id: int = Form(...)):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-    db = SessionLocal()
-    pkg = db.query(Package).filter(Package.id == pkg_id).first()
-    if pkg:
-        db.delete(pkg)
+@app.post("/api/history/record")
+async def record_history(request: Request, title: str = Form("Recap Project"), duration: float = Form(0.0)):
+    user_email = request.cookies.get("user_email")
+    if user_email:
+        db = SessionLocal()
+        h = ProjectHistory(user_email=user_email, title=title, duration_sec=duration)
+        db.add(h)
         db.commit()
-    db.close()
-    return {"status": "success", "message": "Package ဖျက်ပြီးပါပြီ"}
-
-@app.get("/api/admin/requests")
-async def get_admin_requests(request: Request):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    db = SessionLocal()
-    requests_list = db.query(PaymentRequest).order_by(PaymentRequest.id.desc()).all()
-    result = [{
-        "id": r.id,
-        "email": r.user_email,
-        "package_type": r.package_type,
-        "amount": r.amount,
-        "payment_method": r.payment_method,
-        "slip_url": r.slip_url,
-        "status": r.status,
-        "created_at": r.created_at.strftime("%Y-%m-%d %H:%M")
-    } for r in requests_list]
-    db.close()
-    return result
-
-@app.post("/api/admin/approve")
-async def approve_request(request: Request, req_id: int = Form(...)):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    db = SessionLocal()
-    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
-    if not pay_req or pay_req.status != "pending":
         db.close()
-        return JSONResponse(status_code=400, content={"error": "Request not found or processed"})
+    return {"status": "ok"}
 
-    target_user = db.query(User).filter(User.email == pay_req.user_email).first()
-    if target_user:
-        target_user.package_credits += int(pay_req.package_type)
-        pay_req.status = "approved"
-        db.commit()
-    db.close()
-    return {"status": "success", "message": "အတည်ပြုပြီး ပုဒ်ရေ ထည့်သွင်းပေးပြီးပါပြီ!"}
-
-@app.post("/api/admin/reject")
-async def reject_request(request: Request, req_id: int = Form(...)):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
+# Logo Presets APIs
+@app.get("/api/logos")
+async def get_user_logos(request: Request):
+    user_email = request.cookies.get("user_email")
+    if not user_email: return []
     db = SessionLocal()
-    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
-    if pay_req and pay_req.status == "pending":
-        pay_req.status = "rejected"
-        db.commit()
+    logos = db.query(LogoPreset).filter(LogoPreset.user_email == user_email).all()
+    res = [{"id": l.id, "name": l.name, "url": l.file_path} for l in logos]
     db.close()
-    return {"status": "success", "message": "ငွေလွှဲပြေစာကို ပယ်ဖျက်လိုက်ပါပြီ"}
+    return res
 
-@app.post("/api/admin/clawback")
-async def clawback_request(request: Request, req_id: int = Form(...)):
-    if not verify_admin(request):
-        return JSONResponse(status_code=403, content={"error": "Access Denied"})
-
-    db = SessionLocal()
-    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
-    if not pay_req or pay_req.status != "approved":
-        db.close()
-        return JSONResponse(status_code=400, content={"error": "Approved ဖြစ်ထားသော ပြေစာသာ Clawback လုပ်၍ ရပါမည်"})
-
-    target_user = db.query(User).filter(User.email == pay_req.user_email).first()
-    if target_user:
-        target_user.package_credits = max(0, target_user.package_credits - int(pay_req.package_type))
+@app.post("/api/logos/upload")
+async def upload_logo_preset(request: Request, name: str = Form(...), file: UploadFile = File(...)):
+    user_email = request.cookies.get("user_email")
+    if not user_email: return JSONResponse(status_code=401, content={"error": "Unauthorized"})
     
-    pay_req.status = "rejected"
+    ext = os.path.splitext(file.filename)[1] or ".png"
+    fname = f"logo_{uuid.uuid4().hex[:8]}{ext}"
+    fpath = os.path.join(LOGOS_DIR, fname)
+    with open(fpath, "wb") as b:
+        shutil.copyfileobj(file.file, b)
+
+    db = SessionLocal()
+    lp = LogoPreset(user_email=user_email, name=name, file_path=f"/logos/{fname}")
+    db.add(lp)
     db.commit()
     db.close()
-    return {"status": "success", "message": f"ပြေစာ #{req_id} ကို ပယ်ဖျက်ပြီး ပုဒ်ရေ {pay_req.package_type} ခုအား အောင်မြင်စွာ ပြန်လည်နုတ်ယူပြီးပါပြီ!"}
+    return {"status": "success", "url": f"/logos/{fname}", "name": name}
 
-# ================= AUDIO DIARIZATION & BATCH TTS =================
+# Telegram Direct Video Sender
+@app.post("/api/telegram/send-video")
+async def send_video_to_telegram(request: Request, video: UploadFile = File(...), caption: str = Form("Recap Video Export")):
+    user_email = request.cookies.get("user_email")
+    if not user_email: return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return JSONResponse(status_code=500, content={"error": "Telegram Bot Config မရှိပါ"})
 
+    try:
+        content = await video.read()
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendVideo",
+                data={"chat_id": TELEGRAM_CHAT_ID, "caption": f"🎬 {caption}\n👤 By: {user_email}"},
+                files={"video": (video.filename or "recap.mp4", content, "video/mp4")}
+            )
+        return {"status": "success", "message": "Telegram ဆီသို့ တိုက်ရိုက်ပေးပို့ပြီးပါပြီ!"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+# Audio, Direct Gemini & Edge-TTS Batch
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
     temp_audio = os.path.join(TEMP_DIR, f"trans_{uuid.uuid4().hex[:8]}.mp3")
-    
     with open(temp_audio, "wb") as f:
         f.write(await audio.read())
 
     try:
-        # Speaker Diarization ဖွင့်လှစ်ထားခြင်း
         config = aai.TranscriptionConfig(language_detection=True, speaker_labels=True)
         transcriber = aai.Transcriber()
         transcript = transcriber.transcribe(temp_audio, config=config)
 
         segments = []
-        # Utterance အလိုက် စကားပြောသူ (Speaker) ခွဲထုတ်ခြင်း
         if transcript.utterances:
             for idx, u in enumerate(transcript.utterances):
                 segments.append({
@@ -614,7 +306,7 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
                     "start": u.start,
                     "end": u.end,
                     "duration": round((u.end - u.start) / 1000, 2),
-                    "speaker": u.speaker, # Speaker A, Speaker B ...
+                    "speaker": u.speaker,
                     "text": u.text
                 })
         else:
@@ -631,8 +323,49 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     finally:
-        if os.path.exists(temp_audio):
-            os.remove(temp_audio)
+        if os.path.exists(temp_audio): os.remove(temp_audio)
+
+class GeminiDirectRequest(BaseModel):
+    segments: List[dict]
+
+@app.post("/api/translate/gemini-direct")
+async def translate_gemini_direct(request: Request, payload: GeminiDirectRequest):
+    user_email = request.cookies.get("user_email")
+    if not user_email: return JSONResponse(status_code=401, content={"error": "Login ဝင်ပေးပါ"})
+
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == user_email).first()
+    is_premium = user and ((user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin or user.package_credits > 0)
+    db.close()
+
+    if not is_premium:
+        return JSONResponse(status_code=403, content={"error": "💎 Direct Gemini Feature သည် Premium User များသာ သီးသန့် အသုံးပြုနိုင်ပါသည်ခင်ဗျာ။"})
+
+    if not GEMINI_API_KEY:
+        return JSONResponse(status_code=500, content={"error": "GEMINI_API_KEY မသတ်မှတ်ရသေးပါ"})
+
+    prompt_text = """You are an expert Burmese Movie Recap Narrator.
+Translate the following segmented lines into punchy, exciting Burmese movie recap style.
+STRICT RULES:
+1. EXTREMELY SHORT: 4 to 8 words per line.
+2. DURATION LIMIT: Fit into the given duration (max 3-4 syllables per second).
+3. STRICT JSON FORMAT ONLY: {"translations": ["...", "..."]}
+
+INPUTS:
+"""
+    for seg in payload.segments:
+        prompt_text += f"[{seg.get('id')}] [Duration: {seg.get('duration')}s] \"{seg.get('text')}\"\n"
+
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            resp = await client.post(url, json={"contents": [{"parts": [{"text": prompt_text}]}]})
+            data = resp.json()
+            raw_content = data["candidates"][0]["content"]["parts"][0]["text"]
+            cleaned = re.sub(r"```json|```", "", raw_content).strip()
+            return json.loads(cleaned)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 class BatchTTSItem(BaseModel):
     text: str
@@ -643,31 +376,27 @@ class BatchTTSRequest(BaseModel):
     pitch: int = 0
     speed: int = 10
 
+BAD_WORDS = ["လိုး", "လီး", "မအေလိုး", "ဖာသယ်မ", "စောက်ဖုတ်", "လိုးမသား"]
+def censor_text(t: str) -> str:
+    res = t
+    for w in BAD_WORDS: res = re.sub(w, "***", res)
+    return res
+
 @app.post("/api/tts/batch-generate")
 async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
     user_email = request.cookies.get("user_email")
-    if not user_email:
-        return JSONResponse(status_code=401, content={"error": "Export ပြုလုပ်ရန် Google ဖြင့် Login အရင်ဝင်ပေးပါခင်ဗျာ။"})
+    if not user_email: return JSONResponse(status_code=401, content={"error": "Login ဝင်ပေးပါ"})
 
     db = SessionLocal()
     user = db.query(User).filter(User.email == user_email).first()
     if not user or user.is_banned:
         db.close()
-        return JSONResponse(status_code=403, content={"error": "ဤအကောင့်သည် ပိတ်ပင် (Ban) ခံထားရပါသည်"})
+        return JSONResponse(status_code=403, content={"error": "အကောင့်ပိတ်ပင်ခံထားရပါသည်"})
 
-    is_admin_user = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
-
-    if not is_admin_user:
-        today = date.today()
-        if user.last_reset_date != today:
-            user.daily_credits_left = 2
-            user.last_reset_date = today
-            db.commit()
-
-        if (user.daily_credits_left + user.package_credits) <= 0:
-            db.close()
-            return JSONResponse(status_code=403, content={"error": "ယနေ့အတွက် အခမဲ့ ၂ ပုဒ် ကုန်ဆုံးသွားပါပြီ။ ဆက်လက်သုံးလိုပါက Package ဝယ်ယူပေးပါခင်ဗျာ။"})
-
+    is_admin = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
+    if not is_admin and (user.daily_credits_left + user.package_credits) <= 0:
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "Credits ကုန်ဆုံးသွားပါပြီ"})
     db.close()
 
     pitch_str = f"{payload.pitch:+d}Hz" if payload.pitch != 0 else "+0Hz"
@@ -675,7 +404,7 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
 
     audio_results = []
     for idx, item in enumerate(payload.items):
-        clean_text = item.text.strip()
+        clean_text = censor_text(item.text.strip())
         if not clean_text:
             audio_results.append({"index": idx, "audio_b64": "", "duration_ms": 500})
             continue
@@ -684,64 +413,38 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         communicate = edge_tts.Communicate(clean_text, selected_voice, pitch=pitch_str, rate=rate_str)
         audio_stream = io.BytesIO()
         async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_stream.write(chunk["data"])
+            if chunk["type"] == "audio": audio_stream.write(chunk["data"])
         
         audio_bytes = audio_stream.getvalue()
         try:
             mp3_info = MP3(io.BytesIO(audio_bytes))
             duration_ms = int(mp3_info.info.length * 1000)
-        except Exception:
-            duration_ms = 1000
+        except Exception: duration_ms = 1000
 
-        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
         audio_results.append({
             "index": idx,
-            "audio_b64": audio_b64,
+            "audio_b64": base64.b64encode(audio_bytes).decode("utf-8"),
             "duration_ms": duration_ms
         })
-
     return {"status": "success", "audios": audio_results}
 
 @app.post("/api/credits/consume")
 async def consume_credit(request: Request):
     user_email = request.cookies.get("user_email")
-    if not user_email:
-        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    if not user_email: return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
     db = SessionLocal()
     user = db.query(User).filter(User.email == user_email).first()
-    if not user or user.is_banned:
-        db.close()
-        return JSONResponse(status_code=403, content={"error": "Banned or not found"})
-
-    is_admin_user = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
-    if not is_admin_user:
-        today = date.today()
-        if user.last_reset_date != today:
-            user.daily_credits_left = 2
-            user.last_reset_date = today
-
-        if user.daily_credits_left > 0:
-            user.daily_credits_left -= 1
-        elif user.package_credits > 0:
-            user.package_credits -= 1
+    if user and not ((user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin):
+        if user.daily_credits_left > 0: user.daily_credits_left -= 1
+        elif user.package_credits > 0: user.package_credits -= 1
         db.commit()
-
     db.close()
     return {"status": "success"}
 
 @app.post("/api/preview-single-audio")
-async def preview_single_audio(
-    text: str = Form(...),
-    voice: str = Form("my-MM-ThihaNeural"),
-    pitch: int = Form(0),
-    speed: int = Form(10)
-):
-    clean_text = text.strip()
-    if not clean_text:
-        return JSONResponse(status_code=400, content={"error": "Text is empty"})
-
+async def preview_single_audio(text: str = Form(...), voice: str = Form("my-MM-ThihaNeural"), pitch: int = Form(0), speed: int = Form(10)):
+    clean_text = censor_text(text.strip())
     actual_voice = "my-MM-NilarNeural" if "Nilar" in voice else "my-MM-ThihaNeural"
     pitch_str = f"{pitch:+d}Hz" if pitch != 0 else "+0Hz"
     rate_str = f"{speed:+d}%" if speed != 0 else "+0%"
@@ -750,3 +453,32 @@ async def preview_single_audio(
     temp_file = os.path.join(TEMP_DIR, f"prev_{uuid.uuid4().hex[:6]}.mp3")
     await communicate.save(temp_file)
     return FileResponse(temp_file, media_type="audio/mpeg")
+
+@app.get("/api/packages")
+async def get_public_packages():
+    db = SessionLocal()
+    pkgs = db.query(Package).filter(Package.is_active == True).order_by(Package.credits.asc()).all()
+    res = [{"id": p.id, "name": p.name, "credits": p.credits, "price": p.price_mmk} for p in pkgs]
+    db.close()
+    return res
+
+@app.post("/api/payment/submit")
+async def submit_payment(request: Request, package_type: str = Form(...), payment_method: str = Form(...), slip: UploadFile = File(...)):
+    user_email = request.cookies.get("user_email")
+    if not user_email: return JSONResponse(status_code=401, content={"error": "Login ဝင်ပေးပါ"})
+
+    db = SessionLocal()
+    pkg = db.query(Package).filter(Package.credits == int(package_type)).first()
+    amount = pkg.price_mmk if pkg else (int(package_type) * 500)
+
+    ext = os.path.splitext(slip.filename)[1] or ".jpg"
+    slip_filename = f"slip_{uuid.uuid4().hex[:10]}{ext}"
+    slip_path = os.path.join(SLIPS_DIR, slip_filename)
+    with open(slip_path, "wb") as buffer:
+        shutil.copyfileobj(slip.file, buffer)
+
+    pay_req = PaymentRequest(user_email=user_email, package_type=package_type, amount=amount, payment_method=payment_method, slip_url=f"/slips/{slip_filename}", status="pending")
+    db.add(pay_req)
+    db.commit()
+    db.close()
+    return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။"}
