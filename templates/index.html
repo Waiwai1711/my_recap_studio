@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
+  <!-- Stable FFmpeg WASM v0.11.6 -->
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
   <style>
@@ -135,14 +136,15 @@
       cursor: pointer; transition: all 0.2s; background: rgba(11,12,16,0.5);
     }
     .pkg-item.selected { border-color: #38bdf8; background: rgba(56,189,248,0.15); }
-    .pkg-item h4 { font-size: 14px; font-weight: bold; color: #fff; }
-    .pkg-item p { font-size: 11px; color: #38bdf8; margin-top: 4px; }
+    .pkg-item h4 { font-size: 13px; font-weight: bold; color: #fff; }
+    .pkg-item p { font-size: 11px; color: #38bdf8; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
 
     #toastContainer { position: fixed; top: 16px; right: 16px; z-index: 110; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
     .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
     .hidden { display: none !important; }
   </style>
 
+  <!-- Dynamic Cue Style for Subtitles inside Video Player -->
   <style id="cueStyleTag"></style>
 </head>
 
@@ -150,24 +152,26 @@
 
   <div id="toastContainer"></div>
 
+  <!-- LOGIN GATE -->
   <div id="loginGate">
     <div class="login-box">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
         <i class="ph-bold ph-lightning" style="font-size: 24px; color: #fff;"></i>
       </div>
-      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
-      <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.6;">
+      <h2 id="loginGateTitle" style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
+      <p id="loginGateDesc" style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.6;">
         AI Video Dubbing နှင့် Auto-Speed Engine အသုံးပြုရန် Google Account ဖြင့် Login ဝင်ပေးပါခင်ဗျာ။
       </p>
-      <a href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700;">
+      <a id="btnGoogleLogin" href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700;">
         <i class="ph-bold ph-google-logo" style="font-size: 18px; color: #ea4335;"></i> Sign in with Google
       </a>
-      <p style="font-size: 11px; color: #10b981; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
+      <p id="loginGateSubtext" style="font-size: 11px; color: #10b981; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
         🎁 နေ့စဉ် အခမဲ့ ၂ ပုဒ် အသုံးပြုခွင့် ရရှိပါမည်
       </p>
     </div>
   </div>
 
+  <!-- BUY PACKAGE MODAL (DYNAMIC LOADED FROM DATABASE) -->
   <div id="packageModal" class="modal-overlay">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -175,19 +179,9 @@
         <button onclick="closePackageModal()" style="background: transparent; border: none; color: #71717a; font-size: 20px; cursor: pointer;">✕</button>
       </div>
 
-      <div class="pkg-grid">
-        <div class="pkg-item selected" onclick="selectPkg('10', 5000, this)">
-          <h4>၁၀ ပုဒ်</h4>
-          <p>5,000 Ks</p>
-        </div>
-        <div class="pkg-item" onclick="selectPkg('20', 10000, this)">
-          <h4>၂၀ ပုဒ်</h4>
-          <p>10,000 Ks</p>
-        </div>
-        <div class="pkg-item" onclick="selectPkg('30', 15000, this)">
-          <h4>၃၀ ပုဒ်</h4>
-          <p>15,000 Ks</p>
-        </div>
+      <!-- Packages Grid (Populated Dynamically via API) -->
+      <div id="pkgGridContainer" class="pkg-grid">
+        <div style="grid-column: 1 / -1; font-size: 12px; color: #a1a1aa; padding: 12px;">Package စာရင်းများ ဖတ်ယူနေပါသည်...</div>
       </div>
 
       <div style="background: rgba(11,12,16,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
@@ -217,6 +211,7 @@
     </div>
   </div>
 
+  <!-- Progress Modal -->
   <div id="loadingModal" class="modal-overlay">
     <div class="modal-card">
       <div class="circle-wrap">
@@ -234,6 +229,7 @@
     </div>
   </div>
 
+  <!-- Header -->
   <header class="header">
     <div class="brand">
       <div class="brand-icon">
@@ -264,8 +260,10 @@
     </div>
   </header>
 
+  <!-- Main Container -->
   <main class="container">
 
+    <!-- STEP 1: Video File & Audio Extraction -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -291,6 +289,7 @@
         <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
+      <!-- Preview Player for Video Sync -->
       <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);"></video>
 
       <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
@@ -298,6 +297,7 @@
       </button>
     </div>
 
+    <!-- STEP 2: Source Subtitles & Prompt -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -321,6 +321,7 @@
       </button>
     </div>
 
+    <!-- STEP 3: Voice, Subtitle Styling & Render -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -351,6 +352,7 @@
         </div>
       </div>
 
+      <!-- Subtitle Styling Controls with Custom Font File -->
       <div id="subStylingSection" style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
@@ -378,6 +380,7 @@
           </div>
         </div>
 
+        <!-- Subtitle Live Preview Box -->
         <div class="form-group" style="margin-top: 14px;">
           <label style="color: #38bdf8; font-weight: 600;"><i class="ph-bold ph-eye"></i> Subtitle Live Preview (စာတန်းထိုး နမူနာပုံစံ)</label>
           <div id="subPreviewBox" style="background: linear-gradient(180deg, #1e2230 0%, #0f1117 100%); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 100px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
@@ -388,6 +391,7 @@
         </div>
       </div>
 
+      <!-- Toggles Grid (Including Myanmar Subtitle Enable/Disable Toggle) -->
       <div class="toggles">
         <label class="toggle-item" style="color: #38bdf8; font-weight: 600;">
           <input type="checkbox" id="enableSubCheck" checked onchange="toggleSubSection()">
@@ -404,6 +408,7 @@
       </div>
     </div>
 
+    <!-- STEP 4: Live Subtitle Editor with Auto-Save -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -417,6 +422,7 @@
       </div>
     </div>
 
+    <!-- STEP 5: Final Export -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -483,7 +489,29 @@
       document.getElementById('loadingModal').classList.remove('active');
     }
 
-    function openPackageModal() { document.getElementById('packageModal').classList.add('active'); }
+    // Dynamic Package Loading from Backend Database
+    async function openPackageModal() {
+      const grid = document.getElementById('pkgGridContainer');
+      try {
+        const res = await fetch("/api/packages");
+        const pkgs = await res.json();
+        if (pkgs && pkgs.length) {
+          grid.innerHTML = pkgs.map((p, idx) => `
+            <div class="pkg-item ${idx === 0 ? 'selected' : ''}" onclick="selectPkg('${p.credits}', ${p.price}, this)">
+              <h4>${p.name}</h4>
+              <p>${p.price.toLocaleString()} Ks</p>
+            </div>
+          `).join("");
+          selectedPackageType = String(pkgs[0].credits);
+        } else {
+          grid.innerHTML = `<div style="grid-column: 1 / -1; color: #a1a1aa; font-size: 11px;">Package များ မရှိသေးပါ။</div>`;
+        }
+      } catch (e) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; font-size: 11px;">Package များ ဆွဲယူ၍ မရပါ။</div>`;
+      }
+      document.getElementById('packageModal').classList.add('active');
+    }
+
     function closePackageModal() { document.getElementById('packageModal').classList.remove('active'); }
 
     function selectPkg(type, amount, el) {
@@ -513,7 +541,6 @@
       }
     }
 
-    // Toggle Subtitle Styling Section Visibility
     function toggleSubSection() {
       const enableSub = document.getElementById('enableSubCheck').checked;
       const stylingSec = document.getElementById('subStylingSection');
@@ -523,7 +550,6 @@
       }
     }
 
-    // Live Subtitle Styling Preview & Dynamic Cue Update
     function updateSubPreview() {
       const p = document.getElementById('subPreviewText');
       const size = document.getElementById('subFontSize').value || 24;
@@ -549,7 +575,6 @@
         `;
       }
 
-      // Update Subtitle Cue styling on the Video Player
       const styleTag = document.getElementById('cueStyleTag');
       if (styleTag) {
         styleTag.innerHTML = `
@@ -620,6 +645,18 @@
       try {
         const res = await fetch("/api/user/me");
         const data = await res.json();
+        
+        // Handle Banned User State
+        if (data.banned) {
+          document.getElementById('loginGate').classList.remove('hidden');
+          document.getElementById('loginGateTitle').innerText = "🚫 အကောင့်ပိတ်ပင်ခံထားရပါသည်";
+          document.getElementById('loginGateTitle').style.color = "#ef4444";
+          document.getElementById('loginGateDesc').innerText = "စည်းကမ်းဖောက်ဖျက်မှုကြောင့် ဤအကောင့်အား အသုံးပြုခွင့် ရပ်ဆိုင်းထားပါသည်ခင်ဗျာ။";
+          document.getElementById('btnGoogleLogin').classList.add('hidden');
+          document.getElementById('loginGateSubtext').innerText = "အသေးစိတ်သိရှိလိုပါက Admin ထံ ဆက်သွယ်ပါ";
+          return;
+        }
+
         if (data.logged_in) {
           document.getElementById('loginGate').classList.add('hidden');
           document.getElementById('userProfile').classList.remove('hidden');
@@ -657,7 +694,6 @@
         }
       });
 
-      // Handle Custom Font Upload & Dynamic Apply
       const fontInput = document.getElementById('fontFileInput');
       fontInput.addEventListener('change', async (e) => {
         if (e.target.files.length) {
@@ -786,7 +822,6 @@
       a.play();
     }
 
-    // Silence WAV Generator (အသံနှင့် ဇာတ်လမ်း ကွက်တိကိုက်စေရန် Silence Buffer ထုတ်ပေးခြင်း)
     function createSilenceWav(durationSec, sampleRate = 24000) {
       const numChannels = 1;
       const bytesPerSample = 2;
@@ -858,7 +893,6 @@
           const seg = currentSegments[i];
           const targetStartMs = (seg && typeof seg.start === "number") ? seg.start : currentTimelineMs;
 
-          // မူရင်း အချိန်အတိုင်း Silence ထည့်သွင်းပေးခြင်း
           if (targetStartMs > currentTimelineMs) {
             const gapSec = (targetStartMs - currentTimelineMs) / 1000;
             if (gapSec >= 0.05) {
@@ -950,7 +984,6 @@
         player.innerHTML = "";
         player.src = videoUrl;
 
-        // Subtitle Toggle ဖွင့်ထားမှသာ Web Player ထဲတွင် Subtitle Track ထည့်သွင်းပြသပေးခြင်း
         if (isSubEnabled) {
           const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
           const vttUrl = URL.createObjectURL(vttBlob);
