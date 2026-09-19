@@ -24,6 +24,7 @@ app = FastAPI()
 
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
+# WASM နှင့် Web Worker အလုပ်လုပ်စေရန် Security Headers
 @app.middleware("http")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -37,8 +38,12 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
-# Admin အဖြစ် သတ်မှတ်မည့် Gmail (ဤနေရာတွင် မိမိ Gmail ထည့်ပေးပါ)
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "waiphyo171104@gmail.com")
+# Telegram Bot (Optional: Render Environment တွင် ထည့်သွင်းနိုင်သည်)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+
+# သတ်မှတ်ထားသော Admin Gmail သီးသန့်
+ADMIN_EMAIL = "waiphyo171104@gmail.com"
 
 TEMP_DIR = "temp_audios"
 SLIPS_DIR = "uploaded_slips"
@@ -47,24 +52,42 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
+# Telegram Bot သို့ Message & Photo ပို့ပေးသော Function
+async def send_telegram_alert(text: str, photo_path: str = None):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    try:
+        async with httpx.AsyncClient() as client:
+            if photo_path and os.path.exists(photo_path):
+                with open(photo_path, "rb") as f:
+                    await client.post(
+                        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto",
+                        data={"chat_id": TELEGRAM_CHAT_ID, "caption": text},
+                        files={"photo": f}
+                    )
+            else:
+                await client.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                    data={"chat_id": TELEGRAM_CHAT_ID, "text": text}
+                )
+    except Exception:
+        pass
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
+# Admin Panel: waiphyo171104@gmail.com ဖြင့် Login ဝင်ထားမှသာ ခွင့်ပြုမည်
 @app.get("/admin", response_class=HTMLResponse)
 async def serve_admin(request: Request):
     user_email = request.cookies.get("user_email")
-    if not user_email:
-        return RedirectResponse(url="/")
+    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
+        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden: Admin သာ ဝင်ရောက်ခွင့်ရှိပါသည်။</h2>", status_code=403)
     
-    db = SessionLocal()
-    user = db.query(User).filter(User.email == user_email).first()
-    db.close()
-    
-    if not user or (user.email != ADMIN_EMAIL and not user.is_admin):
-        return HTMLResponse("<h3>Access Denied: Admin သာ ဝင်ရောက်ခွင့်ရှိပါသည်။</h3>", status_code=403)
-    
-    return FileResponse(os.path.join("templates", "admin.html"))
+    admin_html_path = os.path.join("templates", "admin.html")
+    if not os.path.exists(admin_html_path):
+        return HTMLResponse("<h2>Admin template ဖိုင် မရှိသေးပါ။</h2>", status_code=500)
+    return FileResponse(admin_html_path)
 
 # --- Google OAuth Login ---
 @app.get("/login/google")
@@ -121,7 +144,7 @@ async def auth_google_callback(request: Request):
     email = user_info["email"]
     db = SessionLocal()
     user = db.query(User).filter(User.email == email).first()
-    is_admin = (email == ADMIN_EMAIL)
+    is_admin = (email.strip().lower() == ADMIN_EMAIL.lower())
     
     if not user:
         user = User(
@@ -176,16 +199,16 @@ async def get_user_data(request: Request):
         "avatar": user.avatar,
         "daily_credits": user.daily_credits_left,
         "package_credits": user.package_credits,
-        "is_admin": user.is_admin or (user.email == ADMIN_EMAIL)
+        "is_admin": (user.email.strip().lower() == ADMIN_EMAIL.lower())
     }
     db.close()
     return data
 
-# --- Payment & Package System ---
+# --- Payment Submit & Telegram Alert ---
 @app.post("/api/payment/submit")
 async def submit_payment(
     request: Request,
-    package_type: str = Form(...), # "10", "20", "30"
+    package_type: str = Form(...),
     payment_method: str = Form(...),
     slip: UploadFile = File(...)
 ):
@@ -196,7 +219,6 @@ async def submit_payment(
     amounts = {"10": 5000, "20": 10000, "30": 15000}
     amount = amounts.get(package_type, 5000)
 
-    # Slip ဖိုင်အား သိမ်းဆည်းခြင်း
     ext = os.path.splitext(slip.filename)[1] or ".jpg"
     slip_filename = f"slip_{uuid.uuid4().hex[:10]}{ext}"
     slip_path = os.path.join(SLIPS_DIR, slip_filename)
@@ -217,18 +239,20 @@ async def submit_payment(
     db.commit()
     db.close()
 
-    return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
+    # Telegram သို့ ချက်ချင်း Notification ပို့ပေးခြင်း
+    alert_msg = f"🔔 ငွေလွှဲပြေစာ အသစ်ရောက်ရှိပါသည်!\n\n👤 User: {user_email}\n📦 Package: {package_type} ပုဒ်\n💰 ပမာဏ: {amount:,} Ks\n💳 Payment: {payment_method}\n\nApprove လုပ်ရန် /admin သို့ ဝင်ရောက်ပေးပါ။"
+    await send_telegram_alert(alert_msg, slip_path)
 
-# --- Admin Panel APIs ---
+    return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ စစ်ဆေးပြီးပါက Credits တိုးပေးပါမည်။"}
+
+# --- Admin APIs (Strictly Protected) ---
 @app.get("/api/admin/requests")
 async def get_admin_requests(request: Request):
     user_email = request.cookies.get("user_email")
-    db = SessionLocal()
-    user = db.query(User).filter(User.email == user_email).first()
-    if not user or (user.email != ADMIN_EMAIL and not user.is_admin):
-        db.close()
+    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
+    db = SessionLocal()
     requests_list = db.query(PaymentRequest).order_by(PaymentRequest.id.desc()).all()
     result = []
     for r in requests_list:
@@ -248,22 +272,18 @@ async def get_admin_requests(request: Request):
 @app.post("/api/admin/approve")
 async def approve_request(request: Request, req_id: int = Form(...)):
     user_email = request.cookies.get("user_email")
-    db = SessionLocal()
-    admin = db.query(User).filter(User.email == user_email).first()
-    if not admin or (admin.email != ADMIN_EMAIL and not admin.is_admin):
-        db.close()
+    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
+    db = SessionLocal()
     pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
     if not pay_req or pay_req.status != "pending":
         db.close()
         return JSONResponse(status_code=400, content={"error": "Request not found or already processed"})
 
-    # User ၏ package credits ထဲသို့ ပုဒ်ရေ ပေါင်းထည့်ပေးခြင်း
     target_user = db.query(User).filter(User.email == pay_req.user_email).first()
     if target_user:
-        add_credits = int(pay_req.package_type)
-        target_user.package_credits += add_credits
+        target_user.package_credits += int(pay_req.package_type)
         pay_req.status = "approved"
         db.commit()
     db.close()
@@ -272,12 +292,10 @@ async def approve_request(request: Request, req_id: int = Form(...)):
 @app.post("/api/admin/reject")
 async def reject_request(request: Request, req_id: int = Form(...)):
     user_email = request.cookies.get("user_email")
-    db = SessionLocal()
-    admin = db.query(User).filter(User.email == user_email).first()
-    if not admin or (admin.email != ADMIN_EMAIL and not admin.is_admin):
-        db.close()
+    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
         return JSONResponse(status_code=403, content={"error": "Access Denied"})
 
+    db = SessionLocal()
     pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
     if pay_req and pay_req.status == "pending":
         pay_req.status = "rejected"
@@ -285,7 +303,7 @@ async def reject_request(request: Request, req_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာကို ပယ်ဖျက်လိုက်ပါပြီ"}
 
-# --- AssemblyAI Transcription ---
+# --- AssemblyAI Audio Transcription ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -315,7 +333,7 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
-# --- Batch TTS (Daily & Premium Credit စစ်ဆေးခြင်း) ---
+# --- Batch TTS (Credit Enforcement) ---
 class BatchTTSRequest(BaseModel):
     lines: List[str]
     voice: str = "my-MM-ThihaNeural"
@@ -339,7 +357,6 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         user.daily_credits_left = 2
         user.last_reset_date = today
 
-    # Credit စစ်ဆေးခြင်း (Free အရင်သုံးမည်၊ ကုန်ပါက Premium Package ထဲမှ နုတ်မည်)
     if user.daily_credits_left > 0:
         user.daily_credits_left -= 1
     elif user.package_credits > 0:
