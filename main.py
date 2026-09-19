@@ -155,7 +155,6 @@ async def serve_admin(request: Request):
         return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden: Admin သာ ဝင်ရောက်ခွင့်ရှိပါသည်။</h2>", status_code=403)
     return FileResponse(os.path.join("templates", "admin.html"))
 
-# Public Packages Endpoint (User Web မှ ဒိုင်းနမစ် ဖတ်ယူရန်)
 @app.get("/api/packages")
 async def get_public_packages():
     db = SessionLocal()
@@ -303,7 +302,6 @@ async def submit_payment(
         db.close()
         return JSONResponse(status_code=403, content={"error": "ဤအကောင့်သည် အသုံးပြုခွင့် ပိတ်ပင်ခံထားရပါသည်"})
 
-    # Dynamic package price search
     pkg = db.query(Package).filter(Package.credits == int(package_type)).first()
     amount = pkg.price_mmk if pkg else (int(package_type) * 500)
 
@@ -334,7 +332,7 @@ async def submit_payment(
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
 
-# ================= ADMIN APIS (FINANCE, USERS, CLAWBACK & PACKAGES) =================
+# ================= ADMIN APIS =================
 
 def verify_admin(request: Request):
     user_email = request.cookies.get("user_email")
@@ -355,7 +353,6 @@ async def get_finance_summary(request: Request):
     today = date.today()
     today_revenue = sum(r.amount for r in approved_reqs if r.created_at and r.created_at.date() == today and r.amount)
 
-    # Method breakdown
     methods = {}
     for r in approved_reqs:
         m = r.payment_method.split(" ")[0]
@@ -392,12 +389,11 @@ async def get_all_users(request: Request):
     db.close()
     return result
 
-# ပုဒ်ရေ အတိုး/အနုတ် လုပ်ဆောင်ပေးသည့် API
 @app.post("/api/admin/users/adjust-credits")
 async def adjust_credits(
     request: Request,
     email: str = Form(...),
-    action_type: str = Form(...),  # 'add' or 'deduct'
+    action_type: str = Form(...),
     amount: int = Form(...)
 ):
     if not verify_admin(request):
@@ -420,7 +416,6 @@ async def adjust_credits(
     db.close()
     return {"status": "success", "message": msg}
 
-# User Account Ban / Unban လုပ်ဆောင်သည့် API
 @app.post("/api/admin/users/toggle-ban")
 async def toggle_ban_user(request: Request, email: str = Form(...)):
     if not verify_admin(request):
@@ -442,7 +437,6 @@ async def toggle_ban_user(request: Request, email: str = Form(...)):
     db.close()
     return {"status": "success", "message": f"{clean_email} အား {status}"}
 
-# Package Settings CRUD APIs
 @app.get("/api/admin/packages")
 async def admin_get_packages(request: Request):
     if not verify_admin(request):
@@ -491,7 +485,6 @@ async def delete_package(request: Request, pkg_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": "Package ဖျက်ပြီးပါပြီ"}
 
-# Requests and Clawback
 @app.get("/api/admin/requests")
 async def get_admin_requests(request: Request):
     if not verify_admin(request):
@@ -544,7 +537,6 @@ async def reject_request(request: Request, req_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာကို ပယ်ဖျက်လိုက်ပါပြီ"}
 
-# မှားယွင်း Approve မိသော ပြေစာမှ ပုဒ်ရေအား အလိုအလျောက် ပြန်နုတ်၍ ပယ်ဖျက်သည့် API (Clawback)
 @app.post("/api/admin/clawback")
 async def clawback_request(request: Request, req_id: int = Form(...)):
     if not verify_admin(request):
@@ -565,7 +557,7 @@ async def clawback_request(request: Request, req_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": f"ပြေစာ #{req_id} ကို ပယ်ဖျက်ပြီး ပုဒ်ရေ {pay_req.package_type} ခုအား အောင်မြင်စွာ ပြန်လည်နုတ်ယူပြီးပါပြီ!"}
 
-# ================= AUDIO & TTS APIS =================
+# ================= AUDIO, TTS & CREDIT SAFE CONSUMPTION =================
 
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
@@ -602,6 +594,7 @@ class BatchTTSRequest(BaseModel):
     pitch: int = 0
     speed: int = 10
 
+# TTS ထုတ်ယူစဉ်တွင် Credit စစ်ဆေးရုံသာ စစ်ဆေးမည် (Credit မဖြတ်ပါ)
 @app.post("/api/tts/batch-generate")
 async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
     user_email = request.cookies.get("user_email")
@@ -621,16 +614,11 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         if user.last_reset_date != today:
             user.daily_credits_left = 2
             user.last_reset_date = today
+            db.commit()
 
-        if user.daily_credits_left > 0:
-            user.daily_credits_left -= 1
-        elif user.package_credits > 0:
-            user.package_credits -= 1
-        else:
+        if (user.daily_credits_left + user.package_credits) <= 0:
             db.close()
             return JSONResponse(status_code=403, content={"error": "ယနေ့အတွက် အခမဲ့ ၂ ပုဒ် ကုန်ဆုံးသွားပါပြီ။ ဆက်လက်သုံးလိုပါက Package ဝယ်ယူပေးပါခင်ဗျာ။"})
-
-        db.commit()
 
     db.close()
 
@@ -666,6 +654,35 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         })
 
     return {"status": "success", "audios": audio_results}
+
+# ★ ဗီဒီယို Render 100% အောင်မြင်မှသာ Credit ၁ ပုဒ် အမှန်တကယ် ဖြတ်တောက်သည့် API
+@app.post("/api/credits/consume")
+async def consume_credit(request: Request):
+    user_email = request.cookies.get("user_email")
+    if not user_email:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == user_email).first()
+    if not user or user.is_banned:
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "Banned or not found"})
+
+    is_admin_user = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
+    if not is_admin_user:
+        today = date.today()
+        if user.last_reset_date != today:
+            user.daily_credits_left = 2
+            user.last_reset_date = today
+
+        if user.daily_credits_left > 0:
+            user.daily_credits_left -= 1
+        elif user.package_credits > 0:
+            user.package_credits -= 1
+        db.commit()
+
+    db.close()
+    return {"status": "success"}
 
 @app.post("/api/preview-single-audio")
 async def preview_single_audio(
