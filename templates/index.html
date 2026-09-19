@@ -327,7 +327,7 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice & Controls Grid & Subtitle Styling -->
+    <!-- STEP 3: Voice, Subtitle Styling & Render -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -358,23 +358,42 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling -->
-      <div class="grid-4" style="background: rgba(11,12,16,0.6); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px;">
-        <div class="form-group">
-          <label>Font Size</label>
-          <input type="number" id="subFontSize" value="24" min="14" max="60" class="glass-input" style="text-align: center;">
+      <!-- Subtitle Styling Controls with Custom Font File -->
+      <div style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
+        <div class="grid-2" style="margin-bottom: 12px;">
+          <div class="form-group">
+            <label><i class="ph-bold ph-text-t"></i> Custom Font File (.ttf / .otf - မြန်မာဖောင့်ဖိုင်)</label>
+            <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff" class="glass-input" style="padding: 6px 10px;">
+          </div>
+          <div class="form-group">
+            <label>Font Size</label>
+            <input type="number" id="subFontSize" value="24" min="14" max="60" class="glass-input" style="text-align: center;">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Font Color</label>
-          <input type="color" id="subFontColor" value="#ffff00" style="width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;">
+
+        <div class="grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Font Color</label>
+            <input type="color" id="subFontColor" value="#ffff00" style="width: 100%; height: 36px; border: none; background: transparent; cursor: pointer;">
+          </div>
+          <div class="form-group">
+            <label>Border Color</label>
+            <input type="color" id="subBorderColor" value="#000000" style="width: 100%; height: 36px; border: none; background: transparent; cursor: pointer;">
+          </div>
+          <div class="form-group">
+            <label>Border Width</label>
+            <input type="number" id="subBorderWidth" value="2" min="1" max="6" class="glass-input" style="text-align: center;">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Border Color</label>
-          <input type="color" id="subBorderColor" value="#000000" style="width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;">
-        </div>
-        <div class="form-group">
-          <label>Border Width</label>
-          <input type="number" id="subBorderWidth" value="2" min="1" max="6" class="glass-input" style="text-align: center;">
+
+        <!-- Subtitle Live Preview Box -->
+        <div class="form-group" style="margin-top: 14px;">
+          <label style="color: #38bdf8; font-weight: 600;"><i class="ph-bold ph-eye"></i> Subtitle Live Preview (စာတန်းထိုး နမူနာပုံစံ)</label>
+          <div id="subPreviewBox" style="background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 90px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px;">
+            <p id="subPreviewText" style="font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffff00; font-weight: bold; text-align: center; padding: 0 16px; user-select: none;">
+              အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
+            </p>
+          </div>
         </div>
       </div>
 
@@ -438,6 +457,7 @@
     let isFFmpegReady = false;
     let currentSegments = [];
     let selectedVideoFile = null;
+    let selectedFontFile = null;
     let srtContent = "";
     let selectedPackageType = "10";
 
@@ -500,6 +520,21 @@
       }
     }
 
+    // Live Subtitle Styling Preview Update
+    function updateSubPreview() {
+      const p = document.getElementById('subPreviewText');
+      if (!p) return;
+      const size = document.getElementById('subFontSize').value || 24;
+      const fColor = document.getElementById('subFontColor').value || '#ffff00';
+      const bColor = document.getElementById('subBorderColor').value || '#000000';
+      const bWidth = document.getElementById('subBorderWidth').value || 2;
+
+      p.style.fontSize = `${size}px`;
+      p.style.color = fColor;
+      p.style.webkitTextStroke = `${bWidth}px ${bColor}`;
+      p.style.textShadow = `-${bWidth}px -${bWidth}px 0 ${bColor}, ${bWidth}px -${bWidth}px 0 ${bColor}, -${bWidth}px ${bWidth}px 0 ${bColor}, ${bWidth}px ${bWidth}px 0 ${bColor}`;
+    }
+
     function triggerAutoSave() {
       const inputs = document.querySelectorAll('.sub-input');
       const lines = Array.from(inputs).map(i => i.value);
@@ -560,7 +595,6 @@
           document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
           document.getElementById('userName').innerText = data.name;
 
-          // Admin User ဖြစ်ပါက Unlimited (အကန့်အသတ်မရှိ) ပြသပေးခြင်း
           if (data.is_admin) {
             document.getElementById('userDailyCredits').innerText = "∞ (Unlimited)";
             document.getElementById('userPkgCredits').innerText = "∞";
@@ -581,6 +615,34 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkUserAuth();
+      updateSubPreview();
+
+      ['subFontSize', 'subFontColor', 'subBorderColor', 'subBorderWidth'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', updateSubPreview);
+          el.addEventListener('change', updateSubPreview);
+        }
+      });
+
+      // Handle Custom Font Upload & Dynamic Apply
+      const fontInput = document.getElementById('fontFileInput');
+      fontInput.addEventListener('change', async (e) => {
+        if (e.target.files.length) {
+          selectedFontFile = e.target.files[0];
+          try {
+            const fontBuffer = await selectedFontFile.arrayBuffer();
+            const customFont = new FontFace("CustomUserFont", fontBuffer);
+            await customFont.load();
+            document.fonts.add(customFont);
+            document.getElementById('subPreviewText').style.fontFamily = "'CustomUserFont', 'Pyidaungsu', sans-serif";
+            showToast(`ဖောင့် '${selectedFontFile.name}' ထည့်သွင်းပြီးပါပြီ!`);
+          } catch (err) {
+            showToast("ဖောင့်ဖိုင် Load လုပ်၍ မရပါ");
+          }
+        }
+      });
+
       const savedKey = localStorage.getItem('assemblyai_key');
       if (savedKey) document.getElementById('apiKey').value = savedKey;
 
