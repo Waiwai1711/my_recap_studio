@@ -6,9 +6,7 @@ assemblyai
 edge-tts
 pydub
 sqlalchemy
-authlib==1.3.1
 httpx
-requests
 itsdangerous
 python-dotenv
 psycopg2-binary
