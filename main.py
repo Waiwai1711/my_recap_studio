@@ -332,7 +332,7 @@ async def submit_payment(
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
 
-# ================= ADMIN APIS =================
+# ================= ADMIN APIS & TELEGRAM DAILY DIGEST =================
 
 def verify_admin(request: Request):
     user_email = request.cookies.get("user_email")
@@ -367,6 +367,38 @@ async def get_finance_summary(request: Request):
         "total_users": users_count,
         "methods": methods
     }
+
+# Telegram နေ့စဉ် အစီရင်ခံစာ ပို့ပေးသည့် API
+@app.post("/api/admin/telegram/daily-digest")
+async def send_daily_digest(request: Request):
+    if not verify_admin(request):
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+    
+    db = SessionLocal()
+    today = date.today()
+    approved_today = db.query(PaymentRequest).filter(PaymentRequest.status == "approved").all()
+    today_revenue = sum(r.amount for r in approved_today if r.created_at and r.created_at.date() == today and r.amount)
+    pending_count = db.query(PaymentRequest).filter(PaymentRequest.status == "pending").count()
+    users_count = db.query(User).count()
+    db.close()
+
+    msg = (
+        f"📊 *DAILY REVENUE & SUMMARY DIGEST*\n\n"
+        f"📅 Date: `{today}`\n"
+        f"💰 ယနေ့ ရောင်းရငွေ: *{today_revenue:,} Ks*\n"
+        f"⏳ Pending ပြေစာ: *{pending_count} စောင်*\n"
+        f"👥 စုစုပေါင်း User: *{users_count} ဦး*\n"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                data={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "Markdown"}
+            )
+        return {"status": "success", "message": "Daily digest ပို့ပြီးပါပြီ"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/admin/users")
 async def get_all_users(request: Request):
@@ -557,7 +589,7 @@ async def clawback_request(request: Request, req_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": f"ပြေစာ #{req_id} ကို ပယ်ဖျက်ပြီး ပုဒ်ရေ {pay_req.package_type} ခုအား အောင်မြင်စွာ ပြန်လည်နုတ်ယူပြီးပါပြီ!"}
 
-# ================= AUDIO & MULTI-SPEAKER TTS =================
+# ================= AUDIO DIARIZATION & BATCH TTS =================
 
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
@@ -568,19 +600,33 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         f.write(await audio.read())
 
     try:
-        config = aai.TranscriptionConfig(language_detection=True)
+        # Speaker Diarization ဖွင့်လှစ်ထားခြင်း
+        config = aai.TranscriptionConfig(language_detection=True, speaker_labels=True)
         transcriber = aai.Transcriber()
         transcript = transcriber.transcribe(temp_audio, config=config)
 
         segments = []
-        for idx, s in enumerate(transcript.get_sentences()):
-            segments.append({
-                "id": idx + 1,
-                "start": s.start,
-                "end": s.end,
-                "duration": round((s.end - s.start) / 1000, 2),
-                "text": s.text
-            })
+        # Utterance အလိုက် စကားပြောသူ (Speaker) ခွဲထုတ်ခြင်း
+        if transcript.utterances:
+            for idx, u in enumerate(transcript.utterances):
+                segments.append({
+                    "id": idx + 1,
+                    "start": u.start,
+                    "end": u.end,
+                    "duration": round((u.end - u.start) / 1000, 2),
+                    "speaker": u.speaker, # Speaker A, Speaker B ...
+                    "text": u.text
+                })
+        else:
+            for idx, s in enumerate(transcript.get_sentences()):
+                segments.append({
+                    "id": idx + 1,
+                    "start": s.start,
+                    "end": s.end,
+                    "duration": round((s.end - s.start) / 1000, 2),
+                    "speaker": "A",
+                    "text": s.text
+                })
         return {"segments": segments}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
