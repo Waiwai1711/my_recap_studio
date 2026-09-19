@@ -49,7 +49,7 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
-# Telegram Bot သို့ Inline Buttons ဖြင့် Alert ပို့ခြင်း
+# Telegram Bot Alert
 async def send_telegram_payment_alert(req_id: int, user_email: str, package_type: str, amount: int, payment_method: str, photo_path: str):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return None
@@ -90,7 +90,6 @@ async def send_telegram_payment_alert(req_id: int, user_email: str, package_type
         pass
     return None
 
-# Telegram Inline Buttons Webhook
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -323,6 +322,69 @@ async def submit_payment(
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
 
+# ================= ADMIN APIS (USERS, REQUESTS & POS) =================
+
+@app.get("/api/admin/users")
+async def get_all_users(request: Request):
+    user_email = request.cookies.get("user_email")
+    if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    db = SessionLocal()
+    users = db.query(User).order_by(User.id.desc()).all()
+    result = []
+    for u in users:
+        result.append({
+            "id": u.id,
+            "email": u.email,
+            "name": u.name,
+            "avatar": u.avatar,
+            "daily_credits": u.daily_credits_left,
+            "package_credits": u.package_credits,
+            "is_admin": u.is_admin
+        })
+    db.close()
+    return result
+
+# POS System: Admin ကိုယ်တိုင် အပြင်မှဝယ်ယူသူများကို ပုဒ်ရေတိုက်ရိုက်သွင်းပေးသည့် API
+@app.post("/api/admin/pos/topup")
+async def pos_topup(
+    request: Request,
+    user_email: str = Form(...),
+    credits: int = Form(...),
+    note: str = Form("")
+):
+    admin_cookie = request.cookies.get("user_email")
+    if not admin_cookie or admin_cookie.strip().lower() != ADMIN_EMAIL.lower():
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    clean_email = user_email.strip().lower()
+    if credits <= 0:
+        return JSONResponse(status_code=400, content={"error": "Credits ပမာဏ အနည်းဆုံး ၁ ပုဒ် ဖြစ်ရပါမည်"})
+
+    db = SessionLocal()
+    target_user = db.query(User).filter(User.email == clean_email).first()
+    if not target_user:
+        db.close()
+        return JSONResponse(status_code=404, content={"error": f"'{clean_email}' ဖြင့် အကောင့်ဖွင့်ထားသော User မရှိသေးပါ"})
+
+    target_user.package_credits += credits
+
+    # POS မှ အရောင်းမှတ်တမ်းအဖြစ် သိမ်းဆည်းခြင်း
+    pos_record = PaymentRequest(
+        user_email=clean_email,
+        package_type=str(credits),
+        amount=0,
+        payment_method=f"POS Direct Top-up ({note.strip() or 'Manual'})",
+        slip_url="",
+        status="approved"
+    )
+    db.add(pos_record)
+    db.commit()
+    db.close()
+
+    return {"status": "success", "message": f"{clean_email} ထံသို့ {credits} ပုဒ် အောင်မြင်စွာ ထည့်သွင်းပေးပြီးပါပြီ!"}
+
 @app.get("/api/admin/requests")
 async def get_admin_requests(request: Request):
     user_email = request.cookies.get("user_email")
@@ -380,6 +442,8 @@ async def reject_request(request: Request, req_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာကို ပယ်ဖျက်လိုက်ပါပြီ"}
 
+# ================= AUDIO & TTS APIS =================
+
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -415,7 +479,6 @@ class BatchTTSRequest(BaseModel):
     pitch: int = 0
     speed: int = 10
 
-# ADMIN အား UNLIMITED ပေးထားသော TTS GENERATOR ENDPOINT
 @app.post("/api/tts/batch-generate")
 async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
     user_email = request.cookies.get("user_email")
@@ -430,7 +493,6 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
 
     is_admin_user = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
 
-    # Admin မဟုတ်မှသာ Credit စစ်ဆေးမည် (Admin ဖြစ်ပါက Unlimited ထုတ်နိုင်သည်)
     if not is_admin_user:
         today = date.today()
         if user.last_reset_date != today:
