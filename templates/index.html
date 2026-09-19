@@ -3,19 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Recap Studio Pro - Client-Side Engine</title>
+  <title>Recap Studio Pro</title>
   
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- Client-Side FFmpeg.wasm -->
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
-  <!-- External CDN မလိုဘဲ ၁၀၀% အလုပ်လုပ်မည့် Pure Embedded CSS -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -30,18 +27,32 @@
     ::-webkit-scrollbar-track { background: #0b0c10; }
     ::-webkit-scrollbar-thumb { background: #272a37; border-radius: 4px; }
 
+    /* Login Gate Modal (Login မဝင်ရသေးပါက ပေါ်နေမည့် Screen) */
+    #loginGate {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(11, 12, 16, 0.95);
+      backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .login-box {
+      background: #14161f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 36px 28px;
+      max-width: 400px; width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+
     .header {
       height: 64px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(20, 22, 31, 0.85);
       backdrop-filter: blur(12px);
-      position: sticky;
-      top: 0;
-      z-index: 40;
+      position: sticky; top: 0; z-index: 40;
       padding: 0 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand-icon {
@@ -54,30 +65,20 @@
     .brand p { font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace; }
 
     .container {
-      max-width: 900px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+      max-width: 900px; width: 100%;
+      margin: 0 auto; padding: 24px 16px;
+      display: flex; flex-direction: column; gap: 20px;
     }
 
     .glass-card {
       background: rgba(20, 22, 31, 0.75);
       backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 16px; padding: 20px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
 
-    .card-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
+    .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .card-title-left { display: flex; align-items: center; gap: 8px; }
     .badge-num {
       width: 24px; height: 24px; border-radius: 50%;
@@ -89,9 +90,7 @@
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-    @media (max-width: 640px) {
-      .grid-2, .grid-4 { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 640px) { .grid-2, .grid-4 { grid-template-columns: 1fr; } }
 
     .form-group { display: flex; flex-direction: column; gap: 6px; }
     .form-group label { font-size: 11px; font-weight: 500; color: #a1a1aa; }
@@ -99,13 +98,8 @@
     .glass-input {
       background: rgba(11, 12, 16, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #f4f4f5;
-      padding: 10px 12px;
-      border-radius: 10px;
-      font-size: 12px;
-      outline: none;
-      width: 100%;
-      transition: all 0.2s;
+      color: #f4f4f5; padding: 10px 12px;
+      border-radius: 10px; font-size: 12px; outline: none; width: 100%;
     }
     .glass-input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
     textarea.glass-input { resize: none; font-family: 'JetBrains Mono', monospace; line-height: 1.5; }
@@ -113,70 +107,32 @@
     .dropzone {
       border: 2px dashed rgba(255, 255, 255, 0.15);
       background: rgba(11, 12, 16, 0.4);
-      border-radius: 12px;
-      padding: 24px 16px;
-      text-align: center;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
+      border-radius: 12px; padding: 24px 16px;
+      text-align: center; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
     .dropzone:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
     .dropzone i { font-size: 26px; color: #71717a; }
     .dropzone p { font-size: 12px; color: #d4d4d8; font-weight: 500; }
 
     .btn {
-      border: none;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 12px 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s;
+      border: none; border-radius: 12px; font-size: 12px; font-weight: 600;
+      cursor: pointer; padding: 12px 16px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      text-decoration: none;
     }
-    .btn-blue {
-      background: linear-gradient(135deg, #2563eb, #0284c7);
-      color: #fff;
-      width: 100%;
-      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25);
-    }
-    .btn-blue:hover { opacity: 0.95; transform: translateY(-1px); }
-    .btn-purple {
-      background: #9333ea;
-      color: #fff;
-      width: 100%;
-      margin-top: 12px;
-    }
-    .btn-purple:hover { background: #a855f7; }
+    .btn-blue { background: linear-gradient(135deg, #2563eb, #0284c7); color: #fff; width: 100%; }
+    .btn-purple { background: #9333ea; color: #fff; width: 100%; margin-top: 12px; }
     .btn-green {
       background: linear-gradient(135deg, #059669, #0d9488);
-      color: #fff;
-      width: 100%;
-      padding: 16px;
-      font-size: 14px;
-      box-shadow: 0 6px 20px rgba(5, 150, 105, 0.25);
+      color: #fff; width: 100%; padding: 16px; font-size: 14px;
     }
-    .btn-green:hover { opacity: 0.95; transform: translateY(-1px); }
-    .btn-ghost {
-      background: rgba(56, 189, 248, 0.1);
-      color: #38bdf8;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 11px;
-    }
-    .btn-ghost:hover { background: rgba(56, 189, 248, 0.2); }
+    .btn-ghost { background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 6px 12px; border-radius: 8px; }
 
     .toggles { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #d4d4d8; }
     .toggle-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-    .toggle-item input[type="checkbox"] { accent-color: #0ea5e9; width: 16px; height: 16px; }
 
-    /* Modal Overlay */
+    /* Modal */
     .modal-overlay {
       position: fixed; inset: 0; z-index: 100;
       background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
@@ -187,29 +143,18 @@
     .modal-card {
       background: #14161f; border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 24px; padding: 24px; max-width: 340px; width: 100%;
-      text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      text-align: center;
     }
     .circle-wrap { position: relative; width: 100px; height: 100px; margin: 12px auto; }
     .circle-progress {
       stroke-dasharray: 283; stroke-dashoffset: 283;
       transition: stroke-dashoffset 0.25s; transform: rotate(-90deg); transform-origin: 50% 50%;
     }
-    .circle-text {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-    }
+    .circle-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .circle-text .percent { font-size: 20px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
-    .circle-text .label { font-size: 8px; color: #71717a; text-transform: uppercase; }
 
-    #toastContainer {
-      position: fixed; top: 16px; right: 16px; z-index: 110;
-      display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-    }
-    .toast {
-      background: rgba(20, 22, 31, 0.95); border: 1px solid rgba(255,255,255,0.1);
-      padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3); pointer-events: auto;
-    }
+    #toastContainer { position: fixed; top: 16px; right: 16px; z-index: 110; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -217,6 +162,25 @@
 <body>
 
   <div id="toastContainer"></div>
+
+  <!-- LOGIN GATE: Login မဝင်ရသေးပါက ဤ Card သာ ပေါ်နေမည် -->
+  <div id="loginGate">
+    <div class="login-box">
+      <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; box-shadow: 0 0 20px rgba(14,165,233,0.4);">
+        <i class="ph-bold ph-lightning" style="font-size: 24px; color: #fff;"></i>
+      </div>
+      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
+      <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.6;">
+        AI Narrator Auto-Speed နှင့် Video Dubbing ပြုလုပ်ရန် Google Account ဖြင့် Login ဝင်ပေးပါခင်ဗျာ။
+      </p>
+      <a href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 15px rgba(255,255,255,0.15);">
+        <i class="ph-bold ph-google-logo" style="font-size: 18px; color: #ea4335;"></i> Sign in with Google
+      </a>
+      <p style="font-size: 11px; color: #10b981; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
+        🎁 နေ့စဉ် အခမဲ့ ၂ ပုဒ် အသုံးပြုခွင့် ရရှိပါမည်
+      </p>
+    </div>
+  </div>
 
   <!-- Progress Modal -->
   <div id="loadingModal" class="modal-overlay">
@@ -228,7 +192,7 @@
         </svg>
         <div class="circle-text">
           <span id="modalPercent" class="percent">0%</span>
-          <span class="label">Rendering</span>
+          <span style="font-size: 8px; color: #71717a; text-transform: uppercase;">Rendering</span>
         </div>
       </div>
       <h3 id="modalTitle" style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-top: 6px;">စတင်လုပ်ဆောင်နေပါသည်</h3>
@@ -248,22 +212,18 @@
       </div>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <a id="loginBtn" href="/login/google" class="btn" style="background: #fff; color: #18181b; padding: 6px 12px; border-radius: 8px;">
-        <i class="ph-bold ph-google-logo"></i> Login with Google
-      </a>
-      <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 8px;">
-        <img id="userAvatar" style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #38bdf8; object-fit: cover;" src="" alt="Avatar">
-        <div style="text-align: left;">
-          <p id="userName" style="font-size: 11px; font-weight: bold; color: #e4e4e7;">User</p>
-          <p style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">Free: <span id="userDailyCredits">0</span></p>
-        </div>
-        <a href="/api/auth/logout" title="Logout" style="color: #71717a; text-decoration: none; padding-left: 6px;"><i class="ph-bold ph-sign-out"></i></a>
+    <!-- User Profile Header -->
+    <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 10px;">
+      <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" src="" alt="Avatar">
+      <div style="text-align: left;">
+        <p id="userName" style="font-size: 12px; font-weight: bold; color: #e4e4e7;">User</p>
+        <p style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">Free: <span id="userDailyCredits">0</span></p>
       </div>
+      <a href="/api/auth/logout" title="Logout" style="color: #ef4444; margin-left: 8px; font-size: 16px;"><i class="ph-bold ph-sign-out"></i></a>
     </div>
   </header>
 
-  <!-- Container -->
+  <!-- Main Content (Login ဝင်ပြီးမှသာ အသုံးပြုနိုင်မည်) -->
   <main class="container">
 
     <!-- STEP 1: Video File & Audio Extraction -->
@@ -289,7 +249,7 @@
       <div id="dropZone" class="dropzone">
         <input type="file" id="videoFileInput" accept="video/*" class="hidden">
         <i class="ph-bold ph-video"></i>
-        <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် Drag ဆွဲထည့်ပါ</p>
+        <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
       <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
@@ -439,18 +399,26 @@
       document.getElementById('loadingModal').classList.remove('active');
     }
 
+    // Login စစ်ဆေးခြင်း
     async function checkUserAuth() {
       try {
         const res = await fetch("/api/user/me");
         const data = await res.json();
         if (data.logged_in) {
-          document.getElementById('loginBtn').classList.add('hidden');
+          // Login ဝင်ထားပါက Login Gate ကို ဖယ်ရှားပေးမည်
+          document.getElementById('loginGate').classList.add('hidden');
           document.getElementById('userProfile').classList.remove('hidden');
           document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
           document.getElementById('userName').innerText = data.name;
           document.getElementById('userDailyCredits').innerText = `${data.daily_credits} ပုဒ်`;
+        } else {
+          // Login မဝင်ရသေးပါက Login Gate ကို ပြသထားမည်
+          document.getElementById('loginGate').classList.remove('hidden');
+          document.getElementById('userProfile').classList.add('hidden');
         }
-      } catch (e) {}
+      } catch (e) {
+        document.getElementById('loginGate').classList.remove('hidden');
+      }
     }
 
     async function loadFFmpeg() {
