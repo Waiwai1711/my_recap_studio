@@ -361,23 +361,31 @@
         </div>
       </div>
 
-      <!-- Highlight Clip Hook Feature -->
-      <div class="highlight-card">
-        <div style="text-align: left;">
-          <div style="display: flex; align-items: center; gap: 6px; color: #10b981; font-weight: 700; font-size: 13px;">
-            <i class="ph-bold ph-sparkle"></i> Video အစတွင် 4.0s Highlight Clip ထည့်မည်
+      <!-- Highlight Hook Clip & Outro Card Features -->
+      <div class="grid-2">
+        <div class="highlight-card" style="margin-bottom: 0;">
+          <div style="text-align: left;">
+            <div style="display: flex; align-items: center; gap: 6px; color: #10b981; font-weight: 700; font-size: 12px;">
+              <i class="ph-bold ph-sparkle"></i> 4.0s Highlight Hook Clip
+            </div>
+            <p style="font-size: 10px; color: #a1a1aa; margin-top: 2px;">ဗီဒီယိုအစတွင် Teaser ထည့်မည်</p>
           </div>
-          <p style="font-size: 11px; color: #a1a1aa; margin-top: 4px;">
-            ဗီဒီယို၏ အလယ်မှ အကောင်းဆုံးအပိုင်းကို အစတွင် Hook Teaser အဖြစ် အလိုအလျောက် ထည့်သွင်းပေးပါမည်
-          </p>
-        </div>
-        <label class="toggle-item" style="cursor: pointer;">
           <input type="checkbox" id="enableHighlightCheck" checked style="width: 18px; height: 18px; accent-color: #10b981;">
-        </label>
+        </div>
+
+        <div class="highlight-card" style="margin-bottom: 0; background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.3);">
+          <div style="text-align: left;">
+            <div style="display: flex; align-items: center; gap: 6px; color: #fbbf24; font-weight: 700; font-size: 12px;">
+              <i class="ph-bold ph-cards"></i> "Part 2 Coming Soon" Outro
+            </div>
+            <p style="font-size: 10px; color: #a1a1aa; margin-top: 2px;">ဗီဒီယိုအဆုံးတွင် ကတ်ပြားထည့်မည်</p>
+          </div>
+          <input type="checkbox" id="enableOutroCheck" checked style="width: 18px; height: 18px; accent-color: #fbbf24;">
+        </div>
       </div>
 
       <!-- Watermark Settings with Opacity Slider -->
-      <div class="grid-3" style="background: rgba(11,12,16,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
+      <div class="grid-3" style="background: rgba(11,12,16,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-top: 12px; margin-bottom: 14px;">
         <div class="form-group">
           <label><i class="ph-bold ph-image"></i> Page Logo / Watermark (PNG)</label>
           <input type="file" id="watermarkInput" accept="image/png,image/jpeg" class="glass-input" style="padding: 6px 10px;">
@@ -448,10 +456,8 @@
           </div>
 
           <div id="subPreviewBox" style="background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; height: 180px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-            <!-- Real Uploaded Video as Dynamic Background -->
             <video id="previewBgVideo" muted loop playsinline style="position: absolute; width: 100%; height: 100%; object-fit: contain; opacity: 0.65; pointer-events: none;"></video>
             
-            <!-- Real-time Positioned Subtitle Text -->
             <p id="subPreviewText" contenteditable="true" spellcheck="false" style="position: absolute; bottom: 10%; width: 90%; font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; margin: 0; outline: none; cursor: text; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.4; z-index: 10;">
               အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
             </p>
@@ -502,7 +508,7 @@
       </div>
     </div>
 
-    <!-- STEP 5: Final Export & Thumbnail Generator -->
+    <!-- STEP 5: Final Export, Thumbnail & TikTok 1-Min Parts Splitter -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -518,8 +524,11 @@
         <!-- Action Buttons -->
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 16px;">
           <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
-            <i class="ph-bold ph-download-simple"></i> Download Video
+            <i class="ph-bold ph-download-simple"></i> Download Full Video
           </a>
+          <button id="btnSplitParts" onclick="splitVideoIntoParts()" class="btn btn-purple" style="width: auto; margin-top:0;">
+            <i class="ph-bold ph-scissors"></i> TikTok 1-Min Parts ပိုင်းထုတ်မည်
+          </button>
           <button id="btnDownloadSRT" onclick="downloadSRT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px;">
             <i class="ph-bold ph-subtitles"></i> Download .SRT
           </button>
@@ -527,6 +536,8 @@
             <i class="ph-bold ph-file-text"></i> Download Script (.TXT)
           </button>
         </div>
+
+        <div id="splitPartsContainer" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px;"></div>
 
         <!-- ★ COVER / THUMBNAIL AUTO-GENERATOR SECTION ★ -->
         <div style="background: rgba(11,12,16,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; text-align: left;">
@@ -930,7 +941,6 @@
           videoPrev.src = vUrl;
           videoPrev.classList.remove('hidden');
 
-          // Preview Background တွင် ဗီဒီယို တိုက်ရိုက် ထည့်သွင်းပြသခြင်း
           if (bgVideo) {
             bgVideo.src = vUrl;
             bgVideo.play().catch(()=>{});
@@ -955,7 +965,7 @@
         const audioData = ffmpeg.FS('readFile', 'extracted_audio.mp3');
         const audioBlob = new Blob([audioData.buffer], { type: 'audio/mp3' });
 
-        updateGauge(50, "AssemblyAI သို့ ပေးပို့၍ စာသားထုတ်ယူနေပါသည်...");
+        updateGauge(50, "AssemblyAI သို့ ပေးပို့၍ Diarization ဖြင့် ဇာတ်ကောင်ခွဲထုတ်နေပါသည်...");
         const formData = new FormData();
         formData.append("api_key", apiKey);
         formData.append("audio", audioBlob, "extracted.mp3");
@@ -965,10 +975,10 @@
         if (!res.ok) throw new Error(data.error);
 
         currentSegments = data.segments;
-        document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) ${s.text}`).join("\n");
+        document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) [Speaker ${s.speaker||'A'}] ${s.text}`).join("\n");
         updateGauge(100);
         hideProgress();
-        showToast(`စာကြောင်း ${currentSegments.length} ခု ရရှိပါပြီ!`);
+        showToast(`ဇာတ်ကောင်အလိုက် စာကြောင်း ${currentSegments.length} ခု ရရှိပါပြီ!`);
       } catch (err) {
         hideProgress();
         showToast(err.message);
@@ -1003,6 +1013,7 @@ INPUTS:
       }
     }
 
+    // ★ AssemblyAI Diarization အသံနားထောင်ခွဲခြားမှုဖြင့် Auto-Select Speaker ပုံစံ ★
     function renderSubEditor(translations, savedVoices = []) {
       const container = document.getElementById('linesContainer');
       container.innerHTML = "";
@@ -1012,13 +1023,20 @@ INPUTS:
         const row = document.createElement('div');
         row.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(11,12,16,0.6); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);";
         
-        const voiceVal = savedVoices[i] || defaultVoice;
+        // Speaker B ဖြစ်ပါက မိန်းမသံ (Nilar)၊ Speaker A သို့မဟုတ် အခြားဖြစ်ပါက Thiha အလိုအလျောက် သတ်မှတ်ခြင်း
+        let autoDetectedVoice = defaultVoice;
+        if (seg.speaker === 'B') {
+          autoDetectedVoice = "my-MM-NilarNeural";
+        } else if (seg.speaker === 'A') {
+          autoDetectedVoice = "my-MM-ThihaNeural";
+        }
+        const voiceVal = savedVoices[i] || autoDetectedVoice;
 
         row.innerHTML = `
-          <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; width: 55px; flex-shrink: 0;">[${seg.id}] (${seg.duration}s)</span>
+          <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; width: 65px; flex-shrink: 0;">[${seg.id}] (${seg.duration}s)</span>
           <select class="sub-voice-select" onchange="triggerAutoSave()" style="background:#14161f; color:#a78bfa; border:1px solid rgba(255,255,255,0.1); border-radius:6px; font-size:11px; padding:4px 6px; outline:none; cursor:pointer;">
-            <option value="my-MM-ThihaNeural" ${voiceVal.includes('Thiha') ? 'selected' : ''}>👨 ကျား (Thiha)</option>
-            <option value="my-MM-NilarNeural" ${voiceVal.includes('Nilar') ? 'selected' : ''}>👩 မ (Nilar)</option>
+            <option value="my-MM-ThihaNeural" ${voiceVal.includes('Thiha') ? 'selected' : ''}>👨 Spk ${seg.speaker||'A'} (Thiha)</option>
+            <option value="my-MM-NilarNeural" ${voiceVal.includes('Nilar') ? 'selected' : ''}>👩 Spk ${seg.speaker||'B'} (Nilar)</option>
           </select>
           <input type="text" class="sub-input" oninput="triggerAutoSave()" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${translations[i] || ''}">
           <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(translations[i] || '')}', this)" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
@@ -1249,6 +1267,7 @@ INPUTS:
       const isReelsEnabled = document.getElementById('enableReelsCheck').checked;
       const isAutoSpeedEnabled = document.getElementById('autoSpeedCheck').checked;
       const isHighlightEnabled = document.getElementById('enableHighlightCheck').checked;
+      const isOutroEnabled = document.getElementById('enableOutroCheck').checked;
       const isTurboFast = document.getElementById('turboFastCheck').checked;
 
       showProgress("TTS အသံထုတ်ယူနေပါသည်", "ဇာတ်ကောင်အလိုက် Multi-Speaker အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
@@ -1410,6 +1429,47 @@ INPUTS:
       }
     }
 
+    // ===== BATCH SPLITTER (1-MINUTE TIKTOK PARTS CUTTER) =====
+    async function splitVideoIntoParts() {
+      const player = document.getElementById('videoPlayer');
+      if (!player || !player.duration) return showToast("ဗီဒီယို အရင် Render လုပ်ပါ!");
+
+      const container = document.getElementById('splitPartsContainer');
+      container.innerHTML = "";
+      showProgress("TikTok Parts ခွဲထုတ်နေပါသည်", "၁ မိနစ်စီ အပိုင်းလိုက် ခွဲခြမ်းနေပါသည်...");
+
+      const partDuration = 60; // 60s
+      const totalParts = Math.ceil(player.duration / partDuration);
+
+      try {
+        for (let i = 0; i < totalParts; i++) {
+          const start = i * partDuration;
+          const outPartName = `recap_part_${i + 1}.mp4`;
+
+          updateGauge(((i + 1) / totalParts) * 100, `Part ${i + 1} ထုတ်လုပ်နေပါသည်...`);
+          await ffmpeg.run('-ss', `${start}`, '-i', 'output.mp4', '-t', `${partDuration}`, '-c', 'copy', outPartName);
+
+          const partData = ffmpeg.FS('readFile', outPartName);
+          const partBlob = new Blob([partData.buffer], { type: 'video/mp4' });
+          const partUrl = URL.createObjectURL(partBlob);
+
+          const btn = document.createElement('a');
+          btn.href = partUrl;
+          btn.download = outPartName;
+          btn.className = "btn btn-ghost";
+          btn.style.cssText = "padding: 8px 12px; font-size: 11px; border: 1px solid rgba(255,255,255,0.2);";
+          btn.innerHTML = `<i class="ph-bold ph-download-simple"></i> Download Part ${i + 1}`;
+          container.appendChild(btn);
+        }
+
+        hideProgress();
+        showToast(`ဗီဒီယိုကို အပိုင်း ${totalParts} ပိုင်းအဖြစ် အောင်မြင်စွာ ခွဲထုတ်ပြီးပါပြီ!`);
+      } catch (e) {
+        hideProgress();
+        showToast("Parts ခွဲထုတ်၍ မရပါ: " + e.message);
+      }
+    }
+
     // ===== THUMBNAIL / COVER GENERATOR LOGIC =====
     function updateThumbnailPreview() {
       const player = document.getElementById('videoPlayer');
@@ -1428,17 +1488,14 @@ INPUTS:
       canvas.height = player.videoHeight;
       const ctx = canvas.getContext('2d');
 
-      // Draw current video frame
       ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
-      // Draw Catchy Title Banner
       const titleText = document.getElementById('thumbTitleInput').value.trim();
       if (titleText) {
         const fontSize = Math.max(36, Math.floor(canvas.width / 16));
         ctx.font = `bold ${fontSize}px 'CustomUserFont', 'Pyidaungsu', sans-serif`;
         ctx.textAlign = "center";
 
-        // Semi-transparent gradient bar behind title
         const gradHeight = fontSize * 2.2;
         const gradY = canvas.height * 0.15;
         const grad = ctx.createLinearGradient(0, gradY, 0, gradY + gradHeight);
@@ -1447,16 +1504,14 @@ INPUTS:
         ctx.fillStyle = grad;
         ctx.fillRect(0, gradY, canvas.width, gradHeight);
 
-        // Text with thick stroke & shadow
         ctx.lineWidth = Math.max(4, Math.floor(fontSize / 8));
         ctx.strokeStyle = "#000000";
         ctx.strokeText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
 
-        ctx.fillStyle = "#facc15"; // Eye-catching Golden Yellow
+        ctx.fillStyle = "#facc15";
         ctx.fillText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
       }
 
-      // Download snapshot as PNG
       const imgUrl = canvas.toDataURL("image/png");
       const a = document.createElement('a');
       a.href = imgUrl;
