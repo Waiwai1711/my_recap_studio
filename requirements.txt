@@ -4,9 +4,11 @@ python-multipart
 jinja2
 assemblyai
 edge-tts
-mutagen
+pydub
 sqlalchemy
+authlib
 httpx
+requests
 itsdangerous
 python-dotenv
 psycopg2-binary
