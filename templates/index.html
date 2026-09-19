@@ -175,20 +175,7 @@
         <button onclick="closePackageModal()" style="background: transparent; border: none; color: #71717a; font-size: 20px; cursor: pointer;">✕</button>
       </div>
 
-      <div class="pkg-grid">
-        <div class="pkg-item selected" onclick="selectPkg('10', 5000, this)">
-          <h4>၁၀ ပုဒ်</h4>
-          <p>5,000 Ks</p>
-        </div>
-        <div class="pkg-item" onclick="selectPkg('20', 10000, this)">
-          <h4>၂၀ ပုဒ်</h4>
-          <p>10,000 Ks</p>
-        </div>
-        <div class="pkg-item" onclick="selectPkg('30', 15000, this)">
-          <h4>၃၀ ပုဒ်</h4>
-          <p>15,000 Ks</p>
-        </div>
-      </div>
+      <div class="pkg-grid"></div>
 
       <div style="background: rgba(11,12,16,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
         <p style="color: #38bdf8; font-weight: bold; margin-bottom: 4px;">ငွေလွှဲရမည့် အကောင့်များ -</p>
@@ -779,7 +766,6 @@
       });
     }
 
-    // ★ စမ်းသပ်ချိန်တွင် ဗီဒီယို မူရင်းအသံ ပိတ်ထားသည့် Preview Function
     async function previewAudioSync(startTimeSec, encodedText) {
       const text = decodeURIComponent(encodedText).trim();
       if (!text) return showToast("စာသား မရှိသေးပါ!");
@@ -792,7 +778,7 @@
       const vPrev = document.getElementById('inputVideoPreview');
       if (vPrev && !vPrev.classList.contains('hidden')) {
         vPrev.currentTime = startTimeSec;
-        vPrev.muted = true; // ဗီဒီယို မူရင်းအသံကို လုံးဝ ပိတ်ထားမည် (Mute)
+        vPrev.muted = true;
         vPrev.play();
       }
 
@@ -820,36 +806,91 @@
       }
     }
 
-    // Silence Buffer Generator
-    function createSilenceWav(durationSec, sampleRate = 24000) {
-      const numChannels = 1;
-      const bytesPerSample = 2;
-      const blockAlign = numChannels * bytesPerSample;
-      const byteRate = sampleRate * blockAlign;
-      const numSamples = Math.max(1, Math.floor(durationSec * sampleRate));
-      const dataSize = numSamples * blockAlign;
-      const buffer = new ArrayBuffer(44 + dataSize);
-      const view = new DataView(buffer);
+    function audioBufferToWav(buffer) {
+      const numOfChan = buffer.numberOfChannels;
+      const length = buffer.length * numOfChan * 2 + 44;
+      const out = new DataView(new ArrayBuffer(length));
+      const channels = [];
+      let offset = 0;
+      let pos = 0;
 
-      const writeStr = (offset, str) => {
-        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-      };
+      function setUint16(data) { out.setUint16(pos, data, true); pos += 2; }
+      function setUint32(data) { out.setUint32(pos, data, true); pos += 4; }
 
-      writeStr(0, 'RIFF');
-      view.setUint32(4, 36 + dataSize, true);
-      writeStr(8, 'WAVE');
-      writeStr(12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, numChannels, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, byteRate, true);
-      view.setUint16(32, blockAlign, true);
-      view.setUint16(34, 16, true);
-      writeStr(36, 'data');
-      view.setUint32(40, dataSize, true);
+      setUint32(0x46464952);
+      setUint32(length - 8);
+      setUint32(0x45564157);
+      setUint32(0x20746d66);
+      setUint32(16);
+      setUint16(1);
+      setUint16(numOfChan);
+      setUint32(buffer.sampleRate);
+      setUint32(buffer.sampleRate * 2 * numOfChan);
+      setUint16(numOfChan * 2);
+      setUint16(16);
+      setUint32(0x61746164);
+      setUint32(length - pos - 4);
 
-      return new Uint8Array(buffer);
+      for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+
+      while (offset < buffer.length) {
+        for (let i = 0; i < numOfChan; i++) {
+          let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+          sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+          out.setInt16(pos, sample, true);
+          pos += 2;
+        }
+        offset++;
+      }
+      return new Uint8Array(out.buffer);
+    }
+
+    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmVol) {
+      let totalSec = 10;
+      if (segments.length > 0) {
+        const last = segments[segments.length - 1];
+        totalSec = Math.max(totalSec, (last.end / 1000) + 5);
+      }
+      const vPrev = document.getElementById('inputVideoPreview');
+      if (vPrev && vPrev.duration) totalSec = Math.max(totalSec, vPrev.duration + 2);
+
+      const sampleRate = 44100;
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(totalSec * sampleRate), sampleRate);
+
+      for (let i = 0; i < ttsData.audios.length; i++) {
+        const item = ttsData.audios[i];
+        if (!item.audio_b64) continue;
+        const seg = segments[i];
+        const startSec = (seg && typeof seg.start === "number") ? (seg.start / 1000) : (i * 2);
+
+        const bytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
+        try {
+          const buf = await actx.decodeAudioData(bytes.buffer.slice(0));
+          const src = offlineCtx.createBufferSource();
+          src.buffer = buf;
+          src.connect(offlineCtx.destination);
+          src.start(startSec);
+        } catch (e) {}
+      }
+
+      if (bgmFile) {
+        try {
+          const bgmBuf = await actx.decodeAudioData(await bgmFile.arrayBuffer());
+          const bgmSrc = offlineCtx.createBufferSource();
+          bgmSrc.buffer = bgmBuf;
+          bgmSrc.loop = true;
+          const gain = offlineCtx.createGain();
+          gain.gain.value = (bgmVol / 100);
+          bgmSrc.connect(gain);
+          gain.connect(offlineCtx.destination);
+          bgmSrc.start(0);
+        } catch (e) {}
+      }
+
+      actx.close();
+      const rendered = await offlineCtx.startRendering();
+      return audioBufferToWav(rendered);
     }
 
     function srtToVtt(srtText) {
@@ -881,98 +922,50 @@
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error);
 
-        updateGauge(30, "အသံနှင့် ဇာတ်လမ်း အချိန်ကိုက် ညှိနေပါသည်...");
-
-        let concatAudioList = "";
-        let srtLines = [];
-        let currentTimelineMs = 0;
-
-        for (let i = 0; i < ttsData.audios.length; i++) {
-          const item = ttsData.audios[i];
-          const seg = currentSegments[i];
-          const targetStartMs = (seg && typeof seg.start === "number") ? seg.start : currentTimelineMs;
-
-          if (targetStartMs > currentTimelineMs) {
-            const gapSec = (targetStartMs - currentTimelineMs) / 1000;
-            if (gapSec >= 0.05) {
-              const silBytes = createSilenceWav(gapSec, 24000);
-              const silWav = `sil_${i}.wav`;
-              const silMp3 = `sil_${i}.mp3`;
-              ffmpeg.FS('writeFile', silWav, silBytes);
-              await ffmpeg.run('-i', silWav, '-acodec', 'libmp3lame', '-ar', '24000', '-b:a', '96k', silMp3);
-              concatAudioList += `file '${silMp3}'\n`;
-              currentTimelineMs = targetStartMs;
-            }
-          }
-
-          const audioBytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
-          const aName = `tts_${i}.mp3`;
-          ffmpeg.FS('writeFile', aName, audioBytes);
-          concatAudioList += `file '${aName}'\n`;
-
-          const durMs = item.duration_ms;
-          const sTime = msToSrt(currentTimelineMs);
-          currentTimelineMs += durMs;
-          const eTime = msToSrt(currentTimelineMs);
-          srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
-        }
-
-        srtContent = srtLines.join("\n");
-        if (isSubEnabled) {
-          ffmpeg.FS('writeFile', 'subs.srt', new TextEncoder().encode(srtContent));
-        }
-
-        ffmpeg.FS('writeFile', 'audio_concat.txt', concatAudioList);
-        await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'audio_concat.txt', '-c', 'copy', 'dub_full.mp3');
-
-        updateGauge(60, "ဗီဒီယိုနှင့် စာတန်းထိုး ပေါင်းစပ်နေပါသည်...");
-
-        const blurSub = document.getElementById('blurSubCheck').checked;
-        let videoFilter = "";
-        if (blurSub) {
-          videoFilter = "[0:v]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[v_out]";
-        }
+        updateGauge(30, "အသံများကို အချိန်ကိုက် ညှိနေပါသည်...");
 
         const bgmInput = document.getElementById('bgmFile');
-        let hasBgm = bgmInput.files.length > 0;
+        const bgmFile = bgmInput.files.length ? bgmInput.files[0] : null;
+        const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 15;
+        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmVol);
+
+        updateGauge(50, "ဗီဒီယိုဖိုင် ပြင်ဆင်နေပါသည်...");
+
+        ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
+        ffmpeg.FS('writeFile', 'dub_master.wav', masterWavBytes);
+
+        let srtLines = [];
+        let curMs = 0;
+        for (let i = 0; i < ttsData.audios.length; i++) {
+          const seg = currentSegments[i];
+          const durMs = ttsData.audios[i].duration_ms;
+          const sTime = msToSrt(seg ? seg.start : curMs);
+          const eTime = msToSrt(seg ? (seg.start + durMs) : (curMs + durMs));
+          curMs = seg ? (seg.start + durMs) : (curMs + durMs);
+          srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
+        }
+        srtContent = srtLines.join("\n");
+
+        updateGauge(70, "ဗီဒီယိုနှင့် အသံ Render လုပ်နေပါသည်...");
+
+        const blurSub = document.getElementById('blurSubCheck').checked;
         let finalArgs = [];
 
-        if (hasBgm) {
-          ffmpeg.FS('writeFile', 'bgm_in.mp3', await fetchFile(bgmInput.files[0]));
-          const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) / 100).toFixed(2);
-          let filterComplex = `[1:a]volume=1.0[maina];[2:a]volume=${bgmVol}[bgma];[maina][bgma]amix=inputs=2:duration=first[finala]`;
-          
-          if (videoFilter) {
-            filterComplex = `${videoFilter};` + filterComplex;
-            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3'];
-            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
-            finalArgs.push('-filter_complex', filterComplex, '-map', '[v_out]', '-map', '[finala]');
-            if (isSubEnabled) { finalArgs.push('-map', '3:s', '-c:s', 'mov_text'); }
-            finalArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4');
-          } else {
-            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3'];
-            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
-            finalArgs.push('-filter_complex', filterComplex, '-map', '0:v', '-map', '[finala]');
-            if (isSubEnabled) { finalArgs.push('-map', '3:s', '-c:s', 'mov_text'); }
-            finalArgs.push('-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4');
-          }
+        if (blurSub) {
+          finalArgs = [
+            '-i', 'input_orig.mp4', '-i', 'dub_master.wav',
+            '-filter_complex', '[0:v]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[v_out]',
+            '-map', '[v_out]', '-map', '1:a',
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-b:a', '128k', '-shortest', 'output.mp4'
+          ];
         } else {
-          if (videoFilter) {
-            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3'];
-            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
-            finalArgs.push('-filter_complex', videoFilter, '-map', '[v_out]', '-map', '1:a');
-            if (isSubEnabled) { finalArgs.push('-map', '2:s', '-c:s', 'mov_text'); }
-            finalArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4');
-          } else {
-            finalArgs = ['-i', 'input_orig.mp4', '-i', 'dub_full.mp3'];
-            if (isSubEnabled) { finalArgs.push('-i', 'subs.srt'); }
-            finalArgs.push('-map', '0:v', '-map', '1:a');
-            if (isSubEnabled) { finalArgs.push('-map', '2:s', '-c:s', 'mov_text'); }
-            finalArgs.push('-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4');
-          }
+          finalArgs = [
+            '-i', 'input_orig.mp4', '-i', 'dub_master.wav',
+            '-map', '0:v', '-map', '1:a',
+            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', 'output.mp4'
+          ];
         }
 
-        updateGauge(85, "နောက်ဆုံးဗီဒီယို Render ပြုလုပ်နေပါသည်...");
         await ffmpeg.run(...finalArgs);
 
         const outData = ffmpeg.FS('readFile', 'output.mp4');
@@ -985,30 +978,31 @@
 
         if (isSubEnabled) {
           const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
-          const vttUrl = URL.createObjectURL(vttBlob);
           const track = document.createElement('track');
           track.kind = 'subtitles';
           track.label = 'Burmese';
           track.srclang = 'my';
-          track.src = vttUrl;
+          track.src = URL.createObjectURL(vttBlob);
           track.default = true;
           player.appendChild(track);
-
-          if (player.textTracks && player.textTracks[0]) {
-            player.textTracks[0].mode = "showing";
-          }
+          if (player.textTracks && player.textTracks[0]) player.textTracks[0].mode = "showing";
         }
 
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
 
+        // ★ ဗီဒီယို 100% အောင်မြင်စွာ ထွက်လာမှသာ Credit ဖြတ်တောက်ခြင်း
+        try {
+          await fetch("/api/credits/consume", { method: "POST" });
+          checkUserAuth();
+        } catch (e) {}
+
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
         hideProgress();
         showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!");
-        checkUserAuth();
       } catch (err) {
         hideProgress();
-        showToast(err.message);
+        showToast("Export မအောင်မြင်ပါ: " + err.message + " (Credits မနုတ်ပါခင်ဗျာ)");
       }
     }
 
