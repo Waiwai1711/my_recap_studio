@@ -38,11 +38,10 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
-# Telegram Bot (Optional: Render Environment တွင် ထည့်သွင်းနိုင်သည်)
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
-# သတ်မှတ်ထားသော Admin Gmail သီးသန့်
+# Admin Gmail
 ADMIN_EMAIL = "waiphyo171104@gmail.com"
 
 TEMP_DIR = "temp_audios"
@@ -52,7 +51,6 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
-# Telegram Bot သို့ Message & Photo ပို့ပေးသော Function
 async def send_telegram_alert(text: str, photo_path: str = None):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return
@@ -77,7 +75,7 @@ async def send_telegram_alert(text: str, photo_path: str = None):
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
-# Admin Panel: waiphyo171104@gmail.com ဖြင့် Login ဝင်ထားမှသာ ခွင့်ပြုမည်
+# Admin Panel: waiphyo171104@gmail.com ဖြင့် ဝင်ထားမှသာ ဖွင့်ခွင့်ပေးခြင်း
 @app.get("/admin", response_class=HTMLResponse)
 async def serve_admin(request: Request):
     user_email = request.cookies.get("user_email")
@@ -89,7 +87,6 @@ async def serve_admin(request: Request):
         return HTMLResponse("<h2>Admin template ဖိုင် မရှိသေးပါ။</h2>", status_code=500)
     return FileResponse(admin_html_path)
 
-# --- Google OAuth Login ---
 @app.get("/login/google")
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
@@ -204,7 +201,6 @@ async def get_user_data(request: Request):
     db.close()
     return data
 
-# --- Payment Submit & Telegram Alert ---
 @app.post("/api/payment/submit")
 async def submit_payment(
     request: Request,
@@ -239,13 +235,11 @@ async def submit_payment(
     db.commit()
     db.close()
 
-    # Telegram သို့ ချက်ချင်း Notification ပို့ပေးခြင်း
     alert_msg = f"🔔 ငွေလွှဲပြေစာ အသစ်ရောက်ရှိပါသည်!\n\n👤 User: {user_email}\n📦 Package: {package_type} ပုဒ်\n💰 ပမာဏ: {amount:,} Ks\n💳 Payment: {payment_method}\n\nApprove လုပ်ရန် /admin သို့ ဝင်ရောက်ပေးပါ။"
     await send_telegram_alert(alert_msg, slip_path)
 
     return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ စစ်ဆေးပြီးပါက Credits တိုးပေးပါမည်။"}
 
-# --- Admin APIs (Strictly Protected) ---
 @app.get("/api/admin/requests")
 async def get_admin_requests(request: Request):
     user_email = request.cookies.get("user_email")
@@ -303,7 +297,6 @@ async def reject_request(request: Request, req_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": "ငွေလွှဲပြေစာကို ပယ်ဖျက်လိုက်ပါပြီ"}
 
-# --- AssemblyAI Audio Transcription ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -333,7 +326,6 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
-# --- Batch TTS (Credit Enforcement) ---
 class BatchTTSRequest(BaseModel):
     lines: List[str]
     voice: str = "my-MM-ThihaNeural"
