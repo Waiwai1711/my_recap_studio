@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- Client-Side FFmpeg.wasm UMD -->
+  <!-- Client-Side FFmpeg.wasm Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
@@ -69,7 +69,7 @@
   <header class="h-16 border-b border-white/5 bg-surface-900/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
       <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
-        <i class="ph-bold ph-cpu text-white text-base"></i>
+        <i class="ph-bold ph-lightning text-white text-base"></i>
       </div>
       <div>
         <h1 class="font-bold text-xs md:text-sm tracking-wide bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">RECAP STUDIO PRO</h1>
@@ -119,7 +119,7 @@
       <div id="dropZone" class="border-2 border-dashed border-zinc-800 hover:border-brand-500/50 bg-surface-950/40 rounded-xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5">
         <input type="file" id="videoFileInput" accept="video/*" class="hidden">
         <i class="ph-bold ph-video text-2xl text-zinc-400"></i>
-        <p class="text-xs font-medium text-zinc-300" id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ (Browser ထဲတွင်သာ Run မည်ဖြစ်၍ လျင်မြန်ပါသည်)</p>
+        <p class="text-xs font-medium text-zinc-300" id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
       <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="w-full mt-3 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 font-semibold text-xs text-white shadow-lg transition flex items-center justify-center gap-2">
@@ -143,7 +143,7 @@
 
       <div>
         <label class="text-xs font-medium text-zinc-400">Gemini မှ ရရှိသော Burmese Translations JSON ထည့်ပါ:</label>
-        <textarea id="jsonInput" rows="3" class="glass-input w-full mt-1 p-3 rounded-xl text-xs font-mono text-purple-300 placeholder-zinc-700 resize-none outline-none focus:border-purple-500" placeholder='{"translations": ["စာကြောင်း ၁", "စာကြောင်း ၂"]}'></textarea>
+        <textarea id="jsonInput" rows="3" class="glass-input w-full mt-1 p-3 rounded-xl text-xs font-mono text-purple-300 placeholder-zinc-700 resize-none outline-none focus:border-purple-500" placeholder='{"translations": ["ပထမစာကြောင်း", "ဒုတိယစာကြောင်း"]}'></textarea>
       </div>
 
       <button onclick="submitJson()" class="w-full mt-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-xs text-white transition flex items-center justify-center gap-2">
@@ -192,20 +192,18 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Editor -->
+    <!-- STEP 4: Live Subtitle Editor -->
     <div class="glass-card rounded-2xl p-4 md:p-6">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">4</span>
-          <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">LIVE SUBTITLE EDITOR</h2>
-        </div>
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">4</span>
+        <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">LIVE SUBTITLE EDITOR</h2>
       </div>
       <div id="linesContainer" class="space-y-2 max-h-80 overflow-y-auto pr-1">
         <div class="text-center py-6 text-zinc-600 text-xs">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
       </div>
     </div>
 
-    <!-- STEP 5: Device Export Button -->
+    <!-- STEP 5: Final Export -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-sm text-white shadow-xl transition flex items-center justify-center gap-2">
         <i class="ph-bold ph-lightning text-lg"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -270,7 +268,7 @@
       setTimeout(() => m.classList.add('hidden'), 300);
     }
 
-    // --- User Auth & State Check ---
+    // Login Status စစ်ဆေးခြင်း
     async function checkUserAuth() {
       try {
         const res = await fetch("/api/user/me");
@@ -286,7 +284,7 @@
       } catch (e) {}
     }
 
-    // --- FFmpeg WASM Loader ---
+    // Client-Side FFmpeg Engine စတင်ခြင်း
     async function loadFFmpeg() {
       if (ffmpeg) return ffmpeg;
       showProgress("FFmpeg Engine စတင်နေပါသည်", "Browser Memory ထဲသို့ FFmpeg.wasm ထည့်သွင်းနေပါသည်...");
@@ -321,7 +319,7 @@
       });
     });
 
-    // --- STEP 1: Video မှ Audio ကို Browser ထဲတွင်သာ ခွဲထုတ်ပြီး AssemblyAI သို့ ပို့ဆောင်ခြင်း ---
+    // အသံခွဲထုတ်ခြင်း
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!", "error");
@@ -329,16 +327,15 @@
 
       try {
         const ff = await loadFFmpeg();
-        showProgress("အသံဖိုင် ခွဲထုတ်နေပါသည်", "Browser ထဲတွင် ဗီဒီယိုမှ MP3 အသံဖိုင် သီးသန့်ထုတ်ယူနေပါသည်...");
+        showProgress("အသံဖိုင် ခွဲထုတ်နေပါသည်", "ဗီဒီယိုမှ MP3 အသံဖိုင် သီးသန့်ထုတ်ယူနေပါသည်...");
         updateGauge(20);
 
         await ff.writeFile('input_orig.mp4', await fetchFile(selectedVideoFile));
-        // Video မပါဘဲ ပေါ့ပါးသော အသံဖိုင်ကို စက္ကန့်ပိုင်းအတွင်း ခွဲထုတ်ခြင်း
         await ff.exec(['-i', 'input_orig.mp4', '-vn', '-acodec', 'libmp3lame', '-b:a', '96k', 'extracted_audio.mp3']);
         const audioData = await ff.readFile('extracted_audio.mp3');
         const audioBlob = new Blob([audioData.buffer], { type: 'audio/mp3' });
 
-        updateGauge(50, "AssemblyAI သို့ အသံဖိုင်ပို့၍ စာသားထုတ်ယူနေပါသည်...");
+        updateGauge(50, "AssemblyAI သို့ ပေးပို့၍ စာသားထုတ်ယူနေပါသည်...");
         const formData = new FormData();
         formData.append("api_key", apiKey);
         formData.append("audio", audioBlob, "extracted.mp3");
@@ -378,7 +375,7 @@
           row.innerHTML = `
             <span class="text-xs font-mono text-brand-400 w-14 shrink-0">[${seg.id}] (${seg.duration}s)</span>
             <input type="text" class="sub-input flex-1 bg-transparent border-none text-xs text-zinc-200 outline-none" value="${trans[i] || ''}">
-            <button onclick="previewAudio('${encodeURIComponent(trans[i] || '')}')" class="px-2 py-1 rounded-lg text-xs bg-brand-500/20 text-brand-400 hover:bg-brand-500/30">▶ Preview</button>
+            <button onclick="previewAudio('${encodeURIComponent(trans[i] || '')}')" class="px-2 py-1 rounded-lg text-xs bg-brand-500/20 text-brand-400 hover:bg-brand-500/30">▶ စမ်းသပ်</button>
           `;
           container.appendChild(row);
         });
@@ -401,7 +398,7 @@
       new Audio(URL.createObjectURL(blob)).play();
     }
 
-    // --- STEP 5: Client-Side Video Processing (FFmpeg.wasm) ---
+    // Client-Side Video Processing Pipeline
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const translations = Array.from(inputs).map(i => i.value);
@@ -409,10 +406,9 @@
       if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် မရှိပါ!", "error");
 
       const ff = await loadFFmpeg();
-      showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ မြန်မာအသံဖိုင်များ ထုတ်ယူနေပါသည်...");
+      showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
 
       try {
-        // 1. Batch Generate Burmese Audios via Server API
         const ttsRes = await fetch("/api/tts/batch-generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -428,7 +424,6 @@
 
         updateGauge(30, "အသံဖိုင်များနှင့် ဗီဒီယို အမြန်နှုန်း ညှိနေပါသည်...");
 
-        // 2. Write Audio Blobs into FFmpeg Virtual FileSystem
         let concatAudioList = "";
         let srtLines = [];
         let runningMs = 0;
@@ -440,7 +435,6 @@
           await ff.writeFile(aName, audioBytes);
           concatAudioList += `file '${aName}'\n`;
 
-          // SRT Generate
           const durMs = item.duration_ms;
           const sTime = msToSrt(runningMs);
           runningMs += durMs;
@@ -450,22 +444,16 @@
         srtContent = srtLines.join("\n");
 
         await ff.writeFile('audio_concat.txt', concatAudioList);
-        // Merge All Dub Audio Clips
         await ff.exec(['-f', 'concat', '-safe', '0', '-i', 'audio_concat.txt', '-c', 'copy', 'dub_full.mp3']);
 
         updateGauge(55, "ဗီဒီယို Auto-Speed နှင့် စာတန်း Blur ပြုလုပ်နေပါသည်...");
 
-        // 3. Prepare Video Filters (Auto-speed and Subtitle Blur)
-        const autoSpeed = document.getElementById('autoSpeedCheck').checked;
         const blurSub = document.getElementById('blurSubCheck').checked;
-
         let videoFilter = "";
         if (blurSub) {
-          // မူရင်းဗီဒီယို၏ အောက်ခြေ ၁၂% နေရာကို boxblur ဖြင့် ဖျက်ပစ်ခြင်း
           videoFilter = "[0:v]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[v_out]";
         }
 
-        // 4. Check Background Music
         const bgmInput = document.getElementById('bgmFile');
         let hasBgm = bgmInput.files.length > 0;
         let finalArgs = [];
@@ -473,8 +461,8 @@
         if (hasBgm) {
           await ff.writeFile('bgm_in.mp3', await fetchFile(bgmInput.files[0]));
           const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) / 100).toFixed(2);
-
           let filterComplex = `[1:a]volume=1.0[maina];[2:a]volume=${bgmVol}[bgma];[maina][bgma]amix=inputs=2:duration=first[finala]`;
+          
           if (videoFilter) {
             filterComplex = `${videoFilter};` + filterComplex;
             finalArgs = [
@@ -508,10 +496,9 @@
           }
         }
 
-        updateGauge(80, "Device ပေါ်တွင် နောက်ဆုံးဗီဒီယို ပေါင်းစပ်နေပါသည်...");
+        updateGauge(80, "ဗီဒီယို ပေါင်းစပ်နေပါသည်...");
         await ff.exec(finalArgs);
 
-        // 5. Read Rendered Video from Virtual FileSystem
         const outData = await ff.readFile('output.mp4');
         const outBlob = new Blob([outData.buffer], { type: 'video/mp4' });
         const videoUrl = URL.createObjectURL(outBlob);
@@ -524,7 +511,7 @@
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
         hideProgress();
         showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!", "success");
-        checkUserAuth(); // လက်ကျန် Credits ပြန်လည် update လုပ်ခြင်း
+        checkUserAuth();
       } catch (err) {
         hideProgress();
         showToast(err.message, "error");
