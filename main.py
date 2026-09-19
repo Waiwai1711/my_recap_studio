@@ -27,6 +27,7 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 @app.middleware("http")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
+    # Browser က Local assets များကို မပိတ်ပင်စေရန် သတ်မှတ်ခြင်း
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
     response.headers["Cross-Origin-Embedder-Policy"] = "credentialless"
     return response
