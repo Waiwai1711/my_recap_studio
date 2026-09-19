@@ -3,289 +3,391 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard & POS - Recap Studio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <title>Admin Dashboard - Recap Studio Pro</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #0b0c10; color: #f4f4f5;
-      font-family: 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif;
-      padding: 24px 16px; max-width: 1200px; margin: 0 auto;
-    }
-    .header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 24px;
-    }
-    .header h1 { font-size: 18px; color: #c084fc; display: flex; align-items: center; gap: 8px; }
-    .btn-back { background: #272a37; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; }
+    body { background: #0b0c10; color: #f4f4f5; font-family: 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif; min-height: 100vh; padding: 20px 16px; }
+    .header { max-width: 1100px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; }
+    .nav-tabs { max-width: 1100px; margin: 0 auto 20px; display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; overflow-x: auto; }
+    .tab-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #a1a1aa; padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .tab-btn.active { background: #38bdf8; color: #000; border-color: #38bdf8; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+    .stat-card { background: #14161f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; }
+    .stat-card p { font-size: 11px; color: #a1a1aa; margin-bottom: 6px; }
+    .stat-card h3 { font-size: 20px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
 
-    .grid-pos {
-      display: grid; grid-template-columns: 360px 1fr; gap: 20px; margin-bottom: 24px;
-    }
-    @media (max-width: 860px) { .grid-pos { grid-template-columns: 1fr; } }
+    .card { background: #14161f; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    th { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); color: #a1a1aa; font-weight: 600; }
+    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+    .badge-pending { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+    .badge-approved { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .badge-rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    
+    .btn { border: none; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-green { background: #10b981; color: #fff; }
+    .btn-red { background: #ef4444; color: #fff; }
+    .btn-blue { background: #38bdf8; color: #000; }
+    .btn-amber { background: #f59e0b; color: #000; }
 
-    .card {
-      background: #14161f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); padding: 18px;
-    }
-    .card h3 { font-size: 14px; color: #38bdf8; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
-
-    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-    .form-group label { font-size: 11px; color: #a1a1aa; font-weight: 600; }
-    .glass-input {
-      background: rgba(11, 12, 16, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #f4f4f5; padding: 10px 12px; border-radius: 10px; font-size: 12px; outline: none; width: 100%;
-    }
-    .glass-input:focus { border-color: #38bdf8; }
-
-    .btn-pos {
-      background: linear-gradient(135deg, #059669, #0d9488); color: #fff; border: none;
-      padding: 12px; border-radius: 10px; font-size: 13px; font-weight: bold; width: 100%; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .btn-pos:hover { opacity: 0.9; }
-
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    th { background: rgba(20,22,31,0.8); color: #a1a1aa; font-weight: 600; font-size: 11px; }
-    tr:hover { background: rgba(255,255,255,0.02); }
-
-    .badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
-    .badge-pending { background: rgba(234,179,8,0.15); color: #facc15; }
-    .badge-approved { background: rgba(16,185,129,0.15); color: #34d399; }
-    .badge-rejected { background: rgba(239,68,68,0.15); color: #f87171; }
-
-    .btn-action {
-      border: none; padding: 5px 8px; border-radius: 6px; font-size: 11px;
-      font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
-    }
-    .btn-approve { background: #059669; color: #fff; }
-    .btn-reject { background: #dc2626; color: #fff; margin-left: 4px; }
-    .slip-img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
-
-    #imgModal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none;
-      align-items: center; justify-content: center; z-index: 1000;
-    }
-    #imgModal.active { display: flex; }
-    #modalSlipImg { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+    .modal.active { display: flex; }
+    .modal-box { background: #14161f; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 24px; max-width: 440px; width: 100%; }
+    .input { background: #0b0c10; border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; width: 100%; margin-top: 4px; outline: none; }
   </style>
 </head>
-
 <body>
 
   <div class="header">
-    <h1><i class="ph-bold ph-shield-check"></i> Admin & POS Dashboard</h1>
-    <a href="/" class="btn-back">← Back to Studio</a>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <i class="ph-bold ph-shield-check" style="font-size:26px; color:#38bdf8;"></i>
+      <h1 style="font-size:18px;">RECAP STUDIO - ADMIN CONSOLE</h1>
+    </div>
+    <a href="/" style="color:#38bdf8; font-size:12px; text-decoration:none;"><i class="ph-bold ph-arrow-left"></i> Web သို့ပြန်သွားမည်</a>
   </div>
 
-  <div class="grid-pos">
-    <!-- POS TOP-UP FORM -->
-    <div class="card">
-      <h3><i class="ph-bold ph-cash-register"></i> POS Quick Top-up (Credits သွင်းပေးမည်)</h3>
-      <p style="font-size: 11px; color: #a1a1aa; margin-bottom: 14px;">Chat box မှတစ်ဆင့် ငွေလွှဲဝယ်ယူသူများအား အကောင့်ထဲသို့ ပုဒ်ရေ တိုက်ရိုက်ထည့်သွင်းပေးရန်</p>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('finance')"><i class="ph-bold ph-chart-line-up"></i> ငွေစာရင်းချုပ်</button>
+    <button class="tab-btn" onclick="switchTab('slips')"><i class="ph-bold ph-receipt"></i> ငွေလွှဲပြေစာများ</button>
+    <button class="tab-btn" onclick="switchTab('users')"><i class="ph-bold ph-users"></i> Users စီမံခန့်ခွဲမှု</button>
+    <button class="tab-btn" onclick="switchTab('packages')"><i class="ph-bold ph-diamonds-four"></i> Package ဈေးနှုန်းများ</button>
+  </div>
 
-      <form id="posForm" onsubmit="handlePosTopup(event)">
-        <div class="form-group">
-          <label>User Gmail</label>
-          <input type="email" id="posEmail" required placeholder="user@gmail.com" class="glass-input" style="font-family: 'JetBrains Mono';">
+  <div class="container">
+
+    <div id="tab-finance">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <p>💰 စုစုပေါင်း ဝင်ငွေ</p>
+          <h3 style="color:#10b981;" id="statTotalRev">0 Ks</h3>
         </div>
-        <div class="form-group">
-          <label>ထည့်သွင်းပေးမည့် ပုဒ်ရေ (Credits)</label>
-          <input type="number" id="posCredits" required min="1" value="10" class="glass-input" style="font-family: 'JetBrains Mono'; font-weight: bold; color: #fbbf24;">
+        <div class="stat-card">
+          <p>📅 ယနေ့ ဝင်ငွေ</p>
+          <h3 style="color:#38bdf8;" id="statTodayRev">0 Ks</h3>
         </div>
-        <div class="form-group">
-          <label>မှတ်ချက် (Note / Ref No)</label>
-          <input type="text" id="posNote" placeholder="KPay / 09xxx မှ ဝယ်ယူသည်" class="glass-input">
+        <div class="stat-card">
+          <p>👥 စုစုပေါင်း User အရေအတွက်</p>
+          <h3 id="statTotalUsers">0</h3>
         </div>
-        <button type="submit" class="btn-pos">
-          <i class="ph-bold ph-plus-circle"></i> ပုဒ်ရေ ထည့်သွင်းပေးမည်
-        </button>
-      </form>
+        <div class="stat-card">
+          <p>⏳ စောင့်ဆိုင်းဆဲ ပြေစာများ</p>
+          <h3 style="color:#fbbf24;" id="statPendingOrders">0</h3>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:14px; margin-bottom:12px; color:#38bdf8;">💳 Payment Method အလိုက် ဝင်ငွေခွဲခြမ်းစိတ်ဖြာချက်</h3>
+        <div id="methodList" style="display:flex; gap:16px; flex-wrap:wrap;"></div>
+      </div>
     </div>
 
-    <!-- USERS INFO TABLE -->
-    <div class="card" style="overflow-x: auto;">
-      <h3><i class="ph-bold ph-users-three"></i> User Information & Credits စာရင်း</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Gmail</th>
-            <th>Daily Free</th>
-            <th>Pkg Credits</th>
-            <th>Quick Select</th>
-          </tr>
-        </thead>
-        <tbody id="usersTableBody">
-          <tr><td colspan="6" style="text-align: center; color: #71717a;">User စာရင်း ရှာဖွေနေပါသည်...</td></tr>
-        </tbody>
-      </table>
+    <div id="tab-slips" style="display:none;">
+      <div class="card" style="overflow-x:auto;">
+        <h3 style="font-size:14px; margin-bottom:14px;">ငွေလွှဲပြေစာများ စာရင်း</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User</th>
+              <th>Package</th>
+              <th>ပမာဏ</th>
+              <th>Method</th>
+              <th>ပြေစာပုံ</th>
+              <th>Status</th>
+              <th>လုပ်ဆောင်ချက်</th>
+            </tr>
+          </thead>
+          <tbody id="slipsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-users" style="display:none;">
+      <div class="card" style="overflow-x:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="font-size:14px;">User များအား ပုဒ်ရေ အတိုးအနုတ် ပြုလုပ်ခြင်း & Ban စနစ်</h3>
+          <input type="text" id="userSearch" placeholder="Gmail ဖြင့် ရှာပါ..." oninput="filterUsers()" style="background:#0b0c10; border:1px solid rgba(255,255,255,0.1); color:#fff; padding:6px 12px; border-radius:8px; font-size:12px;">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Daily</th>
+              <th>Package ပုဒ်ရေ</th>
+              <th>Status</th>
+              <th>ပုဒ်ရေ ပြင်ဆင်ရန်</th>
+              <th>Account Ban</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-packages" style="display:none;">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="font-size:14px;">Package ဈေးနှုန်းများ စီမံခန့်ခွဲခြင်း</h3>
+          <button onclick="openPkgModal(0, '', '', '')" class="btn btn-blue"><i class="ph-bold ph-plus"></i> Package အသစ်ထည့်မည်</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>အမည်</th>
+              <th>ပုဒ်ရေ (Credits)</th>
+              <th>ဈေးနှုန်း (Ks)</th>
+              <th>လုပ်ဆောင်ချက်</th>
+            </tr>
+          </thead>
+          <tbody id="pkgTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="pkgModal" class="modal">
+    <div class="modal-box">
+      <h3 id="pkgModalTitle" style="font-size:14px; margin-bottom:12px;">Package ထည့်မည်</h3>
+      <input type="hidden" id="modalPkgId">
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px; color:#a1a1aa;">အမည် (ဥပမာ - ၁၀ ပုဒ် / Promotion)</label>
+        <input type="text" id="modalPkgName" class="input">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px; color:#a1a1aa;">ရရှိမည့် ပုဒ်ရေ</label>
+        <input type="number" id="modalPkgCredits" class="input">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px; color:#a1a1aa;">ကျသင့်ငွေ (Ks)</label>
+        <input type="number" id="modalPkgPrice" class="input">
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button onclick="closePkgModal()" class="btn" style="background:#272a37; color:#fff;">ပိတ်မည်</button>
+        <button onclick="savePackage()" class="btn btn-blue">သိမ်းဆည်းမည်</button>
+      </div>
     </div>
   </div>
 
-  <!-- PAYMENT REQUESTS TABLE -->
-  <div class="card" style="overflow-x: auto;">
-    <h3><i class="ph-bold ph-receipt"></i> ငွေလွှဲပြေစာ တောင်းဆိုမှုများ (Payment Requests)</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>User Gmail</th>
-          <th>Package</th>
-          <th>Amount</th>
-          <th>Method</th>
-          <th>Slip</th>
-          <th>Date</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="requestTableBody">
-        <tr><td colspan="9" style="text-align: center; color: #71717a;">စာရင်း မရှိသေးပါ</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div id="imgModal" onclick="this.classList.remove('active')">
-    <img id="modalSlipImg" src="" alt="Slip Full">
+  <div id="creditModal" class="modal">
+    <div class="modal-box">
+      <h3 style="font-size:14px; margin-bottom:12px;">ပုဒ်ရေ အတိုးအနုတ် ပြုလုပ်ရန်</h3>
+      <p id="creditUserEmail" style="font-size:12px; color:#38bdf8; margin-bottom:12px;"></p>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px; color:#a1a1aa;">လုပ်ဆောင်ချက်</label>
+        <select id="creditAction" class="input">
+          <option value="add">➕ ပုဒ်ရေ ပေါင်းထည့်ပေးမည် (Add)</option>
+          <option value="deduct">➖ ပုဒ်ရေ ပြန်လည်နုတ်ယူမည် (Deduct / Clawback)</option>
+        </select>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px; color:#a1a1aa;">ပုဒ်ရေ အရေအတွက်</label>
+        <input type="number" id="creditAmount" value="10" min="1" class="input">
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button onclick="document.getElementById('creditModal').classList.remove('active')" class="btn" style="background:#272a37; color:#fff;">ပယ်ဖျက်</button>
+        <button onclick="submitCreditAdjust()" class="btn btn-blue">အတည်ပြုသည်</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    function viewBigSlip(url) {
-      document.getElementById('modalSlipImg').src = url;
-      document.getElementById('imgModal').classList.add('active');
+    let allUsersData = [];
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      ['finance', 'slips', 'users', 'packages'].forEach(t => {
+        document.getElementById(`tab-${t}`).style.display = (t === tab) ? 'block' : 'none';
+      });
+      if (tab === 'finance') loadFinance();
+      if (tab === 'slips') loadSlips();
+      if (tab === 'users') loadUsers();
+      if (tab === 'packages') loadPackages();
     }
 
-    // User Gmail ကို POS Form ထဲသို့ အလွယ်တကူ ထည့်ပေးခြင်း
-    function quickFillPOS(email) {
-      document.getElementById('posEmail').value = email;
-      document.getElementById('posEmail').focus();
+    async function loadFinance() {
+      const res = await fetch("/api/admin/finance/summary");
+      const data = await res.json();
+      document.getElementById('statTotalRev').innerText = `${data.total_revenue.toLocaleString()} Ks`;
+      document.getElementById('statTodayRev').innerText = `${data.today_revenue.toLocaleString()} Ks`;
+      document.getElementById('statTotalUsers').innerText = data.total_users;
+      document.getElementById('statPendingOrders').innerText = data.pending_orders;
+
+      const mBox = document.getElementById('methodList');
+      mBox.innerHTML = Object.entries(data.methods).map(([k, v]) => `
+        <div style="background:#0b0c10; border:1px solid rgba(255,255,255,0.08); padding:10px 16px; border-radius:10px;">
+          <span style="color:#a1a1aa; font-size:11px;">${k}:</span> <b style="color:#fff; font-family:'JetBrains Mono'">${v.toLocaleString()} Ks</b>
+        </div>
+      `).join("");
     }
 
-    // Load All Users
-    async function loadUsers() {
-      try {
-        const res = await fetch("/api/admin/users");
-        if (!res.ok) return;
-        const users = await res.json();
-        const tbody = document.getElementById('usersTableBody');
-        tbody.innerHTML = "";
-
-        if (!users.length) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #71717a;">User မရှိသေးပါ</td></tr>`;
-          return;
-        }
-
-        users.forEach(u => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>#${u.id}</td>
-            <td><b style="color: #fff;">${u.name || 'User'}</b> ${u.is_admin ? '<span style="color:#c084fc;">(Admin)</span>' : ''}</td>
-            <td style="font-family: 'JetBrains Mono'; font-size: 11px;">${u.email}</td>
-            <td style="color: #10b981; font-family: 'JetBrains Mono';">${u.is_admin ? '∞' : u.daily_credits}</td>
-            <td style="color: #fbbf24; font-family: 'JetBrains Mono'; font-weight: bold;">${u.is_admin ? '∞' : u.package_credits}</td>
-            <td>
-              <button onclick="quickFillPOS('${u.email}')" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: none; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer;">
-                POS ရွေးမည်
-              </button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (e) {}
-    }
-
-    // Handle POS Top-up
-    async function handlePosTopup(e) {
-      e.preventDefault();
-      const email = document.getElementById('posEmail').value.trim();
-      const credits = document.getElementById('posCredits').value;
-      const note = document.getElementById('posNote').value.trim();
-
-      if (!confirm(`${email} ထံသို့ ${credits} ပုဒ် တိုက်ရိုက်သွင်းပေးမည် သေချာပါသလား?`)) return;
-
-      const fd = new FormData();
-      fd.append("user_email", email);
-      fd.append("credits", credits);
-      fd.append("note", note);
-
-      try {
-        const res = await fetch("/api/admin/pos/topup", { method: "POST", body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        alert(data.message);
-        document.getElementById('posForm').reset();
-        loadUsers();
-        loadRequests();
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    }
-
-    // Load Requests
-    async function loadRequests() {
+    async function loadSlips() {
       const res = await fetch("/api/admin/requests");
-      if (!res.ok) return;
       const list = await res.json();
-      const tbody = document.getElementById('requestTableBody');
-      tbody.innerHTML = "";
-
-      if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #71717a;">စာရင်း မရှိသေးပါ</td></tr>`;
-        return;
-      }
-
-      list.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>#${r.id}</td>
-          <td style="font-family: 'JetBrains Mono'; font-size: 11px;">${r.email}</td>
-          <td><b style="color: #fbbf24;">${r.package_type} ပုဒ်</b></td>
-          <td>${r.amount ? r.amount.toLocaleString() + ' Ks' : '-'}</td>
-          <td style="font-size: 11px;">${r.payment_method}</td>
-          <td>${r.slip_url ? `<img src="${r.slip_url}" class="slip-img" onclick="viewBigSlip('${r.slip_url}')" title="ကြည့်ရန် နှိပ်ပါ">` : '<span style="color:#71717a;">POS</span>'}</td>
-          <td style="color: #a1a1aa; font-size: 11px;">${r.created_at}</td>
+      const tbody = document.getElementById('slipsTableBody');
+      tbody.innerHTML = list.map(r => `
+        <tr>
+          <td style="font-family:'JetBrains Mono'">#${r.id}</td>
+          <td>${r.email}</td>
+          <td><b>${r.package_type} ပုဒ်</b></td>
+          <td style="font-family:'JetBrains Mono'">${r.amount ? r.amount.toLocaleString() + ' Ks' : '-'}</td>
+          <td>${r.payment_method}</td>
+          <td><a href="${r.slip_url}" target="_blank" style="color:#38bdf8;">ကြည့်မည်</a></td>
           <td><span class="badge badge-${r.status}">${r.status.toUpperCase()}</span></td>
           <td>
             ${r.status === 'pending' ? `
-              <button class="btn-action btn-approve" onclick="approveReq(${r.id})">✓ Approve</button>
-              <button class="btn-action btn-reject" onclick="rejectReq(${r.id})">✕ Reject</button>
-            ` : `<span style="color: #71717a;">ပြီးဆုံးပါပြီ</span>`}
+              <button onclick="approveSlip(${r.id})" class="btn btn-green">Approve</button>
+              <button onclick="rejectSlip(${r.id})" class="btn btn-red">Reject</button>
+            ` : (r.status === 'approved' ? `
+              <button onclick="clawbackSlip(${r.id})" class="btn btn-amber" title="မှားယွင်း Approve မိပါက ပုဒ်ရေပြန်နုတ်မည်">Clawback</button>
+            ` : '-')}
           </td>
-        `;
-        tbody.appendChild(tr);
-      });
+        </tr>
+      `).join("");
     }
 
-    async function approveReq(id) {
-      if (!confirm("အတည်ပြုပြီး User ထံ ပုဒ်ရေ ထည့်သွင်းပေးမည် သေချာပါသလား?")) return;
-      const fd = new FormData();
-      fd.append("req_id", id);
-      const res = await fetch("/api/admin/approve", { method: "POST", body: fd });
+    async function approveSlip(id) {
+      const fd = new FormData(); fd.append("req_id", id);
+      await fetch("/api/admin/approve", { method: "POST", body: fd });
+      loadSlips();
+    }
+    async function rejectSlip(id) {
+      const fd = new FormData(); fd.append("req_id", id);
+      await fetch("/api/admin/reject", { method: "POST", body: fd });
+      loadSlips();
+    }
+    async function clawbackSlip(id) {
+      if (!confirm(`ပြေစာ #${id} အား ပယ်ဖျက်ပြီး ပုဒ်ရေကို User ဆီမှ ပြန်လည်နုတ်ယူမှာ သေချာပါသလား?`)) return;
+      const fd = new FormData(); fd.append("req_id", id);
+      const res = await fetch("/api/admin/clawback", { method: "POST", body: fd });
       const data = await res.json();
       alert(data.message);
-      loadRequests();
+      loadSlips();
+    }
+
+    async function loadUsers() {
+      const res = await fetch("/api/admin/users");
+      allUsersData = await res.json();
+      renderUsers(allUsersData);
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('usersTableBody');
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td>
+            <b>${u.name}</b><br>
+            <span style="font-size:11px; color:#a1a1aa;">${u.email}</span>
+          </td>
+          <td>${u.daily_credits}</td>
+          <td><b style="color:#fbbf24; font-family:'JetBrains Mono'">${u.package_credits}</b> ပုဒ်</td>
+          <td>
+            ${u.is_banned ? '<span class="badge badge-rejected">BANNED</span>' : '<span class="badge badge-approved">ACTIVE</span>'}
+          </td>
+          <td>
+            <button onclick="openCreditModal('${u.email}')" class="btn btn-blue">± ပုဒ်ရေပြင်</button>
+          </td>
+          <td>
+            <button onclick="toggleBan('${u.email}')" class="btn ${u.is_banned ? 'btn-green' : 'btn-red'}">
+              ${u.is_banned ? 'Unban' : '🚫 Ban'}
+            </button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('userSearch').value.toLowerCase();
+      renderUsers(allUsersData.filter(u => u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)));
+    }
+
+    let selectedUserEmail = "";
+    function openCreditModal(email) {
+      selectedUserEmail = email;
+      document.getElementById('creditUserEmail').innerText = `User: ${email}`;
+      document.getElementById('creditModal').classList.add('active');
+    }
+
+    async function submitCreditAdjust() {
+      const action = document.getElementById('creditAction').value;
+      const amt = document.getElementById('creditAmount').value;
+      const fd = new FormData();
+      fd.append("email", selectedUserEmail);
+      fd.append("action_type", action);
+      fd.append("amount", amt);
+
+      const res = await fetch("/api/admin/users/adjust-credits", { method: "POST", body: fd });
+      const data = await res.json();
+      alert(data.message);
+      document.getElementById('creditModal').classList.remove('active');
       loadUsers();
     }
 
-    async function rejectReq(id) {
-      if (!confirm("ငွေလွှဲပြေစာကို ပယ်ဖျက်မည် သေချာပါသလား?")) return;
-      const fd = new FormData();
-      fd.append("req_id", id);
-      const res = await fetch("/api/admin/reject", { method: "POST", body: fd });
+    async function toggleBan(email) {
+      if (!confirm(`${email} အား Ban / Unban ပြုလုပ်မှာ သေချာပါသလား?`)) return;
+      const fd = new FormData(); fd.append("email", email);
+      const res = await fetch("/api/admin/users/toggle-ban", { method: "POST", body: fd });
       const data = await res.json();
       alert(data.message);
-      loadRequests();
+      loadUsers();
     }
 
-    loadUsers();
-    loadRequests();
+    async function loadPackages() {
+      const res = await fetch("/api/admin/packages");
+      const list = await res.json();
+      const tbody = document.getElementById('pkgTableBody');
+      tbody.innerHTML = list.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td><b>${p.name}</b></td>
+          <td style="font-family:'JetBrains Mono'">${p.credits} ပုဒ်</td>
+          <td style="font-family:'JetBrains Mono'; color:#10b981;">${p.price.toLocaleString()} Ks</td>
+          <td>
+            <button onclick="openPkgModal(${p.id}, '${p.name}', ${p.credits}, ${p.price})" class="btn btn-blue">ပြင်မည်</button>
+            <button onclick="deletePackage(${p.id})" class="btn btn-red">ဖျက်မည်</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openPkgModal(id, name, credits, price) {
+      document.getElementById('modalPkgId').value = id;
+      document.getElementById('modalPkgName').value = name;
+      document.getElementById('modalPkgCredits').value = credits;
+      document.getElementById('modalPkgPrice').value = price;
+      document.getElementById('pkgModalTitle').innerText = id ? "Package ပြင်ဆင်မည်" : "Package အသစ်ထည့်မည်";
+      document.getElementById('pkgModal').classList.add('active');
+    }
+    function closePkgModal() { document.getElementById('pkgModal').classList.remove('active'); }
+
+    async function savePackage() {
+      const fd = new FormData();
+      fd.append("pkg_id", document.getElementById('modalPkgId').value || 0);
+      fd.append("name", document.getElementById('modalPkgName').value);
+      fd.append("credits", document.getElementById('modalPkgCredits').value);
+      fd.append("price", document.getElementById('modalPkgPrice').value);
+
+      await fetch("/api/admin/packages/save", { method: "POST", body: fd });
+      closePkgModal();
+      loadPackages();
+    }
+
+    async function deletePackage(id) {
+      if (!confirm("ဤ Package ကို ဖျက်ပစ်မှာ သေချာပါသလား?")) return;
+      const fd = new FormData(); fd.append("pkg_id", id);
+      await fetch("/api/admin/packages/delete", { method: "POST", body: fd });
+      loadPackages();
+    }
+
+    window.addEventListener('DOMContentLoaded', loadFinance);
   </script>
 </body>
 </html>
