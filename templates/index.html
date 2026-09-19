@@ -213,53 +213,14 @@
     <!-- STEP 5: EXPORT & CLIFFHANGER -->
     <div>
       <button onclick="startClientExport()" class="btn btn-green"><i class="ph-bold ph-lightning"></i> Render & Export Video</button>
-
       <div id="resultBox" class="glass-card hidden" style="text-align: center; margin-top: 16px;">
-        <video id="videoPlayer" controls style="max-height: 420px; width: 100%; border-radius: 12px; margin-bottom: 14px;"></video>
-        
-        <!-- ★ အဆိုပါ ခလုတ် (၃) ခု အတိအကျ စီစဉ်ပေးထားခြင်း ★ -->
-        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 16px;">
-          <!-- 1. Download Full Video (အပြာရောင်ခလုတ်) -->
-          <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
-            <i class="ph-bold ph-download-simple"></i> 📥 Download Full Video
-          </a>
-
-          <!-- 2. Split into Part 1 & Part 2 (ခရမ်းရောင်ခလုတ်) -->
-          <button onclick="splitCliffhangerHalf()" class="btn btn-purple" style="width: auto;">
-            <i class="ph-bold ph-scissors"></i> ✂️ Split into Part 1 & Part 2
-          </button>
-
-          <!-- 3. Download Thumbnail (ရွှေဝါရောင်ခလုတ်) -->
-          <button onclick="openThumbnailModal()" class="btn btn-amber" style="width: auto;">
-            <i class="ph-bold ph-camera"></i> 📸 Download Thumbnail
-          </button>
+        <video id="videoPlayer" controls style="max-height: 400px; width: 100%; border-radius: 12px; margin-bottom: 12px;"></video>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px;">
+          <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">Download Full Video</a>
+          <button onclick="splitCliffhangerHalf()" class="btn btn-purple" style="width: auto;"><i class="ph-bold ph-scissors"></i> 5-Min+ Cliffhanger တစ်ဝက်ပိုင်းမည်</button>
+          <button onclick="sendToTelegramCloud()" class="btn btn-amber" style="width: auto;"><i class="ph-bold ph-paper-plane-tilt"></i> Send to Telegram</button>
         </div>
-
-        <div id="splitLinksContainer" style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;"></div>
-
-        <!-- THUMBNAIL GENERATOR PREVIEW SECTION -->
-        <div id="thumbnailSection" class="hidden" style="background: rgba(11,12,16,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; text-align: left;">
-          <h4 style="font-size: 12px; color: #fbbf24; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
-            <i class="ph-bold ph-image-square"></i> Recap Thumbnail / Cover Generator
-          </h4>
-          <div class="grid-2" style="margin-bottom: 8px;">
-            <div class="form-group">
-              <label>Cover ပေါ်ရေးမည့် ခေါင်းစဉ်</label>
-              <input type="text" id="thumbTitleInput" class="glass-input" value="အံ့ဩဖွယ် ဇာတ်သိမ်းခန်း">
-            </div>
-            <div class="form-group">
-              <label>Frame ရွေးချယ်ရန် (Seek)</label>
-              <input type="range" id="thumbFrameSlider" min="0" max="100" value="25" style="accent-color:#fbbf24; margin-top:8px;" oninput="updateThumbnailPreview()">
-            </div>
-          </div>
-          <div style="display: flex; justify-content: flex-end;">
-            <button onclick="downloadThumbnailImage()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
-              <i class="ph-bold ph-download-simple"></i> 📥 Save Thumbnail Image
-            </button>
-          </div>
-          <canvas id="thumbCanvas" style="display: none;"></canvas>
-        </div>
-
+        <div id="splitLinksContainer" style="display:flex; justify-content:center; gap:8px;"></div>
       </div>
     </div>
   </main>
@@ -493,55 +454,6 @@
     }
 
     window.addEventListener('DOMContentLoaded', checkUserAuth);
-    function openThumbnailModal() {
-      const sec = document.getElementById('thumbnailSection');
-      sec.classList.toggle('hidden');
-    }
-
-    function updateThumbnailPreview() {
-      const player = document.getElementById('videoPlayer');
-      const slider = document.getElementById('thumbFrameSlider');
-      if (player && player.duration) {
-        player.currentTime = (slider.value / 100) * player.duration;
-      }
-    }
-
-    function downloadThumbnailImage() {
-      const player = document.getElementById('videoPlayer');
-      if (!player || !player.videoWidth) return showToast("ဗီဒီယို မရှိသေးပါ!");
-
-      const canvas = document.getElementById('thumbCanvas');
-      canvas.width = player.videoWidth;
-      canvas.height = player.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
-
-      const titleText = document.getElementById('thumbTitleInput').value.trim();
-      if (titleText) {
-        const fontSize = Math.max(36, Math.floor(canvas.width / 16));
-        ctx.font = `bold ${fontSize}px 'Pyidaungsu', sans-serif`;
-        ctx.textAlign = "center";
-
-        const gradY = canvas.height * 0.15;
-        const grad = ctx.createLinearGradient(0, gradY, 0, gradY + fontSize * 2.2);
-        grad.addColorStop(0, "rgba(0,0,0,0.85)");
-        grad.addColorStop(1, "rgba(0,0,0,0.4)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, gradY, canvas.width, fontSize * 2.2);
-
-        ctx.lineWidth = Math.max(4, Math.floor(fontSize / 8));
-        ctx.strokeStyle = "#000000";
-        ctx.strokeText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
-        ctx.fillStyle = "#facc15";
-        ctx.fillText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
-      }
-
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL("image/png");
-      a.download = "recap_cover_thumbnail.png";
-      a.click();
-      showToast("Thumbnail ကို အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!");
-    }
   </script>
 </body>
 </html>
