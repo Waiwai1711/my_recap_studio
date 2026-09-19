@@ -10,3 +10,4 @@ authlib
 httpx
 python-dotenv
 psycopg2-binary
+itsdangerous
