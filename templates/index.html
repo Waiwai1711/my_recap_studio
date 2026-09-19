@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- FFmpeg v0.11.x (Worker Cross-Origin Error ကင်းရှင်းသော Version) -->
+  <!-- Stable FFmpeg WASM v0.11.6 -->
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
   <style>
@@ -295,6 +295,9 @@
         <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
+      <!-- Preview Player for Video Sync -->
+      <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);"></video>
+
       <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
         <i class="ph-bold ph-waveform"></i> အသံခွဲထုတ်ပြီး စာသားထုတ်ယူမည် (Transcribe)
       </button>
@@ -355,7 +358,7 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling Settings -->
+      <!-- Subtitle Styling -->
       <div class="grid-4" style="background: rgba(11,12,16,0.6); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px;">
         <div class="form-group">
           <label>Font Size</label>
@@ -387,13 +390,14 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor -->
+    <!-- STEP 4: Live Subtitle Editor with Auto-Save -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">4</span>
           <h2>LIVE SUBTITLE EDITOR</h2>
         </div>
+        <span id="autoSaveStatus" style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">✓ Auto-saved</span>
       </div>
       <div id="linesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
         <div style="text-align: center; padding: 20px; color: #71717a; font-size: 12px;">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
@@ -411,12 +415,15 @@
           <i class="ph-fill ph-check-circle" style="font-size: 18px;"></i> ဗီဒီယို ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!
         </div>
         <video id="videoPlayer" controls style="max-height: 380px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;"></video>
-        <div style="display: flex; justify-content: center; gap: 8px;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
           <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
             <i class="ph-bold ph-download-simple"></i> Download Video
           </a>
           <button onclick="downloadSRT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px;">
             <i class="ph-bold ph-subtitles"></i> Download .SRT
+          </button>
+          <button onclick="downloadScriptTXT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px; color: #fbbf24;">
+            <i class="ph-bold ph-file-text"></i> Download Script (.TXT)
           </button>
         </div>
       </div>
@@ -425,7 +432,6 @@
   </main>
 
   <script>
-    // FFmpeg v0.11 API Binding
     const { createFFmpeg, fetchFile } = FFmpeg;
 
     let ffmpeg = null;
@@ -494,7 +500,33 @@
       }
     }
 
-    // Cross-origin Web Worker error ကင်းစင်သော FFmpeg v0.11 Engine Loader
+    // Auto-Save Translations to LocalStorage
+    function triggerAutoSave() {
+      const inputs = document.querySelectorAll('.sub-input');
+      const lines = Array.from(inputs).map(i => i.value);
+      if (currentSegments.length && lines.length) {
+        localStorage.setItem("recap_saved_project", JSON.stringify({
+          segments: currentSegments,
+          translations: lines
+        }));
+        document.getElementById('autoSaveStatus').innerText = "✓ Saved just now";
+      }
+    }
+
+    function restoreAutoSavedProject() {
+      const saved = localStorage.getItem("recap_saved_project");
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        if (data.segments && data.translations && data.segments.length) {
+          currentSegments = data.segments;
+          document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) ${s.text}`).join("\n");
+          renderSubEditor(data.translations);
+          showToast("ယခင် မူကြမ်းစာကြောင်းများ ပြန်လည်ရယူပြီးပါပြီ!");
+        }
+      } catch (e) {}
+    }
+
     async function initFFmpegOnStart() {
       if (isFFmpegReady) return;
       showProgress("FFmpeg Engine ဒေါင်းလုဒ်ဆွဲနေပါသည်", "Browser ထဲတွင် Engine အား ပြင်ဆင်နေပါသည်...");
@@ -513,7 +545,6 @@
         isFFmpegReady = true;
         updateGauge(100, "အဆင်သင့်ဖြစ်ပါပြီ!");
         setTimeout(hideProgress, 600);
-        showToast("⚡ FFmpeg Engine အဆင်သင့်ဖြစ်ပါပြီ!");
       } catch (err) {
         hideProgress();
         showToast("FFmpeg Load မရပါ: " + err.message);
@@ -533,6 +564,7 @@
           document.getElementById('userPkgCredits').innerText = data.package_credits;
 
           await initFFmpegOnStart();
+          restoreAutoSavedProject();
         } else {
           document.getElementById('loginGate').classList.remove('hidden');
         }
@@ -548,11 +580,15 @@
 
       const dropZone = document.getElementById('dropZone');
       const fileInput = document.getElementById('videoFileInput');
+      const videoPrev = document.getElementById('inputVideoPreview');
+
       dropZone.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
         if (fileInput.files.length) {
           selectedVideoFile = fileInput.files[0];
           document.getElementById('videoFileNameDisplay').innerText = `ရွေးချယ်ထားသော ဖိုင်: ${selectedVideoFile.name}`;
+          videoPrev.src = URL.createObjectURL(selectedVideoFile);
+          videoPrev.classList.remove('hidden');
         }
       });
     });
@@ -605,26 +641,38 @@
       const raw = document.getElementById('jsonInput').value.trim();
       try {
         const trans = JSON.parse(raw.replace(/```json|```/g, "")).translations;
-        const container = document.getElementById('linesContainer');
-        container.innerHTML = "";
-        currentSegments.forEach((seg, i) => {
-          const row = document.createElement('div');
-          row.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(11,12,16,0.6); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);";
-          row.innerHTML = `
-            <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; width: 55px; flex-shrink: 0;">[${seg.id}] (${seg.duration}s)</span>
-            <input type="text" class="sub-input" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${trans[i] || ''}">
-            <button onclick="previewAudio('${encodeURIComponent(trans[i] || '')}')" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
-          `;
-          container.appendChild(row);
-        });
+        renderSubEditor(trans);
+        triggerAutoSave();
         showToast(`မြန်မာစာကြောင်း ${trans.length} ခု ထည့်သွင်းပြီးပါပြီ!`);
       } catch (e) {
         showToast("JSON Format မှားယွင်းနေပါသည်!");
       }
     }
 
-    async function previewAudio(encodedText) {
+    function renderSubEditor(translations) {
+      const container = document.getElementById('linesContainer');
+      container.innerHTML = "";
+      currentSegments.forEach((seg, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(11,12,16,0.6); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);";
+        row.innerHTML = `
+          <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; width: 55px; flex-shrink: 0;">[${seg.id}] (${seg.duration}s)</span>
+          <input type="text" class="sub-input" oninput="triggerAutoSave()" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${translations[i] || ''}">
+          <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(translations[i] || '')}')" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    // Audio စမ်းသပ်ချိန်တွင် Video Timeline သို့ပါ တိုက်ရိုက် Seek လုပ်ပေးခြင်း
+    async function previewAudioSync(startTimeSec, encodedText) {
       const text = decodeURIComponent(encodedText);
+      const vPrev = document.getElementById('inputVideoPreview');
+      if (vPrev && !vPrev.classList.contains('hidden')) {
+        vPrev.currentTime = startTimeSec;
+        vPrev.play();
+      }
+
       const fd = new FormData();
       fd.append("text", text);
       fd.append("voice", document.getElementById('voiceSelect').value);
@@ -633,7 +681,9 @@
 
       const res = await fetch("/api/preview-single-audio", { method: "POST", body: fd });
       const blob = await res.blob();
-      new Audio(URL.createObjectURL(blob)).play();
+      const a = new Audio(URL.createObjectURL(blob));
+      a.onended = () => { if (vPrev) vPrev.pause(); };
+      a.play();
     }
 
     async function startClientExport() {
@@ -771,6 +821,18 @@
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = "recap_subtitles.srt";
+      a.click();
+    }
+
+    // Download Script as Pure Text (.TXT)
+    function downloadScriptTXT() {
+      const inputs = document.querySelectorAll('.sub-input');
+      const lines = Array.from(inputs).map(i => i.value).filter(t => t.trim() !== "");
+      if (!lines.length) return showToast("ဘာသာပြန် စာသား မရှိသေးပါ!");
+      const blob = new Blob([lines.join("\n\n")], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = "recap_voice_script.txt";
       a.click();
     }
   </script>
