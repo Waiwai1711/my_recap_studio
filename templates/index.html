@@ -10,8 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+  <!-- FFmpeg.wasm 0.12.6 Standalone Single Script (Cross-origin Worker Error ကင်းရှင်းစေရန်) -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+  <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -111,7 +112,6 @@
     .toggles { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #d4d4d8; }
     .toggle-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
-    /* Modal Overlay */
     .modal-overlay {
       position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
@@ -130,7 +130,6 @@
     .circle-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .circle-text .percent { font-size: 20px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
 
-    /* Package Selection Grid */
     .pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
     .pkg-item {
       border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 6px;
@@ -192,7 +191,6 @@
         </div>
       </div>
 
-      <!-- Payment Account Details -->
       <div style="background: rgba(11,12,16,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
         <p style="color: #38bdf8; font-weight: bold; margin-bottom: 4px;">ငွေလွှဲရမည့် အကောင့်များ -</p>
         <p>• KPay / WavePay / AYA Pay</p>
@@ -200,7 +198,6 @@
         <p>• Phone: <b style="color: #10b981; font-family: 'JetBrains Mono', monospace;">09799437346</b></p>
       </div>
 
-      <!-- Slip Upload Form -->
       <div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
         <div class="form-group">
           <label>ငွေလွှဲခဲ့သည့် App ရွေးပါ</label>
@@ -239,7 +236,7 @@
     </div>
   </div>
 
-  <!-- Header -->
+  <!-- Header (Admin ခလုတ် မပါဝင်တော့ပါ) -->
   <header class="header">
     <div class="brand">
       <div class="brand-icon">
@@ -251,15 +248,10 @@
       </div>
     </div>
 
-    <!-- Header Actions -->
     <div style="display: flex; align-items: center; gap: 10px;">
       <button onclick="openPackageModal()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
         <i class="ph-bold ph-crown"></i> Buy Package
       </button>
-
-      <a id="btnAdminLink" href="/admin" class="btn hidden" style="background: rgba(147, 51, 234, 0.2); color: #c084fc; border: 1px solid rgba(147, 51, 234, 0.4); padding: 6px 10px; font-size: 11px;">
-        <i class="ph-bold ph-gear"></i> Admin Panel
-      </a>
 
       <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 8px;">
         <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" src="" alt="Avatar">
@@ -309,7 +301,7 @@
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Gemini Prompt -->
+    <!-- STEP 2: Source Subtitles & Prompt -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -333,12 +325,12 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice & Controls Grid -->
+    <!-- STEP 3: Voice & Controls Grid & Subtitle Styling -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">3</span>
-          <h2>VOICE & RENDER SETTINGS</h2>
+          <h2>VOICE, SUBTITLE STYLING & RENDER</h2>
         </div>
       </div>
 
@@ -361,6 +353,26 @@
         <div class="form-group">
           <label>BGM Vol (%)</label>
           <input type="number" id="bgmVolInput" value="15" min="0" max="100" class="glass-input" style="text-align: center;">
+        </div>
+      </div>
+
+      <!-- Subtitle Font Styling Settings -->
+      <div class="grid-4" style="background: rgba(11,12,16,0.6); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px;">
+        <div class="form-group">
+          <label>Font Size</label>
+          <input type="number" id="subFontSize" value="24" min="14" max="60" class="glass-input" style="text-align: center;">
+        </div>
+        <div class="form-group">
+          <label>Font Color</label>
+          <input type="color" id="subFontColor" value="#ffff00" style="width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;">
+        </div>
+        <div class="form-group">
+          <label>Border Color</label>
+          <input type="color" id="subBorderColor" value="#000000" style="width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;">
+        </div>
+        <div class="form-group">
+          <label>Border Width</label>
+          <input type="number" id="subBorderWidth" value="2" min="1" max="6" class="glass-input" style="text-align: center;">
         </div>
       </div>
 
@@ -483,6 +495,7 @@
       }
     }
 
+    // FFmpeg Engine Preload (Blob Script နည်းလမ်းဖြင့် Cross-origin Worker Error ရှင်းလင်းခြင်း)
     async function initFFmpegOnStart() {
       if (isFFmpegReady) return;
       showProgress("FFmpeg Engine ဒေါင်းလုဒ်ဆွဲနေပါသည်", "Browser ထဲတွင် Engine အား ကြိုတင်ပြင်ဆင်နေပါသည်...");
@@ -518,10 +531,6 @@
           document.getElementById('userName').innerText = data.name;
           document.getElementById('userDailyCredits').innerText = data.daily_credits;
           document.getElementById('userPkgCredits').innerText = data.package_credits;
-
-          if (data.is_admin) {
-            document.getElementById('btnAdminLink').classList.remove('hidden');
-          }
 
           await initFFmpegOnStart();
         } else {
@@ -626,6 +635,7 @@
       new Audio(URL.createObjectURL(blob)).play();
     }
 
+    // Video Render & Subtitles Stitched Pipeline
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const translations = Array.from(inputs).map(i => i.value);
