@@ -9,10 +9,8 @@ from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
-try:
-    from authlib.integrations.starlette_integration import OAuth
-except (ImportError, ModuleNotFoundError):
-    from authlib.integrations.base_client import OAuth
+from authlib.integrations.starlette_integration import OAuth
+from authlib.integrations.base_client import OAuth
 import assemblyai as aai
 import edge_tts
 from pydub import AudioSegment
