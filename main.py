@@ -18,7 +18,6 @@ from database import SessionLocal, User
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="RECAP_STUDIO_SECRET_KEY_1711")
 
-# Google OAuth ပြင်ဆင်ချက် (Console မှရသော Client ID / Secret ထည့်ပါ)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET")
 
@@ -49,14 +48,12 @@ def ms_to_srt_time(ms):
     milli = ms % 1000
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milli:03d}"
 
-# --- Voice Clone & TTS Engine ---
 async def generate_speech_with_clone(text, voice, pitch_hz, rate_pct, output_file, ref_voice_path=None):
     clean_text = text.strip()
     if not clean_text:
         AudioSegment.silent(duration=500).export(output_file, format="mp3")
         return
 
-    # ၁။ Standard Voices (Thiha / Nilar)
     if voice != "local_clone" or not ref_voice_path or not os.path.exists(ref_voice_path):
         actual_voice = "my-MM-ThihaNeural" if "Thiha" in voice else "my-MM-NilarNeural"
         pitch_str = f"{pitch_hz:+d}Hz" if pitch_hz != 0 else "+0Hz"
@@ -65,13 +62,11 @@ async def generate_speech_with_clone(text, voice, pitch_hz, rate_pct, output_fil
         await communicate.save(output_file)
         return
 
-    # ၂။ Local Voice Clone အလုပ်လုပ်ပုံ (Voice Profile Analysis & Morphing)
     temp_tts = output_file + "_base.mp3"
     communicate = edge_tts.Communicate(clean_text, "my-MM-ThihaNeural", rate=f"{rate_pct:+d}%")
     await communicate.save(temp_tts)
 
     try:
-        # Reference အသံဖိုင်၏ Pitch နှင့် Frequency EQ ကို တိုင်းတာခြင်း
         cmd_filter = (
             f'ffmpeg -y -i "{temp_tts}" -i "{ref_voice_path}" '
             f'-filter_complex "[0:a]asetrate=44100*1.02,aresample=44100,equalizer=f=300:t=q:w=1.2:g=3,bass=g=2[out]" '
@@ -86,9 +81,8 @@ async def generate_speech_with_clone(text, voice, pitch_hz, rate_pct, output_fil
         if os.path.exists(temp_tts):
             os.remove(temp_tts)
 
-# --- Routes ---
 @app.get("/", response_class=HTMLResponse)
-async def serve_home(request: Request):
+async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
 @app.get("/login/google")
@@ -139,7 +133,6 @@ async def get_user_data(request: Request):
         db.close()
         return JSONResponse(status_code=401, content={"logged_in": False})
 
-    # Daily Reset Logic
     today = date.today()
     if user.last_reset_date != today:
         user.daily_credits_left = 2
@@ -240,7 +233,6 @@ async def start_export(
     if not user_email:
         return JSONResponse(status_code=401, content={"error": "ဗီဒီယို Export ပြုလုပ်ရန် Gmail ဖြင့် အရင် Login ဝင်ပေးပါခင်ဗျာ။"})
 
-    # Credit စစ်ဆေးခြင်းနှင့် နုတ်ယူခြင်း
     db = SessionLocal()
     user = db.query(User).filter(User.email == user_email).first()
     if not user:
@@ -291,7 +283,6 @@ async def start_export(
 
                 final_audio += aud
 
-                # Narrator Auto-Speed Video Logic
                 if auto_speed_video:
                     orig_sec = max(0.4, (seg["end"] - seg["start"]) / 1000.0)
                     target_sec = max(0.4, dur_ms / 1000.0)
@@ -318,7 +309,6 @@ async def start_export(
                     "done": False
                 }
 
-            # Merge Audio & Subtitle
             audio_out = os.path.join(user_dir, f"final_dub_{task_id}.mp3")
             final_audio.export(audio_out, format="mp3")
 
