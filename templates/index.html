@@ -3,733 +3,314 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Recap Studio Pro - AI Dubber & Narrator Auto-Speed</title>
+  <title>Recap Studio Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'Pyidaungsu', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
-            surface: { 800: '#1e2029', 900: '#14161f', 950: '#0b0c10' }
-          }
-        }
-      }
-    }
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Pyidaungsu', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }, colors: { brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' }, surface: { 800: '#1e2029', 900: '#14161f', 950: '#0b0c10' } } } } }
   </script>
-
   <style>
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0b0c10; }
     ::-webkit-scrollbar-thumb { background: #272a37; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
-
-    .glass-card {
-      background: rgba(20, 22, 31, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .glass-input {
-      background: rgba(11, 12, 16, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .glass-input:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
-    }
-
-    .circle-progress {
-      stroke-dasharray: 283;
-      stroke-dashoffset: 283;
-      transition: stroke-dashoffset 0.35s ease;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
-    }
+    .glass-card { background: rgba(20, 22, 31, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    .glass-input { background: rgba(11, 12, 16, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-input:focus { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.15); }
+    .circle-progress { stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.35s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
   </style>
 </head>
-
 <body class="bg-surface-950 text-zinc-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-  <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
 
-  <!-- Loading Animation Modal Overlay -->
   <div id="loadingModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
     <div class="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full mx-auto flex flex-col items-center text-center shadow-2xl border border-white/10 relative overflow-hidden">
-      <div class="relative w-28 h-28 md:w-32 md:h-32 flex items-center justify-center my-2">
+      <div class="relative w-28 h-28 flex items-center justify-center my-2">
         <svg class="w-full h-full" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="45" stroke="#1e2029" stroke-width="8" fill="transparent"/>
           <circle id="gaugeRing" class="circle-progress text-sky-400" cx="50" cy="50" r="45" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="transparent"/>
         </svg>
         <div class="absolute flex flex-col items-center">
           <span id="modalPercent" class="text-2xl font-bold font-mono tracking-tight text-white">0%</span>
-          <span class="text-[9px] text-zinc-500 font-mono uppercase tracking-widest">Progress</span>
         </div>
       </div>
-
       <h3 id="modalTitle" class="text-sm font-bold text-sky-400 mt-2">လုပ်ဆောင်နေပါသည်</h3>
-      <p id="modalStatus" class="text-xs text-zinc-400 mt-1 min-h-[36px] flex items-center justify-center px-2 font-mono">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
-
-      <div class="flex items-center gap-1.5 mt-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce"></span>
-        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce" style="animation-delay: 0.2s"></span>
-        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce" style="animation-delay: 0.4s"></span>
-      </div>
+      <p id="modalStatus" class="text-xs text-zinc-400 mt-1">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
     </div>
   </div>
 
-  <!-- Header -->
   <header class="h-16 border-b border-white/5 bg-surface-900/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
-        <i class="ph-bold ph-lightning text-white text-base md:text-lg"></i>
-      </div>
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg"><i class="ph-bold ph-lightning text-white text-base"></i></div>
       <div>
-        <h1 class="font-bold text-xs md:text-sm tracking-wide bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">RECAP STUDIO PRO</h1>
-        <p class="text-[9px] md:text-[10px] text-zinc-500 font-mono">Narrator Auto-Speed Engine</p>
+        <h1 class="font-bold text-xs md:text-sm bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">RECAP STUDIO PRO</h1>
+        <p class="text-[9px] text-zinc-500 font-mono">Narrator Auto-Speed & Voice Clone</p>
       </div>
     </div>
-    <div class="flex items-center gap-1.5">
-      <button onclick="saveProjectJSON()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-surface-800 hover:bg-zinc-800 text-zinc-300 border border-white/5 transition">
-        <i class="ph-bold ph-floppy-disk text-brand-400"></i> <span class="hidden sm:inline">Save</span>
-      </button>
-      <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-surface-800 hover:bg-zinc-800 text-zinc-300 border border-white/5 transition cursor-pointer">
-        <i class="ph-bold ph-folder-open text-purple-400"></i> <span class="hidden sm:inline">Load</span>
-        <input type="file" id="loadProjectInput" accept=".json" class="hidden" onchange="loadProjectJSON(event)">
-      </label>
+    
+    <div id="authSection" class="flex items-center gap-2">
+      <a id="btnLoginGoogle" href="/login/google" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white text-zinc-900 font-semibold text-xs hover:bg-zinc-200 transition">
+        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
+        <span>Sign in with Google</span>
+      </a>
+      <div id="userProfileBox" class="hidden flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-surface-800 px-3 py-1 rounded-xl border border-white/10 text-xs font-mono">
+          <span>Daily: <b class="text-sky-400" id="userDailyCredits">2</b>/2</span> <span class="text-zinc-600">|</span> <span>Pkg: <b class="text-emerald-400" id="userPkgCredits">0</b></span>
+        </div>
+        <img id="userAvatar" class="w-8 h-8 rounded-full border border-sky-400/50" src="" alt="avatar">
+      </div>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-5 md:space-y-6">
-
-    <!-- STEP 1: Video & AssemblyAI Setup Card -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-5">
+    
     <div class="glass-card rounded-2xl p-4 md:p-6">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">1</span>
-        <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">INPUT VIDEO & TRANSCRIPTION</h2>
-      </div>
-
+      <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200 mb-3">1. INPUT VIDEO & TRANSCRIPTION</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-zinc-400 flex items-center justify-between">
-            <span>AssemblyAI API Key</span>
-            <span class="text-[10px] text-emerald-400 font-mono flex items-center gap-1"><i class="ph-fill ph-shield-check"></i> Saved</span>
-          </label>
-          <input type="password" id="apiKey" placeholder="AssemblyAI API key..." 
-                 class="glass-input w-full px-3 py-2 rounded-xl text-xs font-mono text-zinc-200 outline-none">
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-zinc-400">Background Music (BGM - Optional)</label>
-          <input type="file" id="bgmFile" accept="audio/*" 
-                 class="glass-input w-full px-3 py-1.5 rounded-xl text-xs text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:bg-surface-800 file:text-zinc-300 cursor-pointer">
-        </div>
+        <input type="password" id="apiKey" placeholder="AssemblyAI API key..." class="glass-input w-full px-3 py-2 rounded-xl text-xs font-mono text-zinc-200">
+        <input type="file" id="videoFileInput" accept="video/*" class="glass-input w-full px-3 py-1.5 rounded-xl text-xs text-zinc-400">
       </div>
-
-      <div id="dropZone" class="border-2 border-dashed border-zinc-800 hover:border-brand-500/50 bg-surface-950/40 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5">
-        <input type="file" id="videoFileInput" accept="video/*" class="hidden">
-        <i class="ph-bold ph-cloud-arrow-up text-xl text-zinc-400"></i>
-        <p class="text-xs font-medium text-zinc-300" id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် Drag & Drop ဆွဲထည့်ပါ</p>
-      </div>
-
-      <button id="btnTranscribe" onclick="startTranscribe()" 
-              class="w-full mt-3 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 font-semibold text-xs text-white shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2">
-        <i class="ph-bold ph-waveform"></i> စာသားထုတ်ယူမည် (Transcribe Video)
-      </button>
+      <button onclick="startTranscribe()" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-xs text-white transition">စာသားထုတ်ယူမည် (Transcribe)</button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Gemini Prompt -->
     <div class="glass-card rounded-2xl p-4 md:p-6">
       <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">2</span>
-          <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">SOURCE SUBTITLES & PROMPT</h2>
-        </div>
-        <button onclick="copyPrompt()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 transition">
-          <i class="ph-bold ph-copy"></i> Copy Prompt
-        </button>
+        <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">2. SOURCE SUBTITLES & PROMPT</h2>
+        <button onclick="copyPrompt()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/10 text-brand-400 transition">Copy Prompt</button>
       </div>
-
-      <textarea id="sourceText" readonly rows="3" 
-                class="glass-input w-full p-3 rounded-xl text-xs font-mono text-zinc-400 mb-3 resize-none outline-none leading-relaxed" 
-                placeholder="Transcribed lines will appear here..."></textarea>
-
-      <div class="space-y-1">
-        <label class="text-xs font-medium text-zinc-400">Gemini မှ ရရှိသော Burmese Translations JSON ကို ထည့်ပါ:</label>
-        <textarea id="jsonInput" rows="3" 
-                  class="glass-input w-full p-3 rounded-xl text-xs font-mono text-purple-300 placeholder-zinc-700 resize-none outline-none focus:border-purple-500 transition" 
-                  placeholder='{"translations": ["ပထမစာကြောင်း။", "ဒုတိယစာကြောင်း။"]}'></textarea>
-      </div>
-
-      <button onclick="submitJson()" 
-              class="w-full mt-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-xs text-white shadow-lg shadow-purple-600/20 transition flex items-center justify-center gap-2">
-        <i class="ph-bold ph-paper-plane-right"></i> Submit Translation ▷ (JSON ထည့်သွင်းမည်)
-      </button>
+      <textarea id="sourceText" readonly rows="3" class="glass-input w-full p-3 rounded-xl text-xs font-mono text-zinc-400 mb-3" placeholder="Transcribed lines..."></textarea>
+      <textarea id="jsonInput" rows="3" class="glass-input w-full p-3 rounded-xl text-xs font-mono text-purple-300" placeholder='{"translations": ["..."]}'></textarea>
+      <button onclick="submitJson()" class="w-full mt-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-xs text-white transition">Submit Translation (JSON)</button>
     </div>
 
-    <!-- STEP 3: Voice Selection, Pitch & Subtitle Styling -->
-    <div class="glass-card rounded-2xl p-4 md:p-6 border border-brand-500/20">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">3</span>
-          <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">VOICE, PRESETS & SUBTITLE STYLING</h2>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="applyPreset('tiktok')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-surface-800 text-amber-400 border border-amber-500/20">TikTok 9:16</button>
-          <button onclick="applyPreset('youtube')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-surface-800 text-sky-400 border border-sky-500/20">YouTube 16:9</button>
-        </div>
-      </div>
-
-      <!-- Controls Grid with Voice, Pitch, Speed, BGM -->
+    <div class="glass-card rounded-2xl p-4 md:p-6">
+      <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200 mb-3">3. VOICE, PRESETS & SUBTITLE STYLING</h2>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div>
-          <label class="text-xs text-zinc-400 font-medium">AI Voice (အသံပုံစံ)</label>
-          <select id="voiceSelect" onchange="toggleVoiceCloneBox()" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-zinc-200 outline-none">
+          <label class="text-xs text-zinc-400">AI Voice</label>
+          <select id="voiceSelect" onchange="toggleVoiceCloneBox()" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-zinc-200">
             <option value="my-MM-ThihaNeural">Thiha (Standard Male)</option>
             <option value="my-MM-NilarNeural">Nilar (Standard Female)</option>
-            <option value="local_clone">🎙️ Local Voice Clone (ကိုယ်ပိုင်/အခြားသူအသံ)</option>
+            <option value="local_clone">🎙️ Local Voice Clone</option>
           </select>
         </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium">Pitch / အသံအနိမ့်အမြင့် (Hz)</label>
-          <input type="number" id="pitchInput" value="0" min="-50" max="50" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-zinc-200 text-center outline-none">
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium">Speech Speed (%)</label>
-          <input type="number" id="speedInput" value="10" min="-20" max="60" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-zinc-200 text-center outline-none">
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium">BGM Vol (%)</label>
-          <input type="number" id="bgmVolInput" value="15" min="0" max="100" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-zinc-200 text-center outline-none">
+        <div><label class="text-xs text-zinc-400">Pitch (Hz)</label><input type="number" id="pitchInput" value="0" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-center"></div>
+        <div><label class="text-xs text-zinc-400">Speed (%)</label><input type="number" id="speedInput" value="10" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-center"></div>
+        <div><label class="text-xs text-zinc-400">BGM Vol (%)</label><input type="number" id="bgmVolInput" value="15" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-center"></div>
+      </div>
+
+      <div id="voiceClonePanel" class="hidden p-4 rounded-xl bg-surface-900 border border-brand-500/30 mb-4">
+        <span class="text-xs font-semibold text-sky-400 block mb-2">Local Voice Cloning (Reference Audio)</span>
+        <div class="flex gap-2">
+           <button id="btnRecordVoice" onclick="toggleMicRecord()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition">Record Mic</button>
+           <label class="px-4 py-2 rounded-xl text-xs font-semibold bg-surface-800 text-sky-400 border border-sky-500/20 cursor-pointer">
+              Upload Audio<input type="file" accept="audio/*" onchange="uploadVoiceFile(this.files[0])" class="hidden">
+           </label>
+           <span id="uploadedVoiceStatus" class="text-[10px] text-emerald-400 font-mono mt-2 ml-2"></span>
         </div>
       </div>
 
-      <!-- VOICE CLONE PANEL -->
-      <div id="voiceClonePanel" class="hidden p-4 rounded-xl bg-surface-950/80 border border-brand-500/30 mb-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-sky-400 flex items-center gap-1.5">
-            <i class="ph-bold ph-microphone-stage"></i> Local Voice Cloning Engine
-          </span>
-          <span class="text-[10px] text-zinc-500 font-mono">Reference Audio: ၅ မှ ၁၅ စက္ကန့် ပေးပါ</span>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          <div class="p-3 rounded-lg bg-surface-900 border border-white/5 flex flex-col items-center justify-center gap-2">
-            <span class="text-xs text-zinc-300 font-medium">နည်းလမ်း (၁) - Mic ဖြင့် အသံသွင်းမည်</span>
-            <button id="btnRecordVoice" onclick="toggleMicRecord()" 
-                    class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 transition">
-              <i class="ph-bold ph-record text-base"></i> <span id="recordBtnText">Record စတင်မည်</span>
-            </button>
-            <span id="recordTimer" class="text-[10px] text-zinc-500 font-mono">00:00</span>
-          </div>
-
-          <div class="p-3 rounded-lg bg-surface-900 border border-white/5 flex flex-col items-center justify-center gap-2">
-            <span class="text-xs text-zinc-300 font-medium">နည်းလမ်း (၂) - Voice File တင်မည်</span>
-            <input type="file" id="sampleVoiceFileInput" accept="audio/*" onchange="uploadVoiceFile(this.files[0])" class="hidden">
-            <button onclick="document.getElementById('sampleVoiceFileInput').click()" 
-                    class="px-4 py-2 rounded-xl text-xs font-semibold bg-surface-800 hover:bg-zinc-800 text-sky-400 border border-sky-500/20 flex items-center gap-1.5 transition">
-              <i class="ph-bold ph-upload-simple text-base"></i> Voice File ရွေးပါ (.wav / .mp3)
-            </button>
-            <span id="uploadedVoiceStatus" class="text-[10px] text-zinc-500 font-mono">ဖိုင် မရွေးရသေးပါ</span>
-          </div>
-        </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 rounded-xl bg-surface-950/60 mb-3 border border-white/5">
+        <div><label class="text-xs text-zinc-400">Font Name</label><input type="text" id="fontNameInput" value="Pyidaungsu" oninput="updateLivePreview()" class="glass-input w-full mt-1 p-2 rounded-lg text-xs"></div>
+        <div><label class="text-xs text-zinc-400">Font Size</label><input type="number" id="fontSizeInput" value="22" oninput="updateLivePreview()" class="glass-input w-full mt-1 p-2 rounded-lg text-xs"></div>
+        <div><label class="text-xs text-zinc-400">Text Color</label><input type="color" id="textColorInput" value="#ffff00" oninput="updateLivePreview()" class="w-full h-8 mt-1 rounded-lg"></div>
+        <div><label class="text-xs text-zinc-400">Outline</label><input type="color" id="outlineColorInput" value="#000000" oninput="updateLivePreview()" class="w-full h-8 mt-1 rounded-lg"></div>
       </div>
 
-      <!-- Subtitle Styling Inputs (Font, Size, Color, Margin) -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 rounded-xl bg-surface-950/60 border border-white/5 mb-3">
-        <div class="col-span-2 md:col-span-1">
-          <label class="text-xs text-zinc-400 font-medium">Font Family (ဖောင့်)</label>
-          <div class="flex items-center gap-1 mt-1">
-            <input type="text" id="fontNameInput" value="Pyidaungsu" oninput="updateLivePreview()" 
-                   placeholder="Font Name..." class="glass-input w-full p-2 rounded-lg text-xs font-mono text-zinc-200 outline-none">
-            <label title="Custom Font File တင်မည်" class="p-2 rounded-lg bg-surface-800 hover:bg-zinc-700 text-sky-400 cursor-pointer border border-white/10 shrink-0">
-              <i class="ph-bold ph-text-t"></i>
-              <input type="file" id="customFontFileInput" accept=".ttf,.otf" class="hidden" onchange="handleCustomFont(event)">
-            </label>
-          </div>
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium">Font Size</label>
-          <input type="number" id="fontSizeInput" value="22" oninput="updateLivePreview()" class="glass-input w-full mt-1 p-2 rounded-lg text-xs font-mono text-zinc-200 text-center outline-none">
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium">Margin Bottom (V)</label>
-          <input type="number" id="marginVInput" value="28" class="glass-input w-full mt-1 p-2 rounded-lg text-xs font-mono text-zinc-200 text-center outline-none">
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium">Text Color</label>
-          <input type="color" id="textColorInput" value="#ffff00" oninput="updateLivePreview()" class="w-full h-8 mt-1 p-0.5 rounded-lg bg-transparent border border-white/10 cursor-pointer">
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium">Outline Color</label>
-          <input type="color" id="outlineColorInput" value="#000000" oninput="updateLivePreview()" class="w-full h-8 mt-1 p-0.5 rounded-lg bg-transparent border border-white/10 cursor-pointer">
-        </div>
+      <div class="flex gap-4 text-xs text-zinc-300 mb-3">
+        <label class="flex items-center gap-2 cursor-pointer text-amber-400"><input type="checkbox" id="autoSpeedCheck" checked class="w-4 h-4 rounded"><span>⚡ Narrator Auto-Speed</span></label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="blurSubCheck" checked class="w-4 h-4 rounded"><span>Blur Sub</span></label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="burnSubCheck" checked class="w-4 h-4 rounded"><span>Burn-in Sub</span></label>
       </div>
 
-      <!-- Toggles & Narrator Auto-Speed Setting -->
-      <div class="flex flex-wrap items-center gap-4 text-xs text-zinc-300 mb-3">
-        <label class="flex items-center gap-2 cursor-pointer text-amber-400 font-medium">
-          <input type="checkbox" id="autoSpeedCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700 text-amber-500">
-          <span>⚡ Narrator Auto-Speed (အသံထက်ရှည်သော Video ကို Auto အမြန်ရစ်မည်)</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="blurSubCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700 text-brand-500">
-          <span>မူရင်းစာတန်း Blur မည်</span>
-        </label>
-        <div class="flex items-center gap-2">
-          <span class="text-zinc-500 font-mono">Blur H%:</span>
-          <input type="number" id="blurHInput" value="12" class="glass-input w-14 p-1 text-center rounded text-xs">
-        </div>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="burnSubCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700 text-brand-500">
-          <span>မြန်မာစာတန်း Burn-in</span>
-        </label>
-      </div>
-
-      <div class="w-full bg-black/90 rounded-xl p-3 text-center border border-white/5 flex flex-col items-center justify-center min-h-[55px]">
-        <p id="previewSubtitleText" class="font-bold tracking-wide select-none" style="color: #ffff00; font-size: 20px; text-shadow: 0 0 2px #000, 2px 2px 2px #000; font-family: 'Pyidaungsu', sans-serif;">
-          မြန်မာစာတန်းထိုး နမူနာပုံစံ (Sample Subtitle)
-        </p>
-      </div>
+      <div class="w-full bg-black/90 rounded-xl p-3 text-center border border-white/5"><p id="previewSubtitleText" style="color: #ffff00; font-size: 20px; text-shadow: 0 0 2px #000, 2px 2px 2px #000; font-family: 'Pyidaungsu';">မြန်မာစာတန်းထိုး နမူနာပုံစံ</p></div>
     </div>
 
-    <!-- STEP 4: Live Edit & Find/Replace -->
     <div class="glass-card rounded-2xl p-4 md:p-6">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">4</span>
-          <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">LIVE SUBTITLE EDITOR</h2>
-        </div>
-        <div class="flex items-center gap-1.5 w-full sm:w-auto">
-          <input type="text" id="findWord" placeholder="ရှာမည့်စာလုံး..." class="glass-input px-2.5 py-1 text-xs rounded-lg flex-1 sm:w-28 text-zinc-200 outline-none">
-          <input type="text" id="replaceWord" placeholder="အစားထိုးမည်..." class="glass-input px-2.5 py-1 text-xs rounded-lg flex-1 sm:w-28 text-zinc-200 outline-none">
-          <button onclick="findAndReplaceAll()" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 transition">
-            Replace
-          </button>
-        </div>
-      </div>
-
-      <div id="linesContainer" class="space-y-2 max-h-80 overflow-y-auto pr-1">
-        <div class="text-center py-6 text-zinc-600 text-xs">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
-      </div>
+      <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200 mb-3">4. LIVE SUBTITLE EDITOR</h2>
+      <div id="linesContainer" class="space-y-2 max-h-80 overflow-y-auto"></div>
     </div>
 
-    <!-- STEP 5: Final Export -->
     <div class="space-y-4">
-      <button id="btnExport" onclick="exportVideo()" 
-              class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-sm text-white shadow-xl shadow-emerald-600/20 active:scale-[0.99] transition flex items-center justify-center gap-2">
-        <i class="ph-bold ph-lightning text-lg"></i> Narrator Sync ဖြင့် အသံသွင်း ဗီဒီယို Export ပြုလုပ်မည်
-      </button>
-
-      <div id="resultBox" class="hidden glass-card rounded-2xl p-4 md:p-6 text-center space-y-3">
-        <div class="text-emerald-400 text-sm font-semibold flex items-center justify-center gap-2">
-          <i class="ph-fill ph-check-circle text-lg"></i> ဗီဒီယို ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!
-        </div>
-        <video id="videoPlayer" controls class="max-h-[380px] w-full max-w-lg mx-auto rounded-xl shadow-2xl border border-white/10"></video>
-        <div>
-          <a id="downloadBtn" download="recap_dubbed_output.mp4" 
-             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition shadow-lg shadow-brand-500/20">
-            <i class="ph-bold ph-download-simple"></i> Download Result Video
-          </a>
-        </div>
+      <button onclick="exportVideo()" class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-bold text-sm text-white transition">ဗီဒီယိုနှင့် Subtitle Export ပြုလုပ်မည်</button>
+      <div id="resultBox" class="hidden glass-card rounded-2xl p-4 text-center space-y-3">
+        <video id="videoPlayer" controls class="w-full max-w-lg mx-auto rounded-xl"></video>
+        <a id="downloadBtn" download="recap_video.mp4" class="inline-flex px-5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold">Download Video</a>
       </div>
     </div>
-
   </main>
 
   <script>
-    let userSessionId = localStorage.getItem("user_session_id");
-    if (!userSessionId) {
-      userSessionId = "user_" + Math.random().toString(36).substring(2, 9) + Date.now();
-      localStorage.setItem("user_session_id", userSessionId);
+    let currentSegments = [], uploadedVideoFilename = "", savedClonedVoicePath = null;
+    let mediaRecorder = null, audioChunks = [];
+
+    async function checkUserAuth() {
+      try {
+        const res = await fetch('/api/user/me');
+        if (res.ok) {
+          const user = await res.json();
+          if(user.logged_in) {
+            document.getElementById('btnLoginGoogle').classList.add('hidden');
+            document.getElementById('userProfileBox').classList.remove('hidden');
+            document.getElementById('userDailyCredits').innerText = user.daily_credits;
+            document.getElementById('userPkgCredits').innerText = user.package_credits;
+            if (user.avatar) document.getElementById('userAvatar').src = user.avatar;
+          }
+        }
+      } catch(e) {}
+    }
+    checkUserAuth();
+
+    function showToast(msg) {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = `px-3.5 py-2.5 rounded-xl glass-card text-xs text-zinc-200 shadow-2xl`;
+      t.innerText = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
     }
 
-    let currentSegments = [];
-    let uploadedVideoFilename = "";
-    let savedClonedVoicePath = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let recordInterval = null;
-
-    function showToast(msg, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      const icons = { success: 'ph-check-circle text-emerald-400', error: 'ph-x-circle text-rose-400', info: 'ph-info text-sky-400' };
-      toast.className = `pointer-events-auto flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass-card border border-white/10 text-xs text-zinc-200 shadow-2xl transition-all duration-300 translate-y-2 opacity-0`;
-      toast.innerHTML = `<i class="ph-fill ${icons[type] || icons.info} text-base shrink-0"></i><span>${msg}</span>`;
-      container.appendChild(toast);
-      setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
-      setTimeout(() => { toast.classList.add('opacity-0', 'translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3500);
-    }
-
-    function showProgressModal(title, status = "စတင်လုပ်ဆောင်နေပါသည်...") {
-      const modal = document.getElementById('loadingModal');
+    function showProgressModal(title, status) {
       document.getElementById('modalTitle').innerText = title;
       document.getElementById('modalStatus').innerText = status;
-      updateGauge(0);
-      modal.classList.remove('hidden');
-      setTimeout(() => modal.classList.remove('opacity-0'), 10);
+      document.getElementById('gaugeRing').style.strokeDashoffset = 283;
+      document.getElementById('modalPercent').innerText = `0%`;
+      const m = document.getElementById('loadingModal');
+      m.classList.remove('hidden'); setTimeout(()=> m.classList.remove('opacity-0'), 10);
     }
-
-    function updateGauge(percent, statusText = null) {
-      const ring = document.getElementById('gaugeRing');
-      const text = document.getElementById('modalPercent');
-      const status = document.getElementById('modalStatus');
-      const circumference = 2 * Math.PI * 45;
-      const offset = circumference - (percent / 100) * circumference;
-      ring.style.strokeDashoffset = offset;
-      text.innerText = `${percent}%`;
-      if (statusText) status.innerText = statusText;
+    function updateGauge(pct, text) {
+      document.getElementById('gaugeRing').style.strokeDashoffset = 283 - (pct / 100 * 283);
+      document.getElementById('modalPercent').innerText = `${pct}%`;
+      if(text) document.getElementById('modalStatus').innerText = text;
     }
-
     function hideProgressModal() {
-      const modal = document.getElementById('loadingModal');
-      modal.classList.add('opacity-0');
-      setTimeout(() => modal.classList.add('hidden'), 300);
+      const m = document.getElementById('loadingModal');
+      m.classList.add('opacity-0'); setTimeout(()=> m.classList.add('hidden'), 300);
     }
 
     function toggleVoiceCloneBox() {
-      const v = document.getElementById('voiceSelect').value;
-      const panel = document.getElementById('voiceClonePanel');
-      if (v === 'local_clone') {
-        panel.classList.remove('hidden');
-      } else {
-        panel.classList.add('hidden');
-      }
+      document.getElementById('voiceClonePanel').classList.toggle('hidden', document.getElementById('voiceSelect').value !== 'local_clone');
     }
 
     async function toggleMicRecord() {
       const btn = document.getElementById('btnRecordVoice');
-      const btnText = document.getElementById('recordBtnText');
-      const timer = document.getElementById('recordTimer');
-
       if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
-
-          mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-          mediaRecorder.onstop = async () => {
-            clearInterval(recordInterval);
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-            const file = new File([audioBlob], "mic_sample.wav", { type: "audio/wav" });
-            await uploadVoiceFile(file);
-          };
-
-          mediaRecorder.start();
-          btn.classList.replace('bg-rose-600', 'bg-amber-600');
-          btnText.innerText = "ရပ်တန့်မည် (Stop)";
-          
-          let sec = 0;
-          recordInterval = setInterval(() => {
-            sec++;
-            timer.innerText = `00:${sec < 10 ? '0' + sec : sec}`;
-          }, 1000);
-        } catch (err) {
-          showToast("Microphone ဖွင့်မရပါ: " + err.message, "error");
-        }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+          const file = new File([new Blob(audioChunks)], "mic.wav");
+          await uploadVoiceFile(file);
+        };
+        mediaRecorder.start();
+        btn.innerText = "ရပ်တန့်မည် (Stop)"; btn.classList.replace('bg-rose-600', 'bg-amber-600');
       } else {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(t => t.stop());
-        btn.classList.replace('bg-amber-600', 'bg-rose-600');
-        btnText.innerText = "Record စတင်မည်";
+        mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        btn.innerText = "Record Mic"; btn.classList.replace('bg-amber-600', 'bg-rose-600');
       }
     }
 
     async function uploadVoiceFile(file) {
       if (!file) return;
-      showToast("Voice Sample တင်သွင်းနေပါသည်...", "info");
-      const formData = new FormData();
-      formData.append("voice_file", file);
-
-      try {
-        const res = await fetch("/api/upload-voice-sample", { method: "POST", body: formData });
-        const data = await res.json();
-        if (data.status === "success") {
-          savedClonedVoicePath = data.voice_path;
-          document.getElementById('uploadedVoiceStatus').innerHTML = `ရရှိထားသောအသံ: <span class="text-emerald-400">${file.name || 'Mic Record'}</span>`;
-          showToast("Voice Sample အောင်မြင်စွာ ရရှိပါပြီ! Cloning ပြုလုပ်နိုင်ပါပြီ။", "success");
-        }
-      } catch (err) {
-        showToast("Voice Upload မအောင်မြင်ပါ", "error");
+      const formData = new FormData(); formData.append("voice_file", file);
+      const res = await fetch("/api/upload-voice-sample", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.status === "success") {
+        savedClonedVoicePath = data.voice_path;
+        document.getElementById('uploadedVoiceStatus').innerText = "✅ အသံရရှိပါပြီ";
       }
     }
-
-    function handleCustomFont(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const fontName = file.name.split('.')[0];
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const newStyle = document.createElement('style');
-        newStyle.appendChild(document.createTextNode(`
-          @font-face {
-            font-family: '${fontName}';
-            src: url('${evt.target.result}');
-          }
-        `));
-        document.head.appendChild(newStyle);
-        document.getElementById('fontNameInput').value = fontName;
-        updateLivePreview();
-        showToast(`Font: ${fontName} ကို အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ!`, 'success');
-      };
-      reader.readAsDataURL(file);
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedKey = localStorage.getItem('assemblyai_key');
-      if (savedKey) document.getElementById('apiKey').value = savedKey;
-
-      const dropZone = document.getElementById('dropZone');
-      const fileInput = document.getElementById('videoFileInput');
-      dropZone.addEventListener('click', () => fileInput.click());
-      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-brand-400'); });
-      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-brand-400'));
-      dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('border-brand-400');
-        if (e.dataTransfer.files.length) {
-          fileInput.files = e.dataTransfer.files;
-          document.getElementById('videoFileNameDisplay').innerHTML = `Selected: <span class="text-brand-400 font-mono">${e.dataTransfer.files[0].name}</span>`;
-        }
-      });
-      fileInput.addEventListener('change', () => {
-        if (fileInput.files.length) {
-          document.getElementById('videoFileNameDisplay').innerHTML = `Selected: <span class="text-brand-400 font-mono">${fileInput.files[0].name}</span>`;
-        }
-      });
-    });
 
     function updateLivePreview() {
-      const sz = document.getElementById('fontSizeInput').value;
-      const col = document.getElementById('textColorInput').value;
-      const out = document.getElementById('outlineColorInput').value;
-      const font = document.getElementById('fontNameInput').value.trim() || 'Pyidaungsu';
       const p = document.getElementById('previewSubtitleText');
-      p.style.fontSize = `${sz}px`;
-      p.style.color = col;
-      p.style.fontFamily = `'${font}', sans-serif`;
-      p.style.textShadow = `0 0 2px ${out}, 2px 2px 2px ${out}, -2px -2px 2px ${out}`;
-    }
-
-    function applyPreset(type) {
-      if (type === 'tiktok') {
-        document.getElementById('fontSizeInput').value = 24;
-        document.getElementById('marginVInput').value = 45;
-        document.getElementById('blurHInput').value = 14;
-        showToast("TikTok 9:16 Preset သတ်မှတ်ပြီးပါပြီ!", "success");
-      } else {
-        document.getElementById('fontSizeInput').value = 20;
-        document.getElementById('marginVInput').value = 25;
-        document.getElementById('blurHInput').value = 10;
-        showToast("YouTube 16:9 Preset သတ်မှတ်ပြီးပါပြီ!", "success");
-      }
-      updateLivePreview();
+      p.style.fontSize = document.getElementById('fontSizeInput').value + "px";
+      p.style.color = document.getElementById('textColorInput').value;
+      p.style.fontFamily = document.getElementById('fontNameInput').value;
+      const o = document.getElementById('outlineColorInput').value;
+      p.style.textShadow = `0 0 2px ${o}, 2px 2px 2px ${o}, -2px -2px 2px ${o}`;
     }
 
     async function startTranscribe() {
-      const apiKey = document.getElementById('apiKey').value.trim();
-      const fileInput = document.getElementById('videoFileInput');
-      if (!apiKey || !fileInput.files[0]) return showToast("API Key နှင့် Video ထည့်ပါ!", "error");
-
+      const apiKey = document.getElementById('apiKey').value;
+      const f = document.getElementById('videoFileInput').files[0];
+      if (!apiKey || !f) return showToast("API Key နှင့် Video လိုအပ်ပါသည်");
       localStorage.setItem('assemblyai_key', apiKey);
-      showProgressModal("Transcribing Audio", "AssemblyAI သို့ Upload တင်ပြီး စာသားဖတ်နေပါသည်...");
+      showProgressModal("Transcribing", "AssemblyAI သို့ တင်နေပါသည်...");
       
-      let fakePct = 10;
-      const timer = setInterval(() => {
-        if (fakePct < 85) {
-          fakePct += 5;
-          updateGauge(fakePct, "AssemblyAI ဖြင့် စာကြောင်းများ အသံဖတ်နေပါသည်...");
-        }
-      }, 1200);
-
-      const formData = new FormData();
-      formData.append("session_id", userSessionId);
-      formData.append("api_key", apiKey);
-      formData.append("video", fileInput.files[0]);
-
+      const formData = new FormData(); formData.append("api_key", apiKey); formData.append("video", f);
       try {
         const res = await fetch("/api/transcribe", { method: "POST", body: formData });
         const data = await res.json();
-        clearInterval(timer);
-
-        if (!res.ok) throw new Error(data.error);
-        updateGauge(100, "စာသားများ အောင်မြင်စွာ ရရှိပါပြီ!");
-        currentSegments = data.segments;
-        uploadedVideoFilename = data.video_filename;
-
+        if(data.error) throw new Error(data.error);
+        currentSegments = data.segments; uploadedVideoFilename = data.video_filename;
         document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) ${s.text}`).join("\n");
-        setTimeout(hideProgressModal, 600);
-        showToast(`စာကြောင်း ${currentSegments.length} ခု ထုတ်ယူပြီးပါပြီ!`, "success");
-      } catch (err) {
-        clearInterval(timer);
-        hideProgressModal();
-        showToast(err.message, "error");
-      }
+        hideProgressModal(); showToast("စာသားထုတ်ယူပြီးပါပြီ");
+      } catch(e) { hideProgressModal(); showToast(e.message); }
     }
 
     function copyPrompt() {
-      if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!", "error");
-      const header = `You are a professional video dubbing translator. Translate the subtitles into spoken Burmese.\nCRITICAL: Must fit exact Max Limit duration.\nReturn JSON: {"translations": ["...", "..."]}\nInputs:\n`;
-      const inputs = currentSegments.map(s => `[${s.id}] [Max Limit: ${s.duration}s] "${s.text}"`).join("\n");
-      navigator.clipboard.writeText(header + inputs);
-      showToast("Gemini အတွက် Prompt ကို ကူးယူပြီးပါပြီ!", "success");
+      const t = currentSegments.map(s => `[${s.id}] [Max: ${s.duration}s] "${s.text}"`).join("\n");
+      navigator.clipboard.writeText(`Translate to spoken Burmese. Exact JSON: {"translations": ["...", "..."]}\n${t}`);
+      showToast("Prompt copied!");
     }
 
     function submitJson() {
-      const raw = document.getElementById('jsonInput').value.trim();
       try {
-        const trans = JSON.parse(raw.replace(/```json|```/g, "")).translations;
-        const container = document.getElementById('linesContainer');
-        container.innerHTML = "";
+        const trans = JSON.parse(document.getElementById('jsonInput').value.replace(/```json|```/g, "")).translations;
+        const c = document.getElementById('linesContainer'); c.innerHTML = "";
         currentSegments.forEach((seg, i) => {
-          const row = document.createElement('div');
-          row.className = "flex items-center gap-2 p-2 rounded-xl glass-input border border-white/5";
-          row.innerHTML = `
-            <span class="text-xs font-mono text-brand-400 w-14 shrink-0">[${seg.id}] (${seg.duration}s)</span>
-            <input type="text" class="sub-input flex-1 bg-transparent border-none text-xs text-zinc-200 outline-none" value="${trans[i] || ''}">
-            <button onclick="previewAudioLine('${(trans[i] || '').replace(/'/g, "\\'")}')" class="px-2 py-1 rounded-lg text-xs bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 transition">▶ စမ်းသပ်</button>
-          `;
-          container.appendChild(row);
+          c.innerHTML += `<div class="flex items-center gap-2 p-2 glass-input mb-2 rounded"><span class="text-xs text-brand-400 w-12">[${seg.id}]</span><input type="text" class="sub-input flex-1 bg-transparent border-none text-xs text-white outline-none" value="${trans[i] || ''}"> <button onclick="previewAudioLine('${(trans[i] || '').replace(/'/g, "\\'")}')" class="text-xs bg-brand-500/20 px-2 py-1 rounded">▶</button></div>`;
         });
-        showToast(`မြန်မာစာကြောင်း ${trans.length} ခု ထည့်သွင်းပြီးပါပြီ!`, "success");
-      } catch (e) {
-        showToast("JSON Format မှားယွင်းနေပါသည်!", "error");
-      }
+      } catch(e) { showToast("JSON Format မှားနေပါသည်"); }
     }
 
     async function previewAudioLine(text) {
-      if (!text) return;
+      if(!text) return;
       const formData = new FormData();
-      formData.append("session_id", userSessionId);
-      formData.append("text", text);
-      formData.append("voice", document.getElementById('voiceSelect').value);
-      formData.append("pitch", document.getElementById('pitchInput').value);
-      formData.append("speed", document.getElementById('speedInput').value);
-      if (savedClonedVoicePath) {
-        formData.append("ref_voice_path", savedClonedVoicePath);
-      }
-
-      try {
-        const res = await fetch("/api/preview-audio", { method: "POST", body: formData });
-        const blob = await res.blob();
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.play();
-      } catch (e) {
-        showToast("Audio Preview မအောင်မြင်ပါ", "error");
-      }
-    }
-
-    function findAndReplaceAll() {
-      const f = document.getElementById('findWord').value.trim();
-      const r = document.getElementById('replaceWord').value.trim();
-      if (!f) return;
-      let count = 0;
-      document.querySelectorAll('.sub-input').forEach(input => {
-        if (input.value.includes(f)) {
-          input.value = input.value.replaceAll(f, r);
-          count++;
-        }
-      });
-      showToast(`နေရာပေါင်း ${count} ခုတွင် အစားထိုးပြီးပါပြီ!`, "success");
-    }
-
-    function saveProjectJSON() {
-      if (!currentSegments.length) return;
-      const lines = Array.from(document.querySelectorAll('.sub-input')).map(i => i.value);
-      const proj = { segments: currentSegments, video_filename: uploadedVideoFilename, translations: lines };
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([JSON.stringify(proj, null, 2)], { type: "application/json" }));
-      a.download = "recap_project.json";
-      a.click();
-      showToast("Project သိမ်းဆည်းပြီးပါပြီ!", "success");
-    }
-
-    function loadProjectJSON(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const data = JSON.parse(ev.target.result);
-        currentSegments = data.segments || [];
-        uploadedVideoFilename = data.video_filename || "";
-        document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) ${s.text}`).join("\n");
-        document.getElementById('jsonInput').value = JSON.stringify({ translations: data.translations }, null, 2);
-        submitJson();
-        showToast("Project ပြန်လည်ဖွင့်ပြီးပါပြီ!", "success");
-      };
-      reader.readAsText(file);
+      formData.append("text", text); formData.append("voice", document.getElementById('voiceSelect').value);
+      formData.append("pitch", document.getElementById('pitchInput').value); formData.append("speed", document.getElementById('speedInput').value);
+      if(savedClonedVoicePath) formData.append("ref_voice_path", savedClonedVoicePath);
+      const res = await fetch("/api/preview-audio", { method: "POST", body: formData });
+      const audio = new Audio(URL.createObjectURL(await res.blob())); audio.play();
     }
 
     async function exportVideo() {
-      const inputs = document.querySelectorAll('.sub-input');
-      const translations = Array.from(inputs).map(i => i.value);
-      if (!translations.length) return showToast("ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ!", "error");
-
-      const voice = document.getElementById('voiceSelect').value;
-      if (voice === 'local_clone' && !savedClonedVoicePath) {
-        return showToast("Voice Clone ပြုလုပ်ရန် Mic ဖြင့် အသံသွင်းပါ သို့မဟုတ် Voice File အရင်ထည့်ပါခင်ဗျာ!", "error");
+      const trans = Array.from(document.querySelectorAll('.sub-input')).map(i => i.value);
+      if(!trans.length) return showToast("ဘာသာပြန် မရှိသေးပါ");
+      
+      if(document.getElementById('userProfileBox').classList.contains('hidden')) {
+        return showToast("ကျေးဇူးပြု၍ Google ဖြင့် Login အရင်ဝင်ပါ");
       }
 
       const taskId = "task_" + Date.now();
-      showProgressModal("TTS အသံထုတ်ယူပြီး ဗီဒီယို ပေါင်းစပ်နေပါသည်", "အဆင့်များ စတင်ပြင်ဆင်နေပါသည်...");
-
-      const evtSource = new EventSource(`/api/progress/${taskId}`);
-      evtSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        updateGauge(data.percent, data.status);
-
-        if (data.done) {
-          evtSource.close();
-          if (data.error) {
-            hideProgressModal();
-            showToast(data.status, "error");
-          } else {
-            setTimeout(() => {
-              hideProgressModal();
-              const player = document.getElementById('videoPlayer');
-              player.src = data.download_url;
-              document.getElementById('downloadBtn').href = data.download_url;
-              document.getElementById('resultBox').classList.remove('hidden');
-              showToast("ဗီဒီယို ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!", "success");
-            }, 800);
-          }
+      showProgressModal("Exporting", "စတင်ပြင်ဆင်နေပါသည်...");
+      const evt = new EventSource(`/api/progress/${taskId}`);
+      evt.onmessage = e => {
+        const d = JSON.parse(e.data); updateGauge(d.percent, d.status);
+        if(d.done) {
+          evt.close(); hideProgressModal();
+          if(!d.error) {
+            document.getElementById('videoPlayer').src = d.download_url;
+            document.getElementById('downloadBtn').href = d.download_url;
+            document.getElementById('resultBox').classList.remove('hidden');
+            checkUserAuth(); // update credits
+          } else showToast(d.status);
         }
       };
 
-      const formData = new FormData();
-      formData.append("task_id", taskId);
-      formData.append("session_id", userSessionId);
-      formData.append("video_filename", uploadedVideoFilename);
-      formData.append("segments_json", JSON.stringify(currentSegments));
-      formData.append("translations_json", JSON.stringify(translations));
-      formData.append("voice", voice);
-      formData.append("pitch", document.getElementById('pitchInput').value);
-      formData.append("speed", document.getElementById('speedInput').value);
-      formData.append("bgm_vol", document.getElementById('bgmVolInput').value);
-      formData.append("blur_sub", document.getElementById('blurSubCheck').checked);
-      formData.append("blur_h", document.getElementById('blurHInput').value);
-      formData.append("burn_sub", document.getElementById('burnSubCheck').checked);
-      formData.append("font_size", document.getElementById('fontSizeInput').value);
-      formData.append("font_name", document.getElementById('fontNameInput').value.trim() || "Pyidaungsu");
-      formData.append("auto_speed_video", document.getElementById('autoSpeedCheck').checked);
+      const fd = new FormData();
+      fd.append("task_id", taskId); fd.append("video_filename", uploadedVideoFilename);
+      fd.append("segments_json", JSON.stringify(currentSegments)); fd.append("translations_json", JSON.stringify(trans));
+      fd.append("voice", document.getElementById('voiceSelect').value); fd.append("pitch", document.getElementById('pitchInput').value);
+      fd.append("speed", document.getElementById('speedInput').value); fd.append("bgm_vol", document.getElementById('bgmVolInput').value);
+      fd.append("blur_sub", document.getElementById('blurSubCheck').checked); fd.append("burn_sub", document.getElementById('burnSubCheck').checked);
+      fd.append("blur_h", document.getElementById('blurHInput').value); fd.append("font_size", document.getElementById('fontSizeInput').value);
+      fd.append("font_name", document.getElementById('fontNameInput').value); fd.append("auto_speed_video", document.getElementById('autoSpeedCheck').checked);
+      if(savedClonedVoicePath) fd.append("ref_voice_path", savedClonedVoicePath);
 
-      if (savedClonedVoicePath) {
-        formData.append("ref_voice_path", savedClonedVoicePath);
-      }
-
-      await fetch("/api/start-export", { method: "POST", body: formData });
+      await fetch("/api/start-export", { method: "POST", body: fd });
     }
   </script>
 </body>
