@@ -2,13 +2,15 @@ import os
 import io
 import base64
 import uuid
-from datetime import date
+import shutil
+from datetime import date, datetime
 from typing import List
 from urllib.parse import urlencode
 from pydantic import BaseModel
 
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import httpx
@@ -16,18 +18,15 @@ import assemblyai as aai
 import edge_tts
 from mutagen.mp3 import MP3
 
-from database import SessionLocal, User
+from database import SessionLocal, User, PaymentRequest
 
 app = FastAPI()
 
-# 1. Reverse Proxy ပေါ်တွင် HTTPS Headers များ မှန်ကန်စေရန်
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-# 2. Browser WASM လည်းရ၊ Tailwind CDN လည်း အပိတ်မခံရစေရန် credentialless သုံးခြင်း
 @app.middleware("http")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
-    # Browser က Local assets များကို မပိတ်ပင်စေရန် သတ်မှတ်ခြင်း
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
     response.headers["Cross-Origin-Embedder-Policy"] = "credentialless"
     return response
@@ -38,20 +37,41 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
+# Admin အဖြစ် သတ်မှတ်မည့် Gmail (ဤနေရာတွင် မိမိ Gmail ထည့်ပေးပါ)
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "waiphyo171104@gmail.com")
+
 TEMP_DIR = "temp_audios"
+SLIPS_DIR = "uploaded_slips"
 os.makedirs(TEMP_DIR, exist_ok=True)
+os.makedirs(SLIPS_DIR, exist_ok=True)
+
+app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
+@app.get("/admin", response_class=HTMLResponse)
+async def serve_admin(request: Request):
+    user_email = request.cookies.get("user_email")
+    if not user_email:
+        return RedirectResponse(url="/")
+    
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == user_email).first()
+    db.close()
+    
+    if not user or (user.email != ADMIN_EMAIL and not user.is_admin):
+        return HTMLResponse("<h3>Access Denied: Admin သာ ဝင်ရောက်ခွင့်ရှိပါသည်။</h3>", status_code=403)
+    
+    return FileResponse(os.path.join("templates", "admin.html"))
+
 # --- Google OAuth Login ---
 @app.get("/login/google")
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
-        return JSONResponse(status_code=500, content={"error": "GOOGLE_CLIENT_ID မရှိသေးပါ။ Environment ကို စစ်ဆေးပါ။"})
+        return JSONResponse(status_code=500, content={"error": "GOOGLE_CLIENT_ID မရှိသေးပါ။"})
     
-    # Host header မှ domain ကို တိကျစွာ ရယူခြင်း (Render Proxy အတွက် https ဖြင့် တည်ဆောက်ခြင်း)
     host = request.headers.get("x-forwarded-host") or request.headers.get("host")
     redirect_uri = f"https://{host}/api/auth/google/callback"
     request.session["oauth_redirect_uri"] = redirect_uri
@@ -96,14 +116,13 @@ async def auth_google_callback(request: Request):
             "https://www.googleapis.com/oauth2/v2/userinfo",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        if user_res.status_code != 200:
-            return RedirectResponse(url="/?error=user_fetch_failed")
-
         user_info = user_res.json()
 
     email = user_info["email"]
     db = SessionLocal()
     user = db.query(User).filter(User.email == email).first()
+    is_admin = (email == ADMIN_EMAIL)
+    
     if not user:
         user = User(
             email=email,
@@ -111,10 +130,15 @@ async def auth_google_callback(request: Request):
             avatar=user_info.get("picture", ""),
             daily_credits_left=2,
             package_credits=0,
-            last_reset_date=date.today()
+            last_reset_date=date.today(),
+            is_admin=is_admin
         )
         db.add(user)
         db.commit()
+    else:
+        if is_admin and not user.is_admin:
+            user.is_admin = True
+            db.commit()
     db.close()
 
     res = RedirectResponse(url="/")
@@ -151,12 +175,117 @@ async def get_user_data(request: Request):
         "name": user.name,
         "avatar": user.avatar,
         "daily_credits": user.daily_credits_left,
-        "package_credits": user.package_credits
+        "package_credits": user.package_credits,
+        "is_admin": user.is_admin or (user.email == ADMIN_EMAIL)
     }
     db.close()
     return data
 
-# --- AssemblyAI Audio Transcribe ---
+# --- Payment & Package System ---
+@app.post("/api/payment/submit")
+async def submit_payment(
+    request: Request,
+    package_type: str = Form(...), # "10", "20", "30"
+    payment_method: str = Form(...),
+    slip: UploadFile = File(...)
+):
+    user_email = request.cookies.get("user_email")
+    if not user_email:
+        return JSONResponse(status_code=401, content={"error": "Login အရင်ဝင်ပေးပါ"})
+
+    amounts = {"10": 5000, "20": 10000, "30": 15000}
+    amount = amounts.get(package_type, 5000)
+
+    # Slip ဖိုင်အား သိမ်းဆည်းခြင်း
+    ext = os.path.splitext(slip.filename)[1] or ".jpg"
+    slip_filename = f"slip_{uuid.uuid4().hex[:10]}{ext}"
+    slip_path = os.path.join(SLIPS_DIR, slip_filename)
+    
+    with open(slip_path, "wb") as buffer:
+        shutil.copyfileobj(slip.file, buffer)
+
+    db = SessionLocal()
+    pay_req = PaymentRequest(
+        user_email=user_email,
+        package_type=package_type,
+        amount=amount,
+        payment_method=payment_method,
+        slip_url=f"/slips/{slip_filename}",
+        status="pending"
+    )
+    db.add(pay_req)
+    db.commit()
+    db.close()
+
+    return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
+
+# --- Admin Panel APIs ---
+@app.get("/api/admin/requests")
+async def get_admin_requests(request: Request):
+    user_email = request.cookies.get("user_email")
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == user_email).first()
+    if not user or (user.email != ADMIN_EMAIL and not user.is_admin):
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    requests_list = db.query(PaymentRequest).order_by(PaymentRequest.id.desc()).all()
+    result = []
+    for r in requests_list:
+        result.append({
+            "id": r.id,
+            "email": r.user_email,
+            "package_type": r.package_type,
+            "amount": r.amount,
+            "payment_method": r.payment_method,
+            "slip_url": r.slip_url,
+            "status": r.status,
+            "created_at": r.created_at.strftime("%Y-%m-%d %H:%M")
+        })
+    db.close()
+    return result
+
+@app.post("/api/admin/approve")
+async def approve_request(request: Request, req_id: int = Form(...)):
+    user_email = request.cookies.get("user_email")
+    db = SessionLocal()
+    admin = db.query(User).filter(User.email == user_email).first()
+    if not admin or (admin.email != ADMIN_EMAIL and not admin.is_admin):
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
+    if not pay_req or pay_req.status != "pending":
+        db.close()
+        return JSONResponse(status_code=400, content={"error": "Request not found or already processed"})
+
+    # User ၏ package credits ထဲသို့ ပုဒ်ရေ ပေါင်းထည့်ပေးခြင်း
+    target_user = db.query(User).filter(User.email == pay_req.user_email).first()
+    if target_user:
+        add_credits = int(pay_req.package_type)
+        target_user.package_credits += add_credits
+        pay_req.status = "approved"
+        db.commit()
+    db.close()
+    return {"status": "success", "message": "အတည်ပြုပြီး ပုဒ်ရေ ထည့်သွင်းပေးပြီးပါပြီ!"}
+
+@app.post("/api/admin/reject")
+async def reject_request(request: Request, req_id: int = Form(...)):
+    user_email = request.cookies.get("user_email")
+    db = SessionLocal()
+    admin = db.query(User).filter(User.email == user_email).first()
+    if not admin or (admin.email != ADMIN_EMAIL and not admin.is_admin):
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
+    if pay_req and pay_req.status == "pending":
+        pay_req.status = "rejected"
+        db.commit()
+    db.close()
+    return {"status": "success", "message": "ငွေလွှဲပြေစာကို ပယ်ဖျက်လိုက်ပါပြီ"}
+
+# --- AssemblyAI Transcription ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -186,7 +315,7 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
-# --- Batch TTS (Edge-TTS + Mutagen) ---
+# --- Batch TTS (Daily & Premium Credit စစ်ဆေးခြင်း) ---
 class BatchTTSRequest(BaseModel):
     lines: List[str]
     voice: str = "my-MM-ThihaNeural"
@@ -210,13 +339,14 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         user.daily_credits_left = 2
         user.last_reset_date = today
 
+    # Credit စစ်ဆေးခြင်း (Free အရင်သုံးမည်၊ ကုန်ပါက Premium Package ထဲမှ နုတ်မည်)
     if user.daily_credits_left > 0:
         user.daily_credits_left -= 1
     elif user.package_credits > 0:
         user.package_credits -= 1
     else:
         db.close()
-        return JSONResponse(status_code=403, content={"error": "ယနေ့အတွက် အခမဲ့ ၂ ပုဒ် ကုန်ဆုံးသွားပါပြီ။"})
+        return JSONResponse(status_code=403, content={"error": "ယနေ့အတွက် အခမဲ့ ၂ ပုဒ် ကုန်ဆုံးသွားပါပြီ။ ဆက်လက်သုံးလိုပါက Package ဝယ်ယူပေးပါခင်ဗျာ။"})
 
     db.commit()
     db.close()
@@ -239,7 +369,6 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
                 audio_stream.write(chunk["data"])
         
         audio_bytes = audio_stream.getvalue()
-        
         try:
             mp3_info = MP3(io.BytesIO(audio_bytes))
             duration_ms = int(mp3_info.info.length * 1000)
