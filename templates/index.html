@@ -141,6 +141,20 @@
     #toastContainer { position: fixed; top: 16px; right: 16px; z-index: 110; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
     .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
     .hidden { display: none !important; }
+
+    /* Interactive Drag-and-Drop Subtitle Box on Video */
+    .video-container-wrap {
+      position: relative; width: 100%; max-height: 280px; overflow: hidden;
+      border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);
+      background: #000;
+    }
+    #draggableSubtitle {
+      position: absolute; left: 50%; bottom: 15%; transform: translateX(-50%);
+      cursor: move; user-select: none; z-index: 10; padding: 4px 8px;
+      border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 6px;
+      background: rgba(0,0,0,0.25); text-align: center; max-width: 90%;
+      touch-action: none;
+    }
   </style>
 
   <style id="cueStyleTag"></style>
@@ -278,7 +292,14 @@
         <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
-      <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);"></video>
+      <div id="videoContainerWrap" class="video-container-wrap hidden">
+        <video id="inputVideoPreview" controls style="width: 100%; height: 100%; display: block; object-fit: contain;"></video>
+        <div id="draggableSubtitle" title="ဤစာတန်းကို လက်ဖြင့် ဖိဆွဲ၍ နေရာရွှေ့နိုင်ပါသည်">
+          <span id="dragSubText" style="font-family: 'Pyidaungsu', sans-serif; font-size: 22px; color: #ffff00; font-weight: bold; pointer-events: none;">
+            မြန်မာစာတန်းထိုး နမူနာ (လက်ဖြင့် ဖိဆွဲရွှေ့ပါ)
+          </span>
+        </div>
+      </div>
 
       <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
         <i class="ph-bold ph-waveform"></i> အသံခွဲထုတ်ပြီး စာသားထုတ်ယူမည် (Transcribe)
@@ -345,15 +366,15 @@
             <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff" class="glass-input" style="padding: 6px 10px;">
           </div>
           <div class="form-group">
-            <label>Font Size</label>
-            <input type="number" id="subFontSize" value="24" min="14" max="60" class="glass-input" style="text-align: center;">
+            <label>Font Size (လက်ဖြင့် အရွယ်အစားချိန်ရန်)</label>
+            <input type="range" id="subFontSize" value="22" min="14" max="45" style="width: 100%; cursor: pointer;">
           </div>
         </div>
 
         <div class="grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label>Font Color</label>
-            <input type="color" id="subFontColor" value="#ffffff" style="width: 100%; height: 36px; border: none; background: transparent; cursor: pointer;">
+            <input type="color" id="subFontColor" value="#ffff00" style="width: 100%; height: 36px; border: none; background: transparent; cursor: pointer;">
           </div>
           <div class="form-group">
             <label>Border Color</label>
@@ -362,15 +383,6 @@
           <div class="form-group">
             <label>Border Width</label>
             <input type="number" id="subBorderWidth" value="2" min="1" max="6" class="glass-input" style="text-align: center;">
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-top: 14px;">
-          <label style="color: #38bdf8; font-weight: 600;"><i class="ph-bold ph-eye"></i> Subtitle Live Preview (စာတန်းထိုး နမူနာပုံစံ)</label>
-          <div id="subPreviewBox" style="background: linear-gradient(180deg, #1e2230 0%, #0f1117 100%); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 100px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
-            <p id="subPreviewText" style="font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; padding: 0 16px; user-select: none; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.5;">
-              အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
-            </p>
           </div>
         </div>
       </div>
@@ -382,7 +394,7 @@
         </label>
         <label class="toggle-item" style="color: #fbbf24; font-weight: 500;">
           <input type="checkbox" id="autoSpeedCheck" checked>
-          <span>⚡ Narrator Auto-Speed (အသံထက်ရှည်သော Video ကို Auto အမြန်ရစ်မည်)</span>
+          <span>⚡ Narrator Auto-Speed (စကားပြောချိန် အလိုအလျောက် ညှိမည်)</span>
         </label>
         <label class="toggle-item">
           <input type="checkbox" id="blurSubCheck" checked>
@@ -441,6 +453,9 @@
     let srtContent = "";
     let selectedPackageType = "10";
     let currentPreviewAudio = null;
+
+    // Subtitle Drag Position (Percentage from bottom)
+    let subBottomPercent = 15;
 
     function showToast(msg) {
       const c = document.getElementById('toastContainer');
@@ -521,16 +536,19 @@
     function toggleSubSection() {
       const enableSub = document.getElementById('enableSubCheck').checked;
       const stylingSec = document.getElementById('subStylingSection');
+      const dragBox = document.getElementById('draggableSubtitle');
       if (stylingSec) {
         stylingSec.style.opacity = enableSub ? "1" : "0.35";
         stylingSec.style.pointerEvents = enableSub ? "auto" : "none";
       }
+      if (dragBox) dragBox.style.display = enableSub ? "block" : "none";
     }
 
+    // Live Subtitle Styling & Drag Preview
     function updateSubPreview() {
-      const p = document.getElementById('subPreviewText');
-      const size = document.getElementById('subFontSize').value || 24;
-      const fColor = document.getElementById('subFontColor').value || '#ffffff';
+      const p = document.getElementById('dragSubText');
+      const size = document.getElementById('subFontSize').value || 22;
+      const fColor = document.getElementById('subFontColor').value || '#ffff00';
       const bColor = document.getElementById('subBorderColor').value || '#000000';
       const bWidth = parseFloat(document.getElementById('subBorderWidth').value) || 2;
 
@@ -566,6 +584,43 @@
           }
         `;
       }
+    }
+
+    // Drag-and-Drop Subtitle Position Logic (Touch and Mouse)
+    function initDraggableSubtitle() {
+      const el = document.getElementById('draggableSubtitle');
+      const container = document.getElementById('videoContainerWrap');
+      let isDragging = false;
+      let startY = 0;
+      let startBottom = 15;
+
+      const onStart = (clientY) => {
+        isDragging = true;
+        startY = clientY;
+        const rect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        startBottom = ((rect.bottom - elRect.bottom) / rect.height) * 100;
+      };
+
+      const onMove = (clientY) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        const deltaY = startY - clientY;
+        let newBottom = startBottom + (deltaY / rect.height) * 100;
+        newBottom = Math.max(5, Math.min(85, newBottom));
+        subBottomPercent = Math.round(newBottom);
+        el.style.bottom = `${subBottomPercent}%`;
+      };
+
+      const onEnd = () => { isDragging = false; };
+
+      el.addEventListener('mousedown', (e) => onStart(e.clientY));
+      window.addEventListener('mousemove', (e) => onMove(e.clientY));
+      window.addEventListener('mouseup', onEnd);
+
+      el.addEventListener('touchstart', (e) => { if (e.touches.length) onStart(e.touches[0].clientY); }, { passive: true });
+      window.addEventListener('touchmove', (e) => { if (e.touches.length) onMove(e.touches[0].clientY); }, { passive: true });
+      window.addEventListener('touchend', onEnd);
     }
 
     function triggerAutoSave() {
@@ -650,6 +705,7 @@
       checkUserAuth();
       updateSubPreview();
       toggleSubSection();
+      initDraggableSubtitle();
 
       ['subFontSize', 'subFontColor', 'subBorderColor', 'subBorderWidth'].forEach(id => {
         const el = document.getElementById(id);
@@ -668,7 +724,7 @@
             const customFont = new FontFace("CustomUserFont", fontBuffer);
             await customFont.load();
             document.fonts.add(customFont);
-            document.getElementById('subPreviewText').style.fontFamily = "'CustomUserFont', 'Pyidaungsu', sans-serif";
+            document.getElementById('dragSubText').style.fontFamily = "'CustomUserFont', 'Pyidaungsu', sans-serif";
             updateSubPreview();
             showToast(`ဖောင့် '${selectedFontFile.name}' ထည့်သွင်းပြီးပါပြီ!`);
           } catch (err) {
@@ -683,6 +739,7 @@
       const dropZone = document.getElementById('dropZone');
       const fileInput = document.getElementById('videoFileInput');
       const videoPrev = document.getElementById('inputVideoPreview');
+      const videoWrap = document.getElementById('videoContainerWrap');
 
       dropZone.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
@@ -690,7 +747,7 @@
           selectedVideoFile = fileInput.files[0];
           document.getElementById('videoFileNameDisplay').innerText = `ရွေးချယ်ထားသော ဖိုင်: ${selectedVideoFile.name}`;
           videoPrev.src = URL.createObjectURL(selectedVideoFile);
-          videoPrev.classList.remove('hidden');
+          videoWrap.classList.remove('hidden');
         }
       });
     });
@@ -760,13 +817,13 @@
         row.innerHTML = `
           <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; width: 55px; flex-shrink: 0;">[${seg.id}] (${seg.duration}s)</span>
           <input type="text" class="sub-input" oninput="triggerAutoSave()" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${translations[i] || ''}">
-          <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(translations[i] || '')}')" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
+          <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(translations[i] || '')}', ${seg.duration})" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
         `;
         container.appendChild(row);
       });
     }
 
-    async function previewAudioSync(startTimeSec, encodedText) {
+    async function previewAudioSync(startTimeSec, encodedText, segDurationSec = 0) {
       const text = decodeURIComponent(encodedText).trim();
       if (!text) return showToast("စာသား မရှိသေးပါ!");
 
@@ -795,6 +852,16 @@
         const blob = await res.blob();
         currentPreviewAudio = new Audio(URL.createObjectURL(blob));
 
+        // Auto-speed on preview if needed
+        currentPreviewAudio.onloadedmetadata = () => {
+          if (document.getElementById('autoSpeedCheck').checked && segDurationSec > 0) {
+            const rawDur = currentPreviewAudio.duration;
+            if (rawDur > segDurationSec) {
+              currentPreviewAudio.playbackRate = Math.min(2.0, rawDur / segDurationSec);
+            }
+          }
+        };
+
         currentPreviewAudio.onended = () => {
           if (vPrev) vPrev.pause();
         };
@@ -817,18 +884,18 @@
       function setUint16(data) { out.setUint16(pos, data, true); pos += 2; }
       function setUint32(data) { out.setUint32(pos, data, true); pos += 4; }
 
-      setUint32(0x46464952);
+      setUint32(0x46464952); // RIFF
       setUint32(length - 8);
-      setUint32(0x45564157);
-      setUint32(0x20746d66);
+      setUint32(0x45564157); // WAVE
+      setUint32(0x20746d66); // fmt
       setUint32(16);
-      setUint16(1);
+      setUint16(1); // PCM
       setUint16(numOfChan);
       setUint32(buffer.sampleRate);
       setUint32(buffer.sampleRate * 2 * numOfChan);
       setUint16(numOfChan * 2);
       setUint16(16);
-      setUint32(0x61746164);
+      setUint32(0x61746164); // data
       setUint32(length - pos - 4);
 
       for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
@@ -845,7 +912,8 @@
       return new Uint8Array(out.buffer);
     }
 
-    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmVol) {
+    // True Auto-Speed & Silence Web Audio Mixer
+    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmVol, autoSpeedEnabled) {
       let totalSec = 10;
       if (segments.length > 0) {
         const last = segments[segments.length - 1];
@@ -863,17 +931,26 @@
         if (!item.audio_b64) continue;
         const seg = segments[i];
         const startSec = (seg && typeof seg.start === "number") ? (seg.start / 1000) : (i * 2);
+        const segDur = (seg && typeof seg.duration === "number") ? seg.duration : 0;
 
         const bytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
         try {
           const buf = await actx.decodeAudioData(bytes.buffer.slice(0));
           const src = offlineCtx.createBufferSource();
           src.buffer = buf;
+
+          // Auto-Speed ညှိခြင်း: အသံက ဗီဒီယိုပြကွက်ထက် ရှည်နေပါက အလိုအလျောက် မြန်နှုန်းတင်ခြင်း
+          if (autoSpeedEnabled && segDur > 0 && buf.duration > segDur) {
+            const speedRatio = Math.min(2.0, buf.duration / segDur);
+            src.playbackRate.value = speedRatio;
+          }
+
           src.connect(offlineCtx.destination);
           src.start(startSec);
         } catch (e) {}
       }
 
+      // BGM Mixer
       if (bgmFile) {
         try {
           const bgmBuf = await actx.decodeAudioData(await bgmFile.arrayBuffer());
@@ -905,6 +982,7 @@
       if (!isFFmpegReady) return showToast("FFmpeg Engine အဆင်သင့်မဖြစ်သေးပါ!");
 
       const isSubEnabled = document.getElementById('enableSubCheck').checked;
+      const autoSpeed = document.getElementById('autoSpeedCheck').checked;
 
       showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
 
@@ -922,18 +1000,19 @@
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error);
 
-        updateGauge(30, "အသံများကို အချိန်ကိုက် ညှိနေပါသည်...");
+        updateGauge(30, "အသံများကို Auto-Speed ဖြင့် အချိန်ကိုက် ညှိနေပါသည်...");
 
         const bgmInput = document.getElementById('bgmFile');
         const bgmFile = bgmInput.files.length ? bgmInput.files[0] : null;
         const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 15;
-        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmVol);
+        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmVol, autoSpeed);
 
         updateGauge(50, "ဗီဒီယိုဖိုင် ပြင်ဆင်နေပါသည်...");
 
         ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'dub_master.wav', masterWavBytes);
 
+        // Subtitles SRT Generation
         let srtLines = [];
         let curMs = 0;
         for (let i = 0; i < ttsData.audios.length; i++) {
@@ -945,12 +1024,14 @@
           srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
         }
         srtContent = srtLines.join("\n");
+        ffmpeg.FS('writeFile', 'subs.srt', new TextEncoder().encode(srtContent));
 
-        updateGauge(70, "ဗီဒီယိုနှင့် အသံ Render လုပ်နေပါသည်...");
+        updateGauge(70, "ဗီဒီယိုသစ်အား စာတန်းထိုးနှင့်အတူ Render လုပ်နေပါသည်...");
 
         const blurSub = document.getElementById('blurSubCheck').checked;
         let finalArgs = [];
 
+        // မူရင်း ဗီဒီယိုအသံကို လုံးဝဖြုတ်ပြီး AI Master Audio ဖြင့် အစားထိုးခြင်း
         if (blurSub) {
           finalArgs = [
             '-i', 'input_orig.mp4', '-i', 'dub_master.wav',
@@ -991,7 +1072,7 @@
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
 
-        // ★ ဗီဒီယို 100% အောင်မြင်စွာ ထွက်လာမှသာ Credit ဖြတ်တောက်ခြင်း
+        // Render 100% အောင်မြင်မှသာ Credit ဖြတ်ခြင်း
         try {
           await fetch("/api/credits/consume", { method: "POST" });
           checkUserAuth();
