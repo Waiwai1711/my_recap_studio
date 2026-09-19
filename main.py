@@ -51,10 +51,9 @@ async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
         return JSONResponse(status_code=500, content={"error": "GOOGLE_CLIENT_ID မရှိသေးပါ။ Environment ကို စစ်ဆေးပါ။"})
     
+    # Host header မှ domain ကို တိကျစွာ ရယူခြင်း (Render Proxy အတွက် https ဖြင့် တည်ဆောက်ခြင်း)
     host = request.headers.get("x-forwarded-host") or request.headers.get("host")
-    proto = request.headers.get("x-forwarded-proto", "https")
-    redirect_uri = f"{proto}://{host}/api/auth/google/callback"
-    
+    redirect_uri = f"https://{host}/api/auth/google/callback"
     request.session["oauth_redirect_uri"] = redirect_uri
 
     params = {
@@ -62,7 +61,8 @@ async def login_google(request: Request):
         "response_type": "code",
         "scope": "openid email profile",
         "redirect_uri": redirect_uri,
-        "access_type": "offline"
+        "access_type": "offline",
+        "prompt": "select_account"
     }
     return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
 
@@ -72,11 +72,8 @@ async def auth_google_callback(request: Request):
     if not code:
         return RedirectResponse(url="/?error=no_code")
 
-    redirect_uri = request.session.get("oauth_redirect_uri")
-    if not redirect_uri:
-        host = request.headers.get("x-forwarded-host") or request.headers.get("host")
-        proto = request.headers.get("x-forwarded-proto", "https")
-        redirect_uri = f"{proto}://{host}/api/auth/google/callback"
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    redirect_uri = request.session.get("oauth_redirect_uri") or f"https://{host}/api/auth/google/callback"
 
     async with httpx.AsyncClient() as client:
         token_res = await client.post(
