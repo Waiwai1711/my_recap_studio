@@ -500,7 +500,6 @@
       }
     }
 
-    // Auto-Save Translations to LocalStorage
     function triggerAutoSave() {
       const inputs = document.querySelectorAll('.sub-input');
       const lines = Array.from(inputs).map(i => i.value);
@@ -560,8 +559,15 @@
           document.getElementById('userProfile').classList.remove('hidden');
           document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
           document.getElementById('userName').innerText = data.name;
-          document.getElementById('userDailyCredits').innerText = data.daily_credits;
-          document.getElementById('userPkgCredits').innerText = data.package_credits;
+
+          // Admin User ဖြစ်ပါက Unlimited (အကန့်အသတ်မရှိ) ပြသပေးခြင်း
+          if (data.is_admin) {
+            document.getElementById('userDailyCredits').innerText = "∞ (Unlimited)";
+            document.getElementById('userPkgCredits').innerText = "∞";
+          } else {
+            document.getElementById('userDailyCredits').innerText = data.daily_credits;
+            document.getElementById('userPkgCredits').innerText = data.package_credits;
+          }
 
           await initFFmpegOnStart();
           restoreAutoSavedProject();
@@ -664,7 +670,6 @@
       });
     }
 
-    // Audio စမ်းသပ်ချိန်တွင် Video Timeline သို့ပါ တိုက်ရိုက် Seek လုပ်ပေးခြင်း
     async function previewAudioSync(startTimeSec, encodedText) {
       const text = decodeURIComponent(encodedText);
       const vPrev = document.getElementById('inputVideoPreview');
@@ -824,7 +829,6 @@
       a.click();
     }
 
-    // Download Script as Pure Text (.TXT)
     function downloadScriptTXT() {
       const inputs = document.querySelectorAll('.sub-input');
       const lines = Array.from(inputs).map(i => i.value).filter(t => t.trim() !== "");
