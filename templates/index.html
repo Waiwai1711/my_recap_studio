@@ -870,14 +870,22 @@
 
     function copyPrompt() {
       if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
-      const header = `You are a professional movie recap dubber. Translate the following video segments into spoken Burmese.
-CRITICAL RULES:
-1. EXTREMELY SHORT & PUNCHY: Keep each line between 4 to 8 Burmese words only.
-2. DURATION LIMIT: The text MUST fit into the given duration (max 3-4 syllables per second). Never write long sentences.
-3. RECAP TONE: Use exciting, casual Burmese movie recap style.
-4. Output STRICT JSON format only: {"translations": ["...", "..."]}
+      const header = `You are a professional video dubbing translator specializing in Chinese-to-Burmese lip-sync localization.
+Translate the Chinese subtitles into natural, spoken Burmese (အပြောစကား).
 
-INPUTS:
+Character Context:
+- A young grandson speaking respectfully to his grandpa ("သား", "အဘိုး") and a restaurant owner ("ဦးလေး").
+- Grandpa speaks affectionately to grandson ("အဘိုး", "မြေးလေး/မင်း").
+
+Strict Translation Rules:
+1. Pacing & Syllables: Match the [Max Limit] strictly. Estimate roughly 3-4 Burmese syllables per second. Never make sentences too long for the voice actor to speak comfortably.
+2. Short Durations (Under 2s or 0s): Keep it extremely punchy (maximum 2-5 words).
+3. Dramatic Natural Spoken Burmese: Avoid literary/written Burmese (မသုံးရ: "သည်", "၍", "သော"). Use real conversational phrasing.
+4. Output JSON Format: Return strictly JSON format: {"translations": ["...", "..."]}
+   - Maintain the EXACT same number of items as the input (1-to-1 match).
+   - No additional explanation or Markdown formatting.
+
+Inputs:
 `;
       const inputs = currentSegments.map(s => `[${s.id}] [Max Limit: ${s.duration}s] "${s.text}"`).join("\n");
       navigator.clipboard.writeText(header + inputs);
