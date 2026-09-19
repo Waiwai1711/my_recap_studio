@@ -4,15 +4,14 @@ import base64
 import uuid
 from datetime import date
 from typing import List
+from urllib.parse import urlencode
 from pydantic import BaseModel
 
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
-try:
-    from authlib.integrations.starlette_integration import OAuth
-except (ImportError, ModuleNotFoundError):
-    from authlib.integrations.base_client import OAuth
+from starlette.middleware.sessions import SessionMiddleware
+import httpx
 import assemblyai as aai
 import edge_tts
 from pydub import AudioSegment
@@ -21,10 +20,9 @@ from database import SessionLocal, User
 
 app = FastAPI()
 
-# 1. Render.com HTTPS Reverse Proxy အတွက် Header ညှိယူခြင်း
+# 1. Reverse Proxy & WASM Headers
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-# 2. Browser ပေါ်တွင် Multi-threaded FFmpeg.wasm အလုပ်လုပ်နိုင်ရန် လိုအပ်သော Security Headers
 @app.middleware("http")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -38,16 +36,6 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
-oauth = OAuth()
-if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
-    oauth.register(
-        name='google',
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
-
 TEMP_DIR = "temp_audios"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
@@ -55,43 +43,87 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
-# --- Authentication Endpoints ---
+# --- Native Google OAuth (Authlib လုံးဝမလိုဘဲ တိုက်ရိုက်ခေါ်ယူခြင်း) ---
 @app.get("/login/google")
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
-        return JSONResponse(status_code=500, content={"error": "Google Client ID မထည့်ရသေးပါ။ Environment Variable ကို စစ်ဆေးပါ။"})
-    redirect_uri = request.url_for('auth_google_callback')
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+        return JSONResponse(status_code=500, content={"error": "GOOGLE_CLIENT_ID မရှိသေးပါ။ Environment ကို စစ်ဆေးပါ။"})
+    
+    # Render HTTPS host ကို အလိုအလျောက် ရယူခြင်း
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    proto = request.headers.get("x-forwarded-proto", "https")
+    redirect_uri = f"{proto}://{host}/api/auth/google/callback"
+    
+    request.session["oauth_redirect_uri"] = redirect_uri
+
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "redirect_uri": redirect_uri,
+        "access_type": "offline"
+    }
+    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
 
 @app.get("/api/auth/google/callback")
 async def auth_google_callback(request: Request):
-    try:
-        token = await oauth.google.authorize_access_token(request)
-        user_info = token.get('userinfo')
-        if not user_info:
-            return RedirectResponse(url="/?error=auth_failed")
+    code = request.query_params.get("code")
+    if not code:
+        return RedirectResponse(url="/?error=no_code")
 
-        email = user_info['email']
-        db = SessionLocal()
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            user = User(
-                email=email,
-                name=user_info.get('name', 'User'),
-                avatar=user_info.get('picture', ''),
-                daily_credits_left=2,
-                package_credits=0,
-                last_reset_date=date.today()
-            )
-            db.add(user)
-            db.commit()
-        db.close()
+    redirect_uri = request.session.get("oauth_redirect_uri")
+    if not redirect_uri:
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        proto = request.headers.get("x-forwarded-proto", "https")
+        redirect_uri = f"{proto}://{host}/api/auth/google/callback"
 
-        res = RedirectResponse(url="/")
-        res.set_cookie(key="user_email", value=email, httponly=True, max_age=86400 * 30, samesite="lax")
-        return res
-    except Exception:
-        return RedirectResponse(url="/?error=oauth_error")
+    # Token ရယူခြင်း
+    async with httpx.AsyncClient() as client:
+        token_res = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            }
+        )
+        if token_res.status_code != 200:
+            return RedirectResponse(url="/?error=token_fetch_failed")
+        
+        tokens = token_res.json()
+        access_token = tokens.get("access_token")
+
+        # User Info ရယူခြင်း
+        user_res = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        if user_res.status_code != 200:
+            return RedirectResponse(url="/?error=user_fetch_failed")
+
+        user_info = user_res.json()
+
+    email = user_info["email"]
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(
+            email=email,
+            name=user_info.get("name", "User"),
+            avatar=user_info.get("picture", ""),
+            daily_credits_left=2,
+            package_credits=0,
+            last_reset_date=date.today()
+        )
+        db.add(user)
+        db.commit()
+    db.close()
+
+    res = RedirectResponse(url="/")
+    res.set_cookie(key="user_email", value=email, httponly=True, max_age=86400 * 30, samesite="lax")
+    return res
 
 @app.get("/api/auth/logout")
 async def logout():
@@ -128,7 +160,7 @@ async def get_user_data(request: Request):
     db.close()
     return data
 
-# --- AssemblyAI Transcription (Client Device မှ ခွဲထုတ်ပေးလိုက်သော Audio သေးသေးလေးကိုသာ လက်ခံခြင်း) ---
+# --- AssemblyAI Transcription ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -169,7 +201,7 @@ class BatchTTSRequest(BaseModel):
 async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
     user_email = request.cookies.get("user_email")
     if not user_email:
-        return JSONResponse(status_code=401, content={"error": "Export ပြုလုပ်ရန် Google ဖြင့် အရင် Login ဝင်ပေးပါခင်ဗျာ။"})
+        return JSONResponse(status_code=401, content={"error": "Export ပြုလုပ်ရန် Google ဖြင့် Login အရင်ဝင်ပေးပါခင်ဗျာ။"})
 
     db = SessionLocal()
     user = db.query(User).filter(User.email == user_email).first()
@@ -182,7 +214,6 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         user.daily_credits_left = 2
         user.last_reset_date = today
 
-    # Credit စစ်ဆေးခြင်းနှင့် နုတ်ယူခြင်း
     if user.daily_credits_left > 0:
         user.daily_credits_left -= 1
     elif user.package_credits > 0:
