@@ -4,17 +4,17 @@ import base64
 import uuid
 from datetime import date
 from typing import List
+from urllib.parse import urlencode
 from pydantic import BaseModel
 
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-from authlib.integrations.starlette_integration import OAuth
+import httpx
 import assemblyai as aai
 import edge_tts
-from pydub import AudioSegment
-import httpx
+from mutagen.mp3 import MP3
 
 from database import SessionLocal, User
 
@@ -26,7 +26,7 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    response.headers["Cross-Origin-Embedder-Policy"] = "credentialless"
     return response
 
 SECRET_KEY = os.getenv("SECRET_KEY", "RECAP_STUDIO_SECRET_KEY_PROD_2026")
@@ -37,62 +37,94 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8881875491:AAGTyx6m3-LnsOWSdRKtfuwJ8nEioIjn3Hk")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "5750529400")
 
-oauth = OAuth()
-if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
-    oauth.register(
-        name='google',
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
-
 TEMP_DIR = "temp_audios"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# --- Login မဝင်ထားပါက App ထဲ ပေးမဝင်စေသည့် Guard ---
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
     user_email = request.cookies.get("user_email")
     if not user_email:
-        # Login မဝင်ထားလျှင် Google Login သို့ တိုက်ရိုက် လွှဲပြောင်းပေးခြင်း
         return RedirectResponse(url="/login/google")
     return FileResponse(os.path.join("templates", "index.html"))
 
+# --- Native HTTPX Google OAuth (Authlib လုံးဝမလိုပါ) ---
 @app.get("/login/google")
 async def login_google(request: Request):
-    redirect_uri = request.url_for('auth_google_callback')
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    if not GOOGLE_CLIENT_ID:
+        return JSONResponse(status_code=500, content={"error": "GOOGLE_CLIENT_ID မရှိပါ။"})
+    
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    proto = request.headers.get("x-forwarded-proto", "https")
+    redirect_uri = f"{proto}://{host}/api/auth/google/callback"
+    request.session["oauth_redirect_uri"] = redirect_uri
+
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "redirect_uri": redirect_uri,
+        "access_type": "offline",
+        "prompt": "select_account"
+    }
+    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
 
 @app.get("/api/auth/google/callback")
 async def auth_google_callback(request: Request):
-    try:
-        token = await oauth.google.authorize_access_token(request)
-        user_info = token.get('userinfo')
-        if not user_info:
-            return RedirectResponse(url="/?error=auth_failed")
+    code = request.query_params.get("code")
+    if not code:
+        return RedirectResponse(url="/?error=no_code")
 
-        email = user_info['email']
-        db = SessionLocal()
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            user = User(
-                email=email,
-                name=user_info.get('name', 'User'),
-                avatar=user_info.get('picture', ''),
-                daily_credits_left=2,
-                package_credits=0,
-                last_reset_date=date.today()
-            )
-            db.add(user)
-            db.commit()
-        db.close()
+    redirect_uri = request.session.get("oauth_redirect_uri")
+    if not redirect_uri:
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        proto = request.headers.get("x-forwarded-proto", "https")
+        redirect_uri = f"{proto}://{host}/api/auth/google/callback"
 
-        res = RedirectResponse(url="/")
-        res.set_cookie(key="user_email", value=email, httponly=True, max_age=86400 * 30, samesite="lax")
-        return res
-    except Exception:
-        return RedirectResponse(url="/?error=oauth_error")
+    async with httpx.AsyncClient() as client:
+        token_res = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            }
+        )
+        if token_res.status_code != 200:
+            return RedirectResponse(url="/?error=token_failed")
+
+        tokens = token_res.json()
+        access_token = tokens.get("access_token")
+
+        user_res = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        if user_res.status_code != 200:
+            return RedirectResponse(url="/?error=user_failed")
+
+        user_info = user_res.json()
+
+    email = user_info["email"]
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(
+            email=email,
+            name=user_info.get("name", "User"),
+            avatar=user_info.get("picture", ""),
+            daily_credits_left=2,
+            package_credits=0,
+            last_reset_date=date.today()
+        )
+        db.add(user)
+        db.commit()
+    db.close()
+
+    res = RedirectResponse(url="/")
+    res.set_cookie(key="user_email", value=email, httponly=True, max_age=86400 * 30, samesite="lax")
+    return res
 
 @app.get("/api/auth/logout")
 async def logout():
@@ -129,7 +161,6 @@ async def get_user_data(request: Request):
     db.close()
     return data
 
-# --- Telegram သို့ ငွေလွှဲပြေစာ (Slip) ပေးပို့ခြင်း ---
 @app.post("/api/payment/submit-slip")
 async def submit_slip(request: Request, slip: UploadFile = File(...)):
     user_email = request.cookies.get("user_email")
@@ -176,7 +207,6 @@ async def telegram_webhook(request: Request):
         pass
     return {"ok": True}
 
-# --- AssemblyAI Audio Transcription ---
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -205,7 +235,6 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
-# --- Edge-TTS Batch Audio Generator ---
 class BatchTTSRequest(BaseModel):
     lines: List[str]
     voice: str = "my-MM-ThihaNeural"
@@ -259,8 +288,8 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         
         audio_bytes = audio_stream.getvalue()
         try:
-            pydub_segment = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
-            duration_ms = len(pydub_segment)
+            mp3_info = MP3(io.BytesIO(audio_bytes))
+            duration_ms = int(mp3_info.info.length * 1000)
         except Exception:
             duration_ms = 1000
 
