@@ -5,7 +5,7 @@ import base64
 import uuid
 import shutil
 from datetime import date, datetime
-from typing import List
+from typing import List, Optional
 from urllib.parse import urlencode
 from pydantic import BaseModel
 
@@ -51,7 +51,7 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
-# Telegram Bot Alert (Direct Action Link)
+# Telegram Bot Alert
 async def send_telegram_payment_alert(req_id: int, user_email: str, package_type: str, amount: int, payment_method: str, photo_path: str):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return None
@@ -557,7 +557,7 @@ async def clawback_request(request: Request, req_id: int = Form(...)):
     db.close()
     return {"status": "success", "message": f"ပြေစာ #{req_id} ကို ပယ်ဖျက်ပြီး ပုဒ်ရေ {pay_req.package_type} ခုအား အောင်မြင်စွာ ပြန်လည်နုတ်ယူပြီးပါပြီ!"}
 
-# ================= AUDIO, TTS & CREDIT SAFE CONSUMPTION =================
+# ================= AUDIO & MULTI-SPEAKER TTS =================
 
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
@@ -588,13 +588,15 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
         if os.path.exists(temp_audio):
             os.remove(temp_audio)
 
+class BatchTTSItem(BaseModel):
+    text: str
+    voice: Optional[str] = "my-MM-ThihaNeural"
+
 class BatchTTSRequest(BaseModel):
-    lines: List[str]
-    voice: str = "my-MM-ThihaNeural"
+    items: List[BatchTTSItem]
     pitch: int = 0
     speed: int = 10
 
-# TTS ထုတ်ယူစဉ်တွင် Credit စစ်ဆေးရုံသာ စစ်ဆေးမည် (Credit မဖြတ်ပါ)
 @app.post("/api/tts/batch-generate")
 async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
     user_email = request.cookies.get("user_email")
@@ -622,18 +624,18 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
 
     db.close()
 
-    actual_voice = "my-MM-ThihaNeural" if "Thiha" in payload.voice else "my-MM-NilarNeural"
     pitch_str = f"{payload.pitch:+d}Hz" if payload.pitch != 0 else "+0Hz"
     rate_str = f"{payload.speed:+d}%" if payload.speed != 0 else "+0%"
 
     audio_results = []
-    for idx, text in enumerate(payload.lines):
-        clean_text = text.strip()
+    for idx, item in enumerate(payload.items):
+        clean_text = item.text.strip()
         if not clean_text:
             audio_results.append({"index": idx, "audio_b64": "", "duration_ms": 500})
             continue
 
-        communicate = edge_tts.Communicate(clean_text, actual_voice, pitch=pitch_str, rate=rate_str)
+        selected_voice = "my-MM-NilarNeural" if "Nilar" in (item.voice or "") else "my-MM-ThihaNeural"
+        communicate = edge_tts.Communicate(clean_text, selected_voice, pitch=pitch_str, rate=rate_str)
         audio_stream = io.BytesIO()
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
@@ -655,7 +657,6 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
 
     return {"status": "success", "audios": audio_results}
 
-# ★ ဗီဒီယို Render 100% အောင်မြင်မှသာ Credit ၁ ပုဒ် အမှန်တကယ် ဖြတ်တောက်သည့် API
 @app.post("/api/credits/consume")
 async def consume_credit(request: Request):
     user_email = request.cookies.get("user_email")
@@ -695,7 +696,7 @@ async def preview_single_audio(
     if not clean_text:
         return JSONResponse(status_code=400, content={"error": "Text is empty"})
 
-    actual_voice = "my-MM-ThihaNeural" if "Thiha" in voice else "my-MM-NilarNeural"
+    actual_voice = "my-MM-NilarNeural" if "Nilar" in voice else "my-MM-ThihaNeural"
     pitch_str = f"{pitch:+d}Hz" if pitch != 0 else "+0Hz"
     rate_str = f"{speed:+d}%" if speed != 0 else "+0%"
 
