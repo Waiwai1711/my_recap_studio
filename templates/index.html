@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Recap Studio Pro - Client Sync & Sub Engine</title>
+  <title>Recap Studio Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- Client-Side FFmpeg.wasm Scripts -->
+  <!-- FFmpeg.wasm Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
@@ -38,17 +38,15 @@
     ::-webkit-scrollbar-thumb { background: #272a37; border-radius: 4px; }
     .glass-card { background: rgba(20, 22, 31, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.06); }
     .glass-input { background: rgba(11, 12, 16, 0.9); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .glass-input:focus { border-color: #38bdf8; outline: none; }
     .circle-progress { stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.25s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
   </style>
 </head>
 
 <body class="bg-surface-950 text-zinc-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-  <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
 
-  <!-- Progress Modal Overlay -->
+  <!-- Progress Modal -->
   <div id="loadingModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
     <div class="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full mx-auto flex flex-col items-center text-center shadow-2xl border border-white/10">
       <div class="relative w-28 h-28 flex items-center justify-center my-2">
@@ -66,7 +64,35 @@
     </div>
   </div>
 
-  <!-- Modern Responsive Mobile-Friendly Navbar -->
+  <!-- Buy Package (POS) Modal -->
+  <div id="buyModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center hidden p-4">
+    <div class="glass-card rounded-3xl p-5 md:p-6 max-w-md w-full border border-amber-500/20 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+          <i class="ph-fill ph-crown text-lg"></i>
+          <span>Premium Package ဝယ်ယူရန်</span>
+        </div>
+        <button onclick="closeBuyModal()" class="text-zinc-400 hover:text-white text-lg"><i class="ph-bold ph-x"></i></button>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 space-y-1">
+        <p class="font-bold text-sm text-amber-400">💰 ကျပ် ၅,၀၀၀ (ဗီဒီယို ၁၀ ပုဒ် ခွင့်ပြုချက်)</p>
+        <p>• KPay / Wave: <span class="font-mono font-bold text-white">09798725916</span> (U Wai Phyo Aung)</p>
+        <p>• ငွေလွှဲပြီးပါက အောက်တွင် Transaction Slip ပုံ တင်ပေးပါခင်ဗျာ။</p>
+      </div>
+
+      <div>
+        <label class="text-xs text-zinc-400 font-medium">ငွေလွှဲပြေစာ (Payment Slip) ပုံ ရွေးပါ:</label>
+        <input type="file" id="slipInput" accept="image/*" class="glass-input w-full mt-1.5 p-2 rounded-xl text-xs text-zinc-300 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-surface-800 file:text-zinc-300">
+      </div>
+
+      <button id="btnSubmitSlip" onclick="uploadSlip()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 font-bold text-xs text-zinc-950 transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20">
+        <i class="ph-bold ph-paper-plane-right"></i> ပြေစာ ပေးပို့မည် (Submit Slip)
+      </button>
+    </div>
+  </div>
+
+  <!-- Header with Buy Package & Account Info -->
   <header class="h-16 border-b border-white/5 bg-surface-900/90 backdrop-blur-md sticky top-0 z-40 px-3 md:px-6 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
@@ -74,24 +100,27 @@
       </div>
       <div class="overflow-hidden">
         <h1 class="font-bold text-xs md:text-sm tracking-wide text-white truncate">RECAP STUDIO</h1>
-        <p class="text-[9px] text-emerald-400 font-mono hidden xs:block">Narrator Auto-Sync</p>
+        <p class="text-[9px] text-emerald-400 font-mono hidden sm:block">Narrator Auto-Sync</p>
       </div>
     </div>
 
-    <!-- Auth & User Info Section -->
+    <!-- Right Side: Buy Package Button & User Details -->
     <div class="flex items-center gap-2">
-      <div id="authSection" class="flex items-center gap-2">
-        <a id="loginBtn" href="/login/google" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-zinc-200 text-zinc-900 transition shrink-0">
-          <i class="ph-bold ph-google-logo"></i> <span>Login</span>
-        </a>
-        <div id="userProfile" class="hidden items-center gap-2">
-          <div class="flex flex-col items-end leading-none">
-            <span id="userName" class="text-[11px] font-semibold text-zinc-200 max-w-[80px] sm:max-w-[120px] truncate">User</span>
-            <span id="userCreditsBadge" class="text-[9px] font-mono text-emerald-400 mt-0.5">Free: 2</span>
+      <button onclick="openBuyModal()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 font-bold text-[11px] transition shadow-md shadow-amber-500/10 shrink-0">
+        <i class="ph-fill ph-crown text-xs"></i> <span>Buy Package</span>
+      </button>
+
+      <div id="userProfile" class="flex items-center gap-2 border-l border-white/10 pl-2">
+        <div class="flex flex-col items-end leading-none">
+          <span id="userName" class="text-[11px] font-semibold text-zinc-200 max-w-[80px] sm:max-w-[120px] truncate">User</span>
+          <div class="flex items-center gap-1 text-[9px] font-mono mt-0.5">
+            <span class="text-emerald-400">Daily: <span id="userDailyCredits">0</span></span>
+            <span class="text-zinc-600">|</span>
+            <span class="text-amber-400">Pkg: <span id="userPkgCredits">0</span></span>
           </div>
-          <img id="userAvatar" class="w-7 h-7 rounded-full border border-sky-400 object-cover shrink-0" src="" alt="Avatar">
-          <a href="/api/auth/logout" title="Logout" class="p-1 hover:text-rose-400 text-zinc-400 shrink-0"><i class="ph-bold ph-sign-out text-sm"></i></a>
         </div>
+        <img id="userAvatar" class="w-7 h-7 rounded-full border border-sky-400 object-cover shrink-0" src="" alt="Avatar">
+        <a href="/api/auth/logout" title="Logout" class="p-1 hover:text-rose-400 text-zinc-400 shrink-0"><i class="ph-bold ph-sign-out text-sm"></i></a>
       </div>
     </div>
   </header>
@@ -152,7 +181,7 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice, Subtitle Custom Font & Live Preview -->
+    <!-- STEP 3: Voice & Subtitle Styling -->
     <div class="glass-card rounded-2xl p-4 md:p-5">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
@@ -161,7 +190,7 @@
         </div>
       </div>
 
-      <!-- Voice & Speed Grid -->
+      <!-- Controls Grid -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
         <div>
           <label class="text-[11px] text-zinc-400 font-medium">AI Voice</label>
@@ -184,7 +213,7 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling Controls & Custom Font Upload -->
+      <!-- Subtitle Styling Controls -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 p-3 rounded-xl bg-surface-950/60 border border-white/5 mb-3">
         <div class="col-span-2 sm:col-span-1">
           <label class="text-[11px] text-zinc-400 font-medium">Font Family</label>
@@ -210,7 +239,7 @@
         </div>
       </div>
 
-      <!-- Toggles & Options -->
+      <!-- Toggles -->
       <div class="flex flex-wrap items-center gap-4 text-xs text-zinc-300 mb-3">
         <label class="flex items-center gap-2 cursor-pointer text-amber-400 font-medium">
           <input type="checkbox" id="autoSpeedCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700">
@@ -314,19 +343,48 @@
       setTimeout(() => m.classList.add('hidden'), 300);
     }
 
+    function openBuyModal() { document.getElementById('buyModal').classList.remove('hidden'); }
+    function closeBuyModal() { document.getElementById('buyModal').classList.add('hidden'); }
+
     async function checkUserAuth() {
       try {
         const res = await fetch("/api/user/me");
         const data = await res.json();
         if (data.logged_in) {
-          document.getElementById('loginBtn').classList.add('hidden');
-          document.getElementById('userProfile').classList.remove('hidden');
-          document.getElementById('userProfile').classList.add('flex');
           document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
           document.getElementById('userName').innerText = data.name;
-          document.getElementById('userCreditsBadge').innerText = data.is_admin ? "Admin: ∞" : `Free: ${data.daily_credits}`;
+          document.getElementById('userDailyCredits').innerText = `${data.daily_credits}`;
+          document.getElementById('userPkgCredits').innerText = `${data.package_credits}`;
         }
       } catch (e) {}
+    }
+
+    async function uploadSlip() {
+      const input = document.getElementById('slipInput');
+      if (!input.files[0]) return showToast("Slip ပုံ ရွေးချယ်ပေးပါ", "error");
+
+      const btn = document.getElementById('btnSubmitSlip');
+      btn.innerText = "ပေးပို့နေပါသည်...";
+      btn.disabled = true;
+
+      const fd = new FormData();
+      fd.append("slip", input.files[0]);
+
+      try {
+        const res = await fetch("/api/payment/submit-slip", { method: "POST", body: fd });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, "success");
+          closeBuyModal();
+        } else {
+          showToast(data.error, "error");
+        }
+      } catch (e) {
+        showToast("Slip ပေးပို့မှု မအောင်မြင်ပါ", "error");
+      } finally {
+        btn.innerText = "ပြေစာ ပေးပို့မည် (Submit Slip)";
+        btn.disabled = false;
+      }
     }
 
     async function loadFFmpeg() {
@@ -347,7 +405,6 @@
       return ffmpeg;
     }
 
-    // Custom Font File Handler
     function handleCustomFont(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -360,7 +417,7 @@
           document.fonts.add(loadedFace);
           document.getElementById('fontNameInput').value = currentFontName;
           updateLivePreview();
-          showToast(`Font: ${currentFontName} အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ!`, "success");
+          showToast(`Font: ${currentFontName} ထည့်သွင်းပြီးပါပြီ!`, "success");
         });
       };
       reader.readAsArrayBuffer(file);
@@ -394,7 +451,6 @@
       });
     });
 
-    // STEP 1: Video မှ Audio ခွဲထုတ်ပြီး Transcription လုပ်ခြင်း
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!", "error");
@@ -473,7 +529,6 @@
       new Audio(URL.createObjectURL(blob)).play();
     }
 
-    // STEP 5: Precise Auto-Speed Clip-by-Clip Synchronizer & Subtitle Burner
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const translations = Array.from(inputs).map(i => i.value);
@@ -484,7 +539,6 @@
       showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ မြန်မာစကားပြောသံများ ထုတ်ယူနေပါသည်...");
 
       try {
-        // 1. Batch Generate Burmese Audios
         const ttsRes = await fetch("/api/tts/batch-generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -500,11 +554,9 @@
 
         updateGauge(25, "အသံဖိုင်များနှင့် SRT Subtitle တည်ဆောက်နေပါသည်...");
 
-        // 2. Setup Font & SRT in FFmpeg Virtual FileSystem
         if (customFontData) {
           await ff.writeFile('custom.ttf', customFontData);
         } else {
-          // Default Pyidaungsu Font အား ဒေါင်းလုဒ်ဆွဲ၍ Virtual FS ထဲ ထည့်သွင်းခြင်း
           const fontRes = await fetch("https://github.com/googlefonts/pyidaungsu/raw/main/fonts/ttf/Pyidaungsu-Regular.ttf");
           const fontBuf = await fontRes.arrayBuffer();
           await ff.writeFile('custom.ttf', new Uint8Array(fontBuf));
@@ -530,7 +582,6 @@
           const eTime = msToSrt(runningMs);
           srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
 
-          // 3. Auto-Speed Synchronization (အသံနှင့် ဗီဒီယို တစ်ခန်းချင်း အမြန်နှုန်း ညှိခြင်း)
           if (autoSpeed && seg) {
             updateGauge(25 + Math.round((i / ttsData.audios.length) * 35), `Scene ${i+1}/${ttsData.audios.length} Speed ညှိနေပါသည်...`);
             const origSec = Math.max(0.4, (seg.end - seg.start) / 1000.0);
@@ -555,11 +606,9 @@
         srtContent = srtLines.join("\n");
         await ff.writeFile('sub.srt', new TextEncoder().encode(srtContent));
 
-        // 4. Concat All TTS Audios
         await ff.writeFile('audio_concat.txt', concatAudioList);
         await ff.exec(['-f', 'concat', '-safe', '0', '-i', 'audio_concat.txt', '-c', 'copy', 'dub_full.mp3']);
 
-        // Concat Videos if Auto-Speed
         let inputVideoName = 'input_orig.mp4';
         if (autoSpeed && clipNames.length) {
           updateGauge(65, "ဗီဒီယို အပိုင်းအစများကို ပေါင်းစပ်နေပါသည်...");
@@ -568,7 +617,6 @@
           inputVideoName = 'synced_video.mp4';
         }
 
-        // 5. Build Subtitle, Blur, and BGM Filters
         updateGauge(75, "စာတန်းထိုးနှင့် BGM ပေါင်းစပ်နေပါသည်...");
 
         const blurSub = document.getElementById('blurSubCheck').checked;
@@ -584,7 +632,6 @@
         }
 
         if (burnSub) {
-          // Subtitles filter with Virtual TTF Font
           vfFilters.push(`[${currentV}]subtitles=sub.srt:fontsdir=.:force_style='FontName=custom,FontSize=${fSize},PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2'[v_sub]`);
           currentV = "v_sub";
         }
@@ -597,8 +644,8 @@
           await ff.writeFile('bgm_in.mp3', await fetchFile(bgmInput.files[0]));
           const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) / 100).toFixed(2);
           let afFilter = `[1:a]volume=1.0[maina];[2:a]volume=${bgmVol}[bgma];[maina][bgma]amix=inputs=2:duration=first[a_final]`;
-
           let fullFilter = vfFilters.length ? (vfFilters.join(";") + ";" + afFilter) : afFilter;
+
           finalArgs = [
             '-i', inputVideoName, '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3',
             '-filter_complex', fullFilter,
@@ -622,7 +669,7 @@
           }
         }
 
-        updateGauge(85, "နောက်ဆုံး ဗီဒီယို Render ထုတ်ယူနေပါသည်...");
+        updateGauge(85, "ဗီဒီယို Render ထုတ်ယူနေပါသည်...");
         await ff.exec(finalArgs);
 
         const outData = await ff.readFile('output.mp4');
