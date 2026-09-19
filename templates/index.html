@@ -1,298 +1,429 @@
 <!DOCTYPE html>
-<html lang="my" class="dark">
+<html lang="my">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Recap Studio Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- FFmpeg.wasm Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'Pyidaungsu', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
-            surface: { 800: '#1e2029', 900: '#14161f', 950: '#0b0c10' }
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Stable FFmpeg WASM v0.11.6 -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #0b0c10; color: #f4f4f5;
+      font-family: 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0b0c10; }
     ::-webkit-scrollbar-thumb { background: #272a37; border-radius: 4px; }
-    .glass-card { background: rgba(20, 22, 31, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.06); }
-    .glass-input { background: rgba(11, 12, 16, 0.9); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .circle-progress { stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.25s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
+
+    #loginGate {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(11, 12, 16, 0.95); backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .login-box {
+      background: #14161f; border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px; padding: 36px 28px; max-width: 400px; width: 100%;
+      text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+
+    .header {
+      height: 64px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(20, 22, 31, 0.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 40; padding: 0 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+    }
+    .brand h1 { font-size: 14px; font-weight: 700; color: #fff; }
+    .brand p { font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace; }
+
+    .container {
+      max-width: 900px; width: 100%; margin: 0 auto;
+      padding: 24px 16px; display: flex; flex-direction: column; gap: 20px;
+    }
+
+    .glass-card {
+      background: rgba(20, 22, 31, 0.75); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px;
+      padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .card-title-left { display: flex; align-items: center; gap: 8px; }
+    .badge-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(14, 165, 233, 0.15); color: #38bdf8;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: bold; font-family: 'JetBrains Mono', monospace;
+    }
+    .card-title h2 { font-size: 13px; font-weight: 600; color: #e4e4e7; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 640px) { .grid-2, .grid-4 { grid-template-columns: 1fr; } }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 11px; font-weight: 500; color: #a1a1aa; }
+
+    .glass-input {
+      background: rgba(11, 12, 16, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f4f4f5; padding: 10px 12px; border-radius: 10px; font-size: 12px;
+      outline: none; width: 100%;
+    }
+    .glass-input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
+    textarea.glass-input { resize: none; font-family: 'JetBrains Mono', monospace; line-height: 1.5; }
+
+    .dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.15); background: rgba(11, 12, 16, 0.4);
+      border-radius: 12px; padding: 24px 16px; text-align: center; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .dropzone:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
+
+    .btn {
+      border: none; border-radius: 12px; font-size: 12px; font-weight: 600;
+      cursor: pointer; padding: 10px 16px; display: inline-flex; align-items: center;
+      justify-content: center; gap: 8px; text-decoration: none; transition: all 0.2s;
+    }
+    .btn-blue { background: linear-gradient(135deg, #2563eb, #0284c7); color: #fff; width: 100%; }
+    .btn-purple { background: #9333ea; color: #fff; width: 100%; margin-top: 12px; }
+    .btn-green {
+      background: linear-gradient(135deg, #059669, #0d9488);
+      color: #fff; width: 100%; padding: 16px; font-size: 14px;
+    }
+    .btn-amber { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; }
+    .btn-ghost { background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 6px 12px; border-radius: 8px; }
+
+    .toggles { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #d4d4d8; }
+    .toggle-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
+      padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: #14161f; border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px; padding: 24px; max-width: 440px; width: 100%; text-align: center;
+    }
+    .circle-wrap { position: relative; width: 100px; height: 100px; margin: 12px auto; }
+    .circle-progress {
+      stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.25s;
+      transform: rotate(-90deg); transform-origin: 50% 50%;
+    }
+    .circle-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .circle-text .percent { font-size: 20px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
+
+    .pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+    .pkg-item {
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 6px;
+      cursor: pointer; transition: all 0.2s; background: rgba(11,12,16,0.5);
+    }
+    .pkg-item.selected { border-color: #38bdf8; background: rgba(56,189,248,0.15); }
+    .pkg-item h4 { font-size: 14px; font-weight: bold; color: #fff; }
+    .pkg-item p { font-size: 11px; color: #38bdf8; margin-top: 4px; }
+
+    #toastContainer { position: fixed; top: 16px; right: 16px; z-index: 110; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
+    .hidden { display: none !important; }
   </style>
 </head>
 
-<body class="bg-surface-950 text-zinc-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+<body>
 
-  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
+  <div id="toastContainer"></div>
+
+  <!-- LOGIN GATE -->
+  <div id="loginGate">
+    <div class="login-box">
+      <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+        <i class="ph-bold ph-lightning" style="font-size: 24px; color: #fff;"></i>
+      </div>
+      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
+      <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.6;">
+        AI Video Dubbing နှင့် Auto-Speed Engine အသုံးပြုရန် Google Account ဖြင့် Login ဝင်ပေးပါခင်ဗျာ။
+      </p>
+      <a href="/login/google" class="btn" style="background: #fff; color: #18181b; width: 100%; padding: 14px; font-size: 13px; font-weight: 700;">
+        <i class="ph-bold ph-google-logo" style="font-size: 18px; color: #ea4335;"></i> Sign in with Google
+      </a>
+      <p style="font-size: 11px; color: #10b981; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
+        🎁 နေ့စဉ် အခမဲ့ ၂ ပုဒ် အသုံးပြုခွင့် ရရှိပါမည်
+      </p>
+    </div>
+  </div>
+
+  <!-- BUY PACKAGE MODAL -->
+  <div id="packageModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-size: 15px; font-weight: bold; color: #fbbf24;">💎 Package ဝယ်ယူရန်</h3>
+        <button onclick="closePackageModal()" style="background: transparent; border: none; color: #71717a; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+
+      <div class="pkg-grid">
+        <div class="pkg-item selected" onclick="selectPkg('10', 5000, this)">
+          <h4>၁၀ ပုဒ်</h4>
+          <p>5,000 Ks</p>
+        </div>
+        <div class="pkg-item" onclick="selectPkg('20', 10000, this)">
+          <h4>၂၀ ပုဒ်</h4>
+          <p>10,000 Ks</p>
+        </div>
+        <div class="pkg-item" onclick="selectPkg('30', 15000, this)">
+          <h4>၃၀ ပုဒ်</h4>
+          <p>15,000 Ks</p>
+        </div>
+      </div>
+
+      <div style="background: rgba(11,12,16,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
+        <p style="color: #38bdf8; font-weight: bold; margin-bottom: 4px;">ငွေလွှဲရမည့် အကောင့်များ -</p>
+        <p>• KPay / WavePay / AYA Pay</p>
+        <p>• Name: <b style="color: #fff;">Wai Phyo Aung</b></p>
+        <p>• Phone: <b style="color: #10b981; font-family: 'JetBrains Mono', monospace;">09799437346</b></p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
+        <div class="form-group">
+          <label>ငွေလွှဲခဲ့သည့် App ရွေးပါ</label>
+          <select id="payMethodSelect" class="glass-input">
+            <option value="KPay">KPay</option>
+            <option value="WavePay">WavePay</option>
+            <option value="AYAPay">AYA Pay</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ငွေလွှဲပြေစာ (Slip ပုံတင်ပေးပါ)</label>
+          <input type="file" id="slipFileInput" accept="image/*" class="glass-input" style="padding: 6px 10px;">
+        </div>
+        <button onclick="submitSlip()" class="btn btn-amber" style="width: 100%; margin-top: 8px;">
+          <i class="ph-bold ph-paper-plane-tilt"></i> ပြေစာတင်သွင်းမည်
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Progress Modal -->
-  <div id="loadingModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
-    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full mx-auto flex flex-col items-center text-center shadow-2xl border border-white/10">
-      <div class="relative w-28 h-28 flex items-center justify-center my-2">
-        <svg class="w-full h-full" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" stroke="#1e2029" stroke-width="8" fill="transparent"/>
-          <circle id="gaugeRing" class="circle-progress text-sky-400" cx="50" cy="50" r="45" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="transparent"/>
+  <div id="loadingModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="circle-wrap">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" stroke="#272a37" stroke-width="8" fill="transparent"/>
+          <circle id="gaugeRing" class="circle-progress" cx="50" cy="50" r="45" stroke="#38bdf8" stroke-width="8" stroke-linecap="round" fill="transparent"/>
         </svg>
-        <div class="absolute flex flex-col items-center">
-          <span id="modalPercent" class="text-2xl font-bold font-mono text-white">0%</span>
-          <span class="text-[9px] text-zinc-500 font-mono uppercase">Processing</span>
+        <div class="circle-text">
+          <span id="modalPercent" class="percent">0%</span>
+          <span style="font-size: 8px; color: #71717a; text-transform: uppercase;">Rendering</span>
         </div>
       </div>
-      <h3 id="modalTitle" class="text-sm font-bold text-sky-400 mt-2">စတင်လုပ်ဆောင်နေပါသည်</h3>
-      <p id="modalStatus" class="text-xs text-zinc-400 mt-1 min-h-[36px] flex items-center justify-center px-2 font-mono">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
+      <h3 id="modalTitle" style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-top: 6px;">စတင်လုပ်ဆောင်နေပါသည်</h3>
+      <p id="modalStatus" style="font-size: 11px; color: #a1a1aa; margin-top: 4px; font-family: 'JetBrains Mono', monospace;">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
     </div>
   </div>
 
-  <!-- Buy Package (POS) Modal -->
-  <div id="buyModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center hidden p-4">
-    <div class="glass-card rounded-3xl p-5 md:p-6 max-w-md w-full border border-amber-500/20 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-white/10 pb-3">
-        <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
-          <i class="ph-fill ph-crown text-lg"></i>
-          <span>Premium Package ဝယ်ယူရန်</span>
-        </div>
-        <button onclick="closeBuyModal()" class="text-zinc-400 hover:text-white text-lg"><i class="ph-bold ph-x"></i></button>
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="ph-bold ph-lightning" style="color: #fff; font-size: 18px;"></i>
       </div>
-
-      <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 space-y-1">
-        <p class="font-bold text-sm text-amber-400">💰 ကျပ် ၅,၀၀၀ (ဗီဒီယို ၁၀ ပုဒ် ခွင့်ပြုချက်)</p>
-        <p>• KPay / Wave: <span class="font-mono font-bold text-white">09798725916</span> (U Wai Phyo Aung)</p>
-        <p>• ငွေလွှဲပြီးပါက အောက်တွင် Transaction Slip ပုံ တင်ပေးပါခင်ဗျာ။</p>
-      </div>
-
       <div>
-        <label class="text-xs text-zinc-400 font-medium">ငွေလွှဲပြေစာ (Payment Slip) ပုံ ရွေးပါ:</label>
-        <input type="file" id="slipInput" accept="image/*" class="glass-input w-full mt-1.5 p-2 rounded-xl text-xs text-zinc-300 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-surface-800 file:text-zinc-300">
-      </div>
-
-      <button id="btnSubmitSlip" onclick="uploadSlip()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 font-bold text-xs text-zinc-950 transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20">
-        <i class="ph-bold ph-paper-plane-right"></i> ပြေစာ ပေးပို့မည် (Submit Slip)
-      </button>
-    </div>
-  </div>
-
-  <!-- Header with Buy Package & Account Info -->
-  <header class="h-16 border-b border-white/5 bg-surface-900/90 backdrop-blur-md sticky top-0 z-40 px-3 md:px-6 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
-        <i class="ph-bold ph-lightning text-white text-base"></i>
-      </div>
-      <div class="overflow-hidden">
-        <h1 class="font-bold text-xs md:text-sm tracking-wide text-white truncate">RECAP STUDIO</h1>
-        <p class="text-[9px] text-emerald-400 font-mono hidden sm:block">Narrator Auto-Sync</p>
+        <h1>RECAP STUDIO PRO</h1>
+        <p>100% Client-Side Engine</p>
       </div>
     </div>
 
-    <!-- Right Side: Buy Package Button & User Details -->
-    <div class="flex items-center gap-2">
-      <button onclick="openBuyModal()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 font-bold text-[11px] transition shadow-md shadow-amber-500/10 shrink-0">
-        <i class="ph-fill ph-crown text-xs"></i> <span>Buy Package</span>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button onclick="openPackageModal()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
+        <i class="ph-bold ph-crown"></i> Buy Package
       </button>
 
-      <div id="userProfile" class="flex items-center gap-2 border-l border-white/10 pl-2">
-        <div class="flex flex-col items-end leading-none">
-          <span id="userName" class="text-[11px] font-semibold text-zinc-200 max-w-[80px] sm:max-w-[120px] truncate">User</span>
-          <div class="flex items-center gap-1 text-[9px] font-mono mt-0.5">
-            <span class="text-emerald-400">Daily: <span id="userDailyCredits">0</span></span>
-            <span class="text-zinc-600">|</span>
-            <span class="text-amber-400">Pkg: <span id="userPkgCredits">0</span></span>
+      <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 8px;">
+        <img id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" src="" alt="Avatar">
+        <div style="text-align: left;">
+          <p id="userName" style="font-size: 11px; font-weight: bold; color: #e4e4e7;">User</p>
+          <div style="display: flex; gap: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace;">
+            <span style="color: #10b981;">Daily: <b id="userDailyCredits">0</b></span>
+            <span style="color: #fbbf24;">Pkg: <b id="userPkgCredits">0</b></span>
           </div>
         </div>
-        <img id="userAvatar" class="w-7 h-7 rounded-full border border-sky-400 object-cover shrink-0" src="" alt="Avatar">
-        <a href="/api/auth/logout" title="Logout" class="p-1 hover:text-rose-400 text-zinc-400 shrink-0"><i class="ph-bold ph-sign-out text-sm"></i></a>
+        <a href="/api/auth/logout" title="Logout" style="color: #ef4444; margin-left: 6px; font-size: 16px;"><i class="ph-bold ph-sign-out"></i></a>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 max-w-4xl w-full mx-auto p-3.5 md:p-6 space-y-4">
+  <!-- Main Container -->
+  <main class="container">
 
     <!-- STEP 1: Video File & Audio Extraction -->
-    <div class="glass-card rounded-2xl p-4 md:p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-[11px] font-bold font-mono">1</span>
-        <h2 class="text-xs font-semibold tracking-wider text-zinc-200">INPUT VIDEO & TRANSCRIPTION</h2>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <div>
-          <label class="text-[11px] font-medium text-zinc-400">AssemblyAI API Key</label>
-          <input type="password" id="apiKey" placeholder="AssemblyAI API key..." class="glass-input w-full mt-1 px-3 py-2 rounded-xl text-xs font-mono text-zinc-200">
-        </div>
-        <div>
-          <label class="text-[11px] font-medium text-zinc-400">Background Music (BGM - Optional)</label>
-          <input type="file" id="bgmFile" accept="audio/*" class="glass-input w-full mt-1 px-3 py-1.5 rounded-xl text-xs text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-surface-800 file:text-zinc-300">
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <span class="badge-num">1</span>
+          <h2>INPUT VIDEO & TRANSCRIPTION</h2>
         </div>
       </div>
 
-      <div id="dropZone" class="border-2 border-dashed border-zinc-800 hover:border-brand-500/50 bg-surface-950/40 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5">
+      <div class="grid-2">
+        <div class="form-group">
+          <label>AssemblyAI API Key</label>
+          <input type="password" id="apiKey" placeholder="AssemblyAI API key..." class="glass-input" style="font-family: 'JetBrains Mono', monospace;">
+        </div>
+        <div class="form-group">
+          <label>Background Music (BGM - Optional)</label>
+          <input type="file" id="bgmFile" accept="audio/*" class="glass-input" style="padding: 6px 10px;">
+        </div>
+      </div>
+
+      <div id="dropZone" class="dropzone">
         <input type="file" id="videoFileInput" accept="video/*" class="hidden">
-        <i class="ph-bold ph-video text-2xl text-zinc-400"></i>
-        <p class="text-xs font-medium text-zinc-300" id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
+        <i class="ph-bold ph-video"></i>
+        <p id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ</p>
       </div>
 
-      <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 font-semibold text-xs text-white shadow-lg transition flex items-center justify-center gap-2">
+      <!-- Preview Player for Video Sync -->
+      <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);"></video>
+
+      <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
         <i class="ph-bold ph-waveform"></i> အသံခွဲထုတ်ပြီး စာသားထုတ်ယူမည် (Transcribe)
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Gemini Prompt -->
-    <div class="glass-card rounded-2xl p-4 md:p-5">
-      <div class="flex items-center justify-between mb-2.5">
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-[11px] font-bold font-mono">2</span>
-          <h2 class="text-xs font-semibold tracking-wider text-zinc-200">SOURCE SUBTITLES & PROMPT</h2>
+    <!-- STEP 2: Source Subtitles & Prompt -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <span class="badge-num">2</span>
+          <h2>SOURCE SUBTITLES & PROMPT</h2>
         </div>
-        <button onclick="copyPrompt()" class="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-brand-500/10 text-brand-400 hover:bg-brand-500/20">
+        <button onclick="copyPrompt()" class="btn btn-ghost">
           <i class="ph-bold ph-copy"></i> Copy Prompt
         </button>
       </div>
 
-      <textarea id="sourceText" readonly rows="3" class="glass-input w-full p-2.5 rounded-xl text-xs font-mono text-zinc-400 mb-2.5 resize-none leading-relaxed" placeholder="Transcribed lines will appear here..."></textarea>
+      <textarea id="sourceText" readonly rows="3" class="glass-input" placeholder="Transcribed lines will appear here..." style="margin-bottom: 12px;"></textarea>
 
-      <div>
-        <label class="text-[11px] font-medium text-zinc-400">Gemini မှ ရရှိသော Burmese Translations JSON ထည့်ပါ:</label>
-        <textarea id="jsonInput" rows="3" class="glass-input w-full mt-1 p-2.5 rounded-xl text-xs font-mono text-purple-300 placeholder-zinc-700 resize-none focus:border-purple-500" placeholder='{"translations": ["ပထမစာကြောင်း", "ဒုတိယစာကြောင်း"]}'></textarea>
+      <div class="form-group">
+        <label>Gemini မှ ရရှိသော Burmese Translations JSON ထည့်ပါ:</label>
+        <textarea id="jsonInput" rows="3" class="glass-input" style="color: #c084fc;" placeholder='{"translations": ["ပထမစာကြောင်း", "ဒုတိယစာကြောင်း"]}'></textarea>
       </div>
 
-      <button onclick="submitJson()" class="w-full mt-2.5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-xs text-white transition flex items-center justify-center gap-2">
+      <button onclick="submitJson()" class="btn btn-purple">
         <i class="ph-bold ph-paper-plane-right"></i> Submit Translation
       </button>
     </div>
 
-    <!-- STEP 3: Voice & Subtitle Styling -->
-    <div class="glass-card rounded-2xl p-4 md:p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-[11px] font-bold font-mono">3</span>
-          <h2 class="text-xs font-semibold tracking-wider text-zinc-200">VOICE & SUBTITLE STYLING</h2>
+    <!-- STEP 3: Voice & Controls Grid & Subtitle Styling -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <span class="badge-num">3</span>
+          <h2>VOICE, SUBTITLE STYLING & RENDER</h2>
         </div>
       </div>
 
-      <!-- Controls Grid -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
-        <div>
-          <label class="text-[11px] text-zinc-400 font-medium">AI Voice</label>
-          <select id="voiceSelect" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-zinc-200">
-            <option value="my-MM-ThihaNeural">Thiha (Standard Male)</option>
-            <option value="my-MM-NilarNeural">Nilar (Standard Female)</option>
+      <div class="grid-4">
+        <div class="form-group">
+          <label>AI Voice</label>
+          <select id="voiceSelect" class="glass-input">
+            <option value="my-MM-ThihaNeural">Thiha (Male)</option>
+            <option value="my-MM-NilarNeural">Nilar (Female)</option>
           </select>
         </div>
-        <div>
-          <label class="text-[11px] text-zinc-400 font-medium">Pitch (Hz)</label>
-          <input type="number" id="pitchInput" value="0" min="-50" max="50" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-center">
+        <div class="form-group">
+          <label>Pitch (Hz)</label>
+          <input type="number" id="pitchInput" value="0" min="-50" max="50" class="glass-input" style="text-align: center;">
         </div>
-        <div>
-          <label class="text-[11px] text-zinc-400 font-medium">Speed (%)</label>
-          <input type="number" id="speedInput" value="10" min="-20" max="60" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-center">
+        <div class="form-group">
+          <label>Speed (%)</label>
+          <input type="number" id="speedInput" value="10" min="-20" max="60" class="glass-input" style="text-align: center;">
         </div>
-        <div>
-          <label class="text-[11px] text-zinc-400 font-medium">BGM Vol (%)</label>
-          <input type="number" id="bgmVolInput" value="15" min="0" max="100" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-center">
-        </div>
-      </div>
-
-      <!-- Subtitle Styling Controls -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 p-3 rounded-xl bg-surface-950/60 border border-white/5 mb-3">
-        <div class="col-span-2 sm:col-span-1">
-          <label class="text-[11px] text-zinc-400 font-medium">Font Family</label>
-          <div class="flex items-center gap-1 mt-1">
-            <input type="text" id="fontNameInput" value="Pyidaungsu" oninput="updateLivePreview()" class="glass-input w-full p-2 rounded-lg text-xs font-mono">
-            <label title="Custom .ttf Font တင်မည်" class="p-2 rounded-lg bg-surface-800 hover:bg-zinc-700 text-sky-400 cursor-pointer border border-white/10 shrink-0">
-              <i class="ph-bold ph-text-t"></i>
-              <input type="file" id="customFontFileInput" accept=".ttf,.otf" class="hidden" onchange="handleCustomFont(event)">
-            </label>
-          </div>
-        </div>
-        <div>
-          <label class="text-[11px] text-zinc-400 font-medium">Font Size</label>
-          <input type="number" id="fontSizeInput" value="22" oninput="updateLivePreview()" class="glass-input w-full mt-1 p-2 rounded-lg text-xs font-mono text-center">
-        </div>
-        <div>
-          <label class="text-[11px] text-zinc-400 font-medium">Text Color</label>
-          <input type="color" id="textColorInput" value="#ffff00" oninput="updateLivePreview()" class="w-full h-8 mt-1 p-0.5 rounded-lg bg-transparent border border-white/10 cursor-pointer">
-        </div>
-        <div>
-          <label class="text-[11px] text-zinc-400 font-medium">Outline Color</label>
-          <input type="color" id="outlineColorInput" value="#000000" oninput="updateLivePreview()" class="w-full h-8 mt-1 p-0.5 rounded-lg bg-transparent border border-white/10 cursor-pointer">
+        <div class="form-group">
+          <label>BGM Vol (%)</label>
+          <input type="number" id="bgmVolInput" value="15" min="0" max="100" class="glass-input" style="text-align: center;">
         </div>
       </div>
 
-      <!-- Toggles -->
-      <div class="flex flex-wrap items-center gap-4 text-xs text-zinc-300 mb-3">
-        <label class="flex items-center gap-2 cursor-pointer text-amber-400 font-medium">
-          <input type="checkbox" id="autoSpeedCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700">
-          <span>⚡ Narrator Auto-Speed (အသံနှင့် ဗီဒီယို တစ်ခန်းချင်း Sync ညှိမည်)</span>
+      <!-- Subtitle Styling -->
+      <div class="grid-4" style="background: rgba(11,12,16,0.6); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px;">
+        <div class="form-group">
+          <label>Font Size</label>
+          <input type="number" id="subFontSize" value="24" min="14" max="60" class="glass-input" style="text-align: center;">
+        </div>
+        <div class="form-group">
+          <label>Font Color</label>
+          <input type="color" id="subFontColor" value="#ffff00" style="width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;">
+        </div>
+        <div class="form-group">
+          <label>Border Color</label>
+          <input type="color" id="subBorderColor" value="#000000" style="width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;">
+        </div>
+        <div class="form-group">
+          <label>Border Width</label>
+          <input type="number" id="subBorderWidth" value="2" min="1" max="6" class="glass-input" style="text-align: center;">
+        </div>
+      </div>
+
+      <div class="toggles">
+        <label class="toggle-item" style="color: #fbbf24; font-weight: 500;">
+          <input type="checkbox" id="autoSpeedCheck" checked>
+          <span>⚡ Narrator Auto-Speed (အသံထက်ရှည်သော Video ကို Auto အမြန်ရစ်မည်)</span>
         </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="blurSubCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700">
+        <label class="toggle-item">
+          <input type="checkbox" id="blurSubCheck" checked>
           <span>မူရင်းစာတန်း Blur မည်</span>
         </label>
-        <label class="flex items-center gap-2 cursor-pointer text-sky-400 font-medium">
-          <input type="checkbox" id="burnSubCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700">
-          <span>မြန်မာစာတန်း Burn-in ထည့်သွင်းမည်</span>
-        </label>
-      </div>
-
-      <!-- Subtitle Live Preview Box -->
-      <div class="w-full bg-black/90 rounded-xl p-3 text-center border border-white/5 flex flex-col items-center justify-center min-h-[60px]">
-        <p id="previewSubtitleText" class="font-bold tracking-wide select-none" style="color: #ffff00; font-size: 22px; text-shadow: 0 0 2px #000, 2px 2px 2px #000; font-family: 'Pyidaungsu', sans-serif;">
-          မြန်မာစာတန်းထိုး နမူနာပုံစံ (Sample Subtitle)
-        </p>
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor -->
-    <div class="glass-card rounded-2xl p-4 md:p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-[11px] font-bold font-mono">4</span>
-          <h2 class="text-xs font-semibold tracking-wider text-zinc-200">LIVE SUBTITLE EDITOR</h2>
+    <!-- STEP 4: Live Subtitle Editor with Auto-Save -->
+    <div class="glass-card">
+      <div class="card-title">
+        <div class="card-title-left">
+          <span class="badge-num">4</span>
+          <h2>LIVE SUBTITLE EDITOR</h2>
         </div>
+        <span id="autoSaveStatus" style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">✓ Auto-saved</span>
       </div>
-      <div id="linesContainer" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-        <div class="text-center py-6 text-zinc-600 text-xs">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
+      <div id="linesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+        <div style="text-align: center; padding: 20px; color: #71717a; font-size: 12px;">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
       </div>
     </div>
 
     <!-- STEP 5: Final Export -->
     <div>
-      <button id="btnExport" onclick="startClientExport()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-sm text-white shadow-xl transition flex items-center justify-center gap-2">
-        <i class="ph-bold ph-lightning text-lg"></i> Narrator Sync & Subtitle ဖြင့် ဗီဒီယို Render ပြုလုပ်မည်
+      <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
+        <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
       </button>
 
-      <div id="resultBox" class="hidden glass-card rounded-2xl p-4 md:p-6 text-center space-y-3 mt-4">
-        <div class="text-emerald-400 text-sm font-semibold flex items-center justify-center gap-2">
-          <i class="ph-fill ph-check-circle text-lg"></i> ဗီဒီယို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!
+      <div id="resultBox" class="glass-card hidden" style="text-align: center; margin-top: 16px;">
+        <div style="color: #34d399; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px;">
+          <i class="ph-fill ph-check-circle" style="font-size: 18px;"></i> ဗီဒီယို ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!
         </div>
-        <video id="videoPlayer" controls class="max-h-[360px] w-full max-w-lg mx-auto rounded-xl border border-white/10"></video>
-        <div class="flex items-center justify-center gap-2 pt-2">
-          <a id="downloadBtn" download="recap_video.mp4" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition">
+        <video id="videoPlayer" controls style="max-height: 380px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;"></video>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+          <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
             <i class="ph-bold ph-download-simple"></i> Download Video
           </a>
-          <button onclick="downloadSRT()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs border border-white/10">
+          <button onclick="downloadSRT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px;">
             <i class="ph-bold ph-subtitles"></i> Download .SRT
+          </button>
+          <button onclick="downloadScriptTXT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px; color: #fbbf24;">
+            <i class="ph-bold ph-file-text"></i> Download Script (.TXT)
           </button>
         </div>
       </div>
@@ -301,23 +432,22 @@
   </main>
 
   <script>
-    const { FFmpeg } = FFmpegWASM;
-    const { fetchFile, toBlobURL } = FFmpegUtil;
+    const { createFFmpeg, fetchFile } = FFmpeg;
 
     let ffmpeg = null;
+    let isFFmpegReady = false;
     let currentSegments = [];
     let selectedVideoFile = null;
     let srtContent = "";
-    let customFontData = null;
-    let currentFontName = "Pyidaungsu";
+    let selectedPackageType = "10";
 
-    function showToast(msg, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      toast.className = `flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass-card border border-white/10 text-xs text-zinc-200 shadow-2xl transition duration-300`;
-      toast.innerHTML = `<span>${msg}</span>`;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3500);
+    function showToast(msg) {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.innerText = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
     }
 
     function showProgress(title, status = "လုပ်ဆောင်နေပါသည်...") {
@@ -325,8 +455,7 @@
       document.getElementById('modalTitle').innerText = title;
       document.getElementById('modalStatus').innerText = status;
       updateGauge(0);
-      m.classList.remove('hidden');
-      setTimeout(() => m.classList.remove('opacity-0'), 10);
+      m.classList.add('active');
     }
 
     function updateGauge(percent, statusText = null) {
@@ -338,101 +467,116 @@
     }
 
     function hideProgress() {
-      const m = document.getElementById('loadingModal');
-      m.classList.add('opacity-0');
-      setTimeout(() => m.classList.add('hidden'), 300);
+      document.getElementById('loadingModal').classList.remove('active');
     }
 
-    function openBuyModal() { document.getElementById('buyModal').classList.remove('hidden'); }
-    function closeBuyModal() { document.getElementById('buyModal').classList.add('hidden'); }
+    function openPackageModal() { document.getElementById('packageModal').classList.add('active'); }
+    function closePackageModal() { document.getElementById('packageModal').classList.remove('active'); }
+
+    function selectPkg(type, amount, el) {
+      selectedPackageType = type;
+      document.querySelectorAll('.pkg-item').forEach(item => item.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    async function submitSlip() {
+      const fileInput = document.getElementById('slipFileInput');
+      if (!fileInput.files.length) return showToast("ကျေးဇူးပြု၍ ငွေလွှဲပြေစာ ပုံရွေးချယ်ပေးပါခင်ဗျာ");
+
+      const fd = new FormData();
+      fd.append("package_type", selectedPackageType);
+      fd.append("payment_method", document.getElementById('payMethodSelect').value);
+      fd.append("slip", fileInput.files[0]);
+
+      try {
+        const res = await fetch("/api/payment/submit", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        closePackageModal();
+        showToast(data.message);
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    function triggerAutoSave() {
+      const inputs = document.querySelectorAll('.sub-input');
+      const lines = Array.from(inputs).map(i => i.value);
+      if (currentSegments.length && lines.length) {
+        localStorage.setItem("recap_saved_project", JSON.stringify({
+          segments: currentSegments,
+          translations: lines
+        }));
+        document.getElementById('autoSaveStatus').innerText = "✓ Saved just now";
+      }
+    }
+
+    function restoreAutoSavedProject() {
+      const saved = localStorage.getItem("recap_saved_project");
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        if (data.segments && data.translations && data.segments.length) {
+          currentSegments = data.segments;
+          document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) ${s.text}`).join("\n");
+          renderSubEditor(data.translations);
+          showToast("ယခင် မူကြမ်းစာကြောင်းများ ပြန်လည်ရယူပြီးပါပြီ!");
+        }
+      } catch (e) {}
+    }
+
+    async function initFFmpegOnStart() {
+      if (isFFmpegReady) return;
+      showProgress("FFmpeg Engine ဒေါင်းလုဒ်ဆွဲနေပါသည်", "Browser ထဲတွင် Engine အား ပြင်ဆင်နေပါသည်...");
+      try {
+        ffmpeg = createFFmpeg({
+          log: false,
+          corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+        });
+
+        ffmpeg.setProgress(({ ratio }) => {
+          if (ratio > 0 && ratio <= 1) updateGauge(ratio * 100, "Render ပြုလုပ်နေပါသည်...");
+        });
+
+        await ffmpeg.load();
+
+        isFFmpegReady = true;
+        updateGauge(100, "အဆင်သင့်ဖြစ်ပါပြီ!");
+        setTimeout(hideProgress, 600);
+      } catch (err) {
+        hideProgress();
+        showToast("FFmpeg Load မရပါ: " + err.message);
+      }
+    }
 
     async function checkUserAuth() {
       try {
         const res = await fetch("/api/user/me");
         const data = await res.json();
         if (data.logged_in) {
+          document.getElementById('loginGate').classList.add('hidden');
+          document.getElementById('userProfile').classList.remove('hidden');
           document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
           document.getElementById('userName').innerText = data.name;
-          document.getElementById('userDailyCredits').innerText = `${data.daily_credits}`;
-          document.getElementById('userPkgCredits').innerText = `${data.package_credits}`;
-        }
-      } catch (e) {}
-    }
 
-    async function uploadSlip() {
-      const input = document.getElementById('slipInput');
-      if (!input.files[0]) return showToast("Slip ပုံ ရွေးချယ်ပေးပါ", "error");
+          // Admin User ဖြစ်ပါက Unlimited (အကန့်အသတ်မရှိ) ပြသပေးခြင်း
+          if (data.is_admin) {
+            document.getElementById('userDailyCredits').innerText = "∞ (Unlimited)";
+            document.getElementById('userPkgCredits').innerText = "∞";
+          } else {
+            document.getElementById('userDailyCredits').innerText = data.daily_credits;
+            document.getElementById('userPkgCredits').innerText = data.package_credits;
+          }
 
-      const btn = document.getElementById('btnSubmitSlip');
-      btn.innerText = "ပေးပို့နေပါသည်...";
-      btn.disabled = true;
-
-      const fd = new FormData();
-      fd.append("slip", input.files[0]);
-
-      try {
-        const res = await fetch("/api/payment/submit-slip", { method: "POST", body: fd });
-        const data = await res.json();
-        if (res.ok) {
-          showToast(data.message, "success");
-          closeBuyModal();
+          await initFFmpegOnStart();
+          restoreAutoSavedProject();
         } else {
-          showToast(data.error, "error");
+          document.getElementById('loginGate').classList.remove('hidden');
         }
       } catch (e) {
-        showToast("Slip ပေးပို့မှု မအောင်မြင်ပါ", "error");
-      } finally {
-        btn.innerText = "ပြေစာ ပေးပို့မည် (Submit Slip)";
-        btn.disabled = false;
+        document.getElementById('loginGate').classList.remove('hidden');
       }
-    }
-
-    async function loadFFmpeg() {
-      if (ffmpeg) return ffmpeg;
-      showProgress("FFmpeg Engine စတင်နေပါသည်", "Browser ထဲသို့ FFmpeg Core ထည့်သွင်းနေပါသည်...");
-      ffmpeg = new FFmpeg();
-      ffmpeg.on('progress', ({ progress }) => {
-        if (progress > 0 && progress <= 1) {
-          updateGauge(progress * 100, "Device ပေါ်တွင် ဗီဒီယို Render ပြုလုပ်နေပါသည်...");
-        }
-      });
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
-      hideProgress();
-      return ffmpeg;
-    }
-
-    function handleCustomFont(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      currentFontName = file.name.split('.')[0];
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        customFontData = new Uint8Array(evt.target.result);
-        const fontFace = new FontFace(currentFontName, evt.target.result);
-        fontFace.load().then(loadedFace => {
-          document.fonts.add(loadedFace);
-          document.getElementById('fontNameInput').value = currentFontName;
-          updateLivePreview();
-          showToast(`Font: ${currentFontName} ထည့်သွင်းပြီးပါပြီ!`, "success");
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function updateLivePreview() {
-      const sz = document.getElementById('fontSizeInput').value;
-      const col = document.getElementById('textColorInput').value;
-      const out = document.getElementById('outlineColorInput').value;
-      const font = document.getElementById('fontNameInput').value.trim() || currentFontName;
-      const p = document.getElementById('previewSubtitleText');
-      p.style.fontSize = `${sz}px`;
-      p.style.color = col;
-      p.style.fontFamily = `'${font}', sans-serif`;
-      p.style.textShadow = `0 0 2px ${out}, 2px 2px 2px ${out}, -2px -2px 2px ${out}`;
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -442,28 +586,33 @@
 
       const dropZone = document.getElementById('dropZone');
       const fileInput = document.getElementById('videoFileInput');
+      const videoPrev = document.getElementById('inputVideoPreview');
+
       dropZone.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
         if (fileInput.files.length) {
           selectedVideoFile = fileInput.files[0];
           document.getElementById('videoFileNameDisplay').innerText = `ရွေးချယ်ထားသော ဖိုင်: ${selectedVideoFile.name}`;
+          videoPrev.src = URL.createObjectURL(selectedVideoFile);
+          videoPrev.classList.remove('hidden');
         }
       });
     });
 
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
-      if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!", "error");
+      if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!");
+      if (!isFFmpegReady) await initFFmpegOnStart();
       localStorage.setItem('assemblyai_key', apiKey);
 
       try {
-        const ff = await loadFFmpeg();
-        showProgress("အသံဖိုင် ခွဲထုတ်နေပါသည်", "ဗီဒီယိုမှ MP3 သီးသန့် ထုတ်ယူနေပါသည်...");
+        showProgress("အသံဖိုင် ခွဲထုတ်နေပါသည်", "ဗီဒီယိုမှ MP3 အသံဖိုင် ထုတ်ယူနေပါသည်...");
         updateGauge(20);
 
-        await ff.writeFile('input_orig.mp4', await fetchFile(selectedVideoFile));
-        await ff.exec(['-i', 'input_orig.mp4', '-vn', '-acodec', 'libmp3lame', '-b:a', '96k', 'extracted_audio.mp3']);
-        const audioData = await ff.readFile('extracted_audio.mp3');
+        ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
+        await ffmpeg.run('-i', 'input_orig.mp4', '-vn', '-acodec', 'libmp3lame', '-b:a', '96k', 'extracted_audio.mp3');
+        
+        const audioData = ffmpeg.FS('readFile', 'extracted_audio.mp3');
         const audioBlob = new Blob([audioData.buffer], { type: 'audio/mp3' });
 
         updateGauge(50, "AssemblyAI သို့ ပေးပို့၍ စာသားထုတ်ယူနေပါသည်...");
@@ -479,45 +628,56 @@
         document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) ${s.text}`).join("\n");
         updateGauge(100);
         hideProgress();
-        showToast(`စာကြောင်း ${currentSegments.length} ခု ရရှိပါပြီ!`, "success");
+        showToast(`စာကြောင်း ${currentSegments.length} ခု ရရှိပါပြီ!`);
       } catch (err) {
         hideProgress();
-        showToast(err.message, "error");
+        showToast(err.message);
       }
     }
 
     function copyPrompt() {
-      if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!", "error");
+      if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
       const header = `You are a professional video dubbing translator. Translate the subtitles into spoken Burmese.\nReturn JSON: {"translations": ["...", "..."]}\nInputs:\n`;
       const inputs = currentSegments.map(s => `[${s.id}] [Max Limit: ${s.duration}s] "${s.text}"`).join("\n");
       navigator.clipboard.writeText(header + inputs);
-      showToast("Gemini အတွက် Prompt ကို ကူးယူပြီးပါပြီ!", "success");
+      showToast("Prompt ကူးယူပြီးပါပြီ!");
     }
 
     function submitJson() {
       const raw = document.getElementById('jsonInput').value.trim();
       try {
         const trans = JSON.parse(raw.replace(/```json|```/g, "")).translations;
-        const container = document.getElementById('linesContainer');
-        container.innerHTML = "";
-        currentSegments.forEach((seg, i) => {
-          const row = document.createElement('div');
-          row.className = "flex items-center gap-2 p-2 rounded-xl glass-input border border-white/5";
-          row.innerHTML = `
-            <span class="text-[11px] font-mono text-brand-400 w-16 shrink-0">[${seg.id}] (${seg.duration}s)</span>
-            <input type="text" class="sub-input flex-1 bg-transparent border-none text-xs text-zinc-200 outline-none" value="${trans[i] || ''}">
-            <button onclick="previewAudio('${encodeURIComponent(trans[i] || '')}')" class="px-2 py-1 rounded-lg text-xs bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 shrink-0">▶ Preview</button>
-          `;
-          container.appendChild(row);
-        });
-        showToast(`မြန်မာစာကြောင်း ${trans.length} ခု ထည့်သွင်းပြီးပါပြီ!`, "success");
+        renderSubEditor(trans);
+        triggerAutoSave();
+        showToast(`မြန်မာစာကြောင်း ${trans.length} ခု ထည့်သွင်းပြီးပါပြီ!`);
       } catch (e) {
-        showToast("JSON Format မှားယွင်းနေပါသည်!", "error");
+        showToast("JSON Format မှားယွင်းနေပါသည်!");
       }
     }
 
-    async function previewAudio(encodedText) {
+    function renderSubEditor(translations) {
+      const container = document.getElementById('linesContainer');
+      container.innerHTML = "";
+      currentSegments.forEach((seg, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(11,12,16,0.6); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);";
+        row.innerHTML = `
+          <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; width: 55px; flex-shrink: 0;">[${seg.id}] (${seg.duration}s)</span>
+          <input type="text" class="sub-input" oninput="triggerAutoSave()" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${translations[i] || ''}">
+          <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(translations[i] || '')}')" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    async function previewAudioSync(startTimeSec, encodedText) {
       const text = decodeURIComponent(encodedText);
+      const vPrev = document.getElementById('inputVideoPreview');
+      if (vPrev && !vPrev.classList.contains('hidden')) {
+        vPrev.currentTime = startTimeSec;
+        vPrev.play();
+      }
+
       const fd = new FormData();
       fd.append("text", text);
       fd.append("voice", document.getElementById('voiceSelect').value);
@@ -526,17 +686,19 @@
 
       const res = await fetch("/api/preview-single-audio", { method: "POST", body: fd });
       const blob = await res.blob();
-      new Audio(URL.createObjectURL(blob)).play();
+      const a = new Audio(URL.createObjectURL(blob));
+      a.onended = () => { if (vPrev) vPrev.pause(); };
+      a.play();
     }
 
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const translations = Array.from(inputs).map(i => i.value);
-      if (!translations.length) return showToast("စာကြောင်းများ မရှိသေးပါ!", "error");
-      if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် မရှိပါ!", "error");
+      if (!translations.length) return showToast("စာကြောင်းများ မရှိသေးပါ!");
+      if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် မရှိပါ!");
+      if (!isFFmpegReady) return showToast("FFmpeg Engine အဆင်သင့်မဖြစ်သေးပါ!");
 
-      const ff = await loadFFmpeg();
-      showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ မြန်မာစကားပြောသံများ ထုတ်ယူနေပါသည်...");
+      showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
 
       try {
         const ttsRes = await fetch("/api/tts/batch-generate", {
@@ -552,28 +714,17 @@
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error);
 
-        updateGauge(25, "အသံဖိုင်များနှင့် SRT Subtitle တည်ဆောက်နေပါသည်...");
-
-        if (customFontData) {
-          await ff.writeFile('custom.ttf', customFontData);
-        } else {
-          const fontRes = await fetch("https://github.com/googlefonts/pyidaungsu/raw/main/fonts/ttf/Pyidaungsu-Regular.ttf");
-          const fontBuf = await fontRes.arrayBuffer();
-          await ff.writeFile('custom.ttf', new Uint8Array(fontBuf));
-        }
+        updateGauge(30, "အသံဖိုင်များနှင့် ဗီဒီယို ညှိနေပါသည်...");
 
         let concatAudioList = "";
         let srtLines = [];
         let runningMs = 0;
-        let clipNames = [];
-        const autoSpeed = document.getElementById('autoSpeedCheck').checked;
 
         for (let i = 0; i < ttsData.audios.length; i++) {
           const item = ttsData.audios[i];
-          const seg = currentSegments[i];
           const audioBytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
           const aName = `tts_${i}.mp3`;
-          await ff.writeFile(aName, audioBytes);
+          ffmpeg.FS('writeFile', aName, audioBytes);
           concatAudioList += `file '${aName}'\n`;
 
           const durMs = item.duration_ms;
@@ -581,59 +732,18 @@
           runningMs += durMs;
           const eTime = msToSrt(runningMs);
           srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
-
-          if (autoSpeed && seg) {
-            updateGauge(25 + Math.round((i / ttsData.audios.length) * 35), `Scene ${i+1}/${ttsData.audios.length} Speed ညှိနေပါသည်...`);
-            const origSec = Math.max(0.4, (seg.end - seg.start) / 1000.0);
-            const targetSec = Math.max(0.4, durMs / 1000.0);
-            const clipName = `clip_${i}.mp4`;
-
-            let vf = "setpts=PTS-STARTPTS";
-            if (origSec > targetSec) {
-              const factor = Math.min(origSec / targetSec, 3.0);
-              vf = `setpts=${(1.0 / factor).toFixed(4)}*(PTS-STARTPTS)`;
-            }
-
-            await ff.exec([
-              '-ss', `${seg.start / 1000}`, '-to', `${seg.end / 1000}`,
-              '-i', 'input_orig.mp4',
-              '-filter:v', vf,
-              '-an', '-c:v', 'libx264', '-preset', 'ultrafast', clipName
-            ]);
-            clipNames.push(`file '${clipName}'\n`);
-          }
         }
         srtContent = srtLines.join("\n");
-        await ff.writeFile('sub.srt', new TextEncoder().encode(srtContent));
 
-        await ff.writeFile('audio_concat.txt', concatAudioList);
-        await ff.exec(['-f', 'concat', '-safe', '0', '-i', 'audio_concat.txt', '-c', 'copy', 'dub_full.mp3']);
+        ffmpeg.FS('writeFile', 'audio_concat.txt', concatAudioList);
+        await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'audio_concat.txt', '-c', 'copy', 'dub_full.mp3');
 
-        let inputVideoName = 'input_orig.mp4';
-        if (autoSpeed && clipNames.length) {
-          updateGauge(65, "ဗီဒီယို အပိုင်းအစများကို ပေါင်းစပ်နေပါသည်...");
-          await ff.writeFile('video_concat.txt', clipNames.join(""));
-          await ff.exec(['-f', 'concat', '-safe', '0', '-i', 'video_concat.txt', '-c', 'copy', 'synced_video.mp4']);
-          inputVideoName = 'synced_video.mp4';
-        }
-
-        updateGauge(75, "စာတန်းထိုးနှင့် BGM ပေါင်းစပ်နေပါသည်...");
+        updateGauge(55, "ဗီဒီယိုနှင့် စာတန်း Blur ပြုလုပ်နေပါသည်...");
 
         const blurSub = document.getElementById('blurSubCheck').checked;
-        const burnSub = document.getElementById('burnSubCheck').checked;
-        const fSize = document.getElementById('fontSizeInput').value || "22";
-
-        let vfFilters = [];
-        let currentV = "0:v";
-
+        let videoFilter = "";
         if (blurSub) {
-          vfFilters.push(`[${currentV}]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[v_blurred]`);
-          currentV = "v_blurred";
-        }
-
-        if (burnSub) {
-          vfFilters.push(`[${currentV}]subtitles=sub.srt:fontsdir=.:force_style='FontName=custom,FontSize=${fSize},PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2'[v_sub]`);
-          currentV = "v_sub";
+          videoFilter = "[0:v]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[v_out]";
         }
 
         const bgmInput = document.getElementById('bgmFile');
@@ -641,38 +751,47 @@
         let finalArgs = [];
 
         if (hasBgm) {
-          await ff.writeFile('bgm_in.mp3', await fetchFile(bgmInput.files[0]));
+          ffmpeg.FS('writeFile', 'bgm_in.mp3', await fetchFile(bgmInput.files[0]));
           const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) / 100).toFixed(2);
-          let afFilter = `[1:a]volume=1.0[maina];[2:a]volume=${bgmVol}[bgma];[maina][bgma]amix=inputs=2:duration=first[a_final]`;
-          let fullFilter = vfFilters.length ? (vfFilters.join(";") + ";" + afFilter) : afFilter;
-
-          finalArgs = [
-            '-i', inputVideoName, '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3',
-            '-filter_complex', fullFilter,
-            '-map', `[${currentV}]`, '-map', '[a_final]',
-            '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4'
-          ];
-        } else {
-          if (vfFilters.length) {
+          let filterComplex = `[1:a]volume=1.0[maina];[2:a]volume=${bgmVol}[bgma];[maina][bgma]amix=inputs=2:duration=first[finala]`;
+          
+          if (videoFilter) {
+            filterComplex = `${videoFilter};` + filterComplex;
             finalArgs = [
-              '-i', inputVideoName, '-i', 'dub_full.mp3',
-              '-filter_complex', vfFilters.join(";"),
-              '-map', `[${currentV}]`, '-map', '1:a',
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3',
+              '-filter_complex', filterComplex,
+              '-map', '[v_out]', '-map', '[finala]',
               '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4'
             ];
           } else {
             finalArgs = [
-              '-i', inputVideoName, '-i', 'dub_full.mp3',
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3',
+              '-filter_complex', filterComplex,
+              '-map', '0:v', '-map', '[finala]',
+              '-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4'
+            ];
+          }
+        } else {
+          if (videoFilter) {
+            finalArgs = [
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3',
+              '-filter_complex', videoFilter,
+              '-map', '[v_out]', '-map', '1:a',
+              '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4'
+            ];
+          } else {
+            finalArgs = [
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3',
               '-map', '0:v', '-map', '1:a',
               '-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4'
             ];
           }
         }
 
-        updateGauge(85, "ဗီဒီယို Render ထုတ်ယူနေပါသည်...");
-        await ff.exec(finalArgs);
+        updateGauge(80, "နောက်ဆုံးဗီဒီယို ပေါင်းစပ်နေပါသည်...");
+        await ffmpeg.run(...finalArgs);
 
-        const outData = await ff.readFile('output.mp4');
+        const outData = ffmpeg.FS('readFile', 'output.mp4');
         const outBlob = new Blob([outData.buffer], { type: 'video/mp4' });
         const videoUrl = URL.createObjectURL(outBlob);
 
@@ -683,11 +802,11 @@
 
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
         hideProgress();
-        showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!", "success");
+        showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!");
         checkUserAuth();
       } catch (err) {
         hideProgress();
-        showToast(err.message, "error");
+        showToast(err.message);
       }
     }
 
@@ -702,11 +821,22 @@
     }
 
     function downloadSRT() {
-      if (!srtContent) return showToast("စာတန်းထိုး မရှိသေးပါ!", "error");
+      if (!srtContent) return showToast("စာတန်းထိုး မရှိသေးပါ!");
       const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = "recap_subtitles.srt";
+      a.click();
+    }
+
+    function downloadScriptTXT() {
+      const inputs = document.querySelectorAll('.sub-input');
+      const lines = Array.from(inputs).map(i => i.value).filter(t => t.trim() !== "");
+      if (!lines.length) return showToast("ဘာသာပြန် စာသား မရှိသေးပါ!");
+      const blob = new Blob([lines.join("\n\n")], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = "recap_voice_script.txt";
       a.click();
     }
   </script>
