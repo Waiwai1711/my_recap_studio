@@ -8,6 +8,7 @@ pydub
 sqlalchemy
 authlib
 httpx
+requests
+itsdangerous
 python-dotenv
 psycopg2-binary
-itsdangerous
