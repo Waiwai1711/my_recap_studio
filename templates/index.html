@@ -109,8 +109,14 @@
     .btn-amber { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; }
     .btn-ghost { background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 6px 12px; border-radius: 8px; }
 
-    .toggles { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #d4d4d8; }
-    .toggle-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .toggles { display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: #d4d4d8; }
+    .toggle-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+    .highlight-card {
+      background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
 
     .modal-overlay {
       position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.85);
@@ -316,7 +322,7 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice, Watermark, Hand Slider & Editable Subtitle Settings -->
+    <!-- STEP 3: Voice, Watermark, Hand Slider & Highlight Teaser Settings -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -339,12 +345,27 @@
         </div>
         <div class="form-group">
           <label>Base Speed (%)</label>
-          <input type="number" id="speedInput" value="10" min="-20" max="60" class="glass-input" style="text-align: center;">
+          <input type="number" id="speedInput" value="5" min="-20" max="60" class="glass-input" style="text-align: center;">
         </div>
         <div class="form-group">
           <label>BGM Max Vol (%)</label>
           <input type="number" id="bgmVolInput" value="25" min="0" max="100" class="glass-input" style="text-align: center;">
         </div>
+      </div>
+
+      <!-- Highlight Clip Hook Feature -->
+      <div class="highlight-card">
+        <div style="text-align: left;">
+          <div style="display: flex; align-items: center; gap: 6px; color: #10b981; font-weight: 700; font-size: 13px;">
+            <i class="ph-bold ph-sparkle"></i> Video အစတွင် 4.0s Highlight Clip ထည့်မည်[cite: 9]
+          </div>
+          <p style="font-size: 11px; color: #a1a1aa; margin-top: 4px;">
+            ဗီဒီယို၏ အလယ်မှ အကောင်းဆုံးအပိုင်းကို အစတွင် Hook Teaser အဖြစ် အလိုအလျောက် ထည့်သွင်းပေးပါမည်[cite: 9]
+          </p>
+        </div>
+        <label class="toggle-item" style="cursor: pointer;">
+          <input type="checkbox" id="enableHighlightCheck" checked style="width: 18px; height: 18px; accent-color: #10b981;">
+        </label>
       </div>
 
       <div class="grid-2" style="background: rgba(11,12,16,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
@@ -375,7 +396,6 @@
               <label>Font Size (လက်ဖြင့် ဆွဲချိန်ပါ)</label>
               <span id="fontSizeDisplay" style="font-size: 11px; color: #38bdf8; font-weight: bold; font-family: 'JetBrains Mono', monospace;">24px</span>
             </div>
-            <!-- လက်နှင့် အကြီးအသေး ဆွဲချိန်နိုင်သော Range Slider -->
             <input type="range" id="subFontSize" min="14" max="55" value="24" style="width: 100%; accent-color: #38bdf8; cursor: pointer; margin-top: 8px;">
           </div>
         </div>
@@ -395,14 +415,12 @@
           </div>
         </div>
 
-        <!-- Editable Preview Box (စာသားကို လက်ဖြင့် နှိပ်၍ အစားထိုး ရိုက်ထည့်ကြည့်နိုင်ပါသည်) -->
         <div class="form-group" style="margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <label style="color: #38bdf8; font-weight: 600;"><i class="ph-bold ph-eye"></i> Subtitle Live Preview (စာသားကို နှိပ်၍ စိတ်ကြိုက် ပြင်ရိုက်ကြည့်နိုင်ပါသည်)</label>
             <span style="font-size: 10px; color: #71717a;">✏️ Click to edit preview text</span>
           </div>
           <div id="subPreviewBox" style="background: linear-gradient(180deg, #1e2230 0%, #0f1117 100%); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; height: 110px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
-            <!-- contenteditable=true ဖြင့် စာလုံးကို တိုက်ရိုက် ရိုက်စမ်းနိုင်ပါသည် -->
             <p id="subPreviewText" contenteditable="true" spellcheck="false" style="font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; padding: 0 16px; outline: none; cursor: text; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.5;">
               အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
             </p>
@@ -410,6 +428,7 @@
         </div>
       </div>
 
+      <!-- Advanced Feature Toggles with Video Auto-Speed Sync -->
       <div class="toggles">
         <label class="toggle-item" style="color: #38bdf8; font-weight: 600;">
           <input type="checkbox" id="enableSubCheck" checked onchange="toggleSubSection()">
@@ -423,9 +442,9 @@
           <input type="checkbox" id="enableReelsCheck">
           <span>📱 TikTok / Reels 9:16 ဒေါင်လိုက် ပြောင်းလဲမည် (Auto-Blur Fill)</span>
         </label>
-        <label class="toggle-item" style="color: #fbbf24; font-weight: 500;">
+        <label class="toggle-item" style="color: #fbbf24; font-weight: 600;">
           <input type="checkbox" id="autoSpeedCheck" checked>
-          <span>⚡ Dynamic Auto-Speed (အချိန်မီအောင် အသံကို အလိုအလျောက် အမြန်/အနှေးညှိမည်)</span>
+          <span>⚡ Dynamic Video & Audio Speed Sync (စကားမပြောသည့် Video အပိုင်းလွတ်များကို အလိုအလျောက် အမြန်ရစ်မည်)</span>
         </label>
         <label class="toggle-item">
           <input type="checkbox" id="blurSubCheck" checked>
@@ -510,9 +529,7 @@
         const db = await openFontDB();
         const tx = db.transaction(STORE_NAME, "readwrite");
         tx.objectStore(STORE_NAME).put({ fileName, buffer }, "active_font");
-      } catch (e) {
-        console.error("Font save error", e);
-      }
+      } catch (e) {}
     }
 
     async function loadSavedFont() {
@@ -870,22 +887,14 @@
 
     function copyPrompt() {
       if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
-      const header = `You are a professional video dubbing translator specializing in Chinese-to-Burmese lip-sync localization.
-Translate the Chinese subtitles into natural, spoken Burmese (အပြောစကား).
+      const header = `You are a professional movie recap dubber. Translate the following video segments into spoken Burmese.
+CRITICAL RULES:
+1. EXTREMELY SHORT & PUNCHY: Keep each line between 4 to 8 Burmese words only.
+2. DURATION LIMIT: The text MUST fit into the given duration (max 3-4 syllables per second). Never write long sentences.
+3. RECAP TONE: Use exciting, casual Burmese movie recap style.
+4. Output STRICT JSON format only: {"translations": ["...", "..."]}
 
-Character Context:
-- A young grandson speaking respectfully to his grandpa ("သား", "အဘိုး") and a restaurant owner ("ဦးလေး").
-- Grandpa speaks affectionately to grandson ("အဘိုး", "မြေးလေး/မင်း").
-
-Strict Translation Rules:
-1. Pacing & Syllables: Match the [Max Limit] strictly. Estimate roughly 3-4 Burmese syllables per second. Never make sentences too long for the voice actor to speak comfortably.
-2. Short Durations (Under 2s or 0s): Keep it extremely punchy (maximum 2-5 words).
-3. Dramatic Natural Spoken Burmese: Avoid literary/written Burmese (မသုံးရ: "သည်", "၍", "သော"). Use real conversational phrasing.
-4. Output JSON Format: Return strictly JSON format: {"translations": ["...", "..."]}
-   - Maintain the EXACT same number of items as the input (1-to-1 match).
-   - No additional explanation or Markdown formatting.
-
-Inputs:
+INPUTS:
 `;
       const inputs = currentSegments.map(s => `[${s.id}] [Max Limit: ${s.duration}s] "${s.text}"`).join("\n");
       navigator.clipboard.writeText(header + inputs);
@@ -1013,14 +1022,15 @@ Inputs:
       return new Uint8Array(out.buffer);
     }
 
-    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmVol, isDuckingEnabled, isAutoSpeedEnabled) {
+    // ★ အသံ ကာတွန်းသံမဖြစ်စေရန် Auto-Speed အား အများဆုံး 1.12x သာ ကန့်သတ်ပေးထားသော Engine
+    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmVol, isDuckingEnabled, isAutoSpeedEnabled, highlightOffsetSec = 0) {
       let totalSec = 10;
       if (segments.length > 0) {
         const last = segments[segments.length - 1];
-        totalSec = Math.max(totalSec, (last.end / 1000) + 5);
+        totalSec = Math.max(totalSec, (last.end / 1000) + highlightOffsetSec + 5);
       }
       const vPrev = document.getElementById('inputVideoPreview');
-      if (vPrev && vPrev.duration) totalSec = Math.max(totalSec, vPrev.duration + 2);
+      if (vPrev && vPrev.duration) totalSec = Math.max(totalSec, vPrev.duration + highlightOffsetSec + 2);
 
       const sampleRate = 44100;
       const actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1034,12 +1044,12 @@ Inputs:
         const seg = segments[i];
         const nextSeg = segments[i + 1];
 
-        const startSec = (seg && typeof seg.start === "number") ? (seg.start / 1000) : (i * 2);
+        const startSec = ((seg && typeof seg.start === "number") ? (seg.start / 1000) : (i * 2)) + highlightOffsetSec;
         const originalDurationSec = item.duration_ms / 1000;
         
         let maxAllowedSec = seg && typeof seg.duration === "number" ? seg.duration : originalDurationSec;
         if (nextSeg && typeof nextSeg.start === "number") {
-          maxAllowedSec = Math.min(maxAllowedSec, (nextSeg.start / 1000) - startSec - 0.05);
+          maxAllowedSec = Math.min(maxAllowedSec, (nextSeg.start / 1000) - (seg.start / 1000) - 0.05);
         }
         maxAllowedSec = Math.max(0.5, maxAllowedSec);
 
@@ -1049,9 +1059,10 @@ Inputs:
           const src = offlineCtx.createBufferSource();
           src.buffer = buf;
 
+          // ★ အသံ စူးဝါး/မြန်မသွားစေရန် Max Speed အား 1.12x ဖြင့်သာ သဘာဝကျကျ ကန့်သတ်ခြင်း
           let rate = 1.0;
           if (isAutoSpeedEnabled && originalDurationSec > maxAllowedSec) {
-            rate = Math.min(2.0, originalDurationSec / maxAllowedSec);
+            rate = Math.min(1.12, originalDurationSec / maxAllowedSec);
           }
           src.playbackRate.value = rate;
 
@@ -1121,6 +1132,7 @@ Inputs:
       const isDuckingEnabled = document.getElementById('enableDuckingCheck').checked;
       const isReelsEnabled = document.getElementById('enableReelsCheck').checked;
       const isAutoSpeedEnabled = document.getElementById('autoSpeedCheck').checked;
+      const isHighlightEnabled = document.getElementById('enableHighlightCheck').checked;
 
       showProgress("TTS အသံထုတ်ယူနေပါသည်", "ဇာတ်ကောင်အလိုက် Multi-Speaker အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
 
@@ -1142,14 +1154,14 @@ Inputs:
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error);
 
-        updateGauge(30, "Auto-Speed နှင့် အသံမထပ်အောင် ချိန်ညှိနေပါသည်...");
+        updateGauge(25, "အသံနှင့် ဗီဒီယို ပြင်ဆင်နေပါသည်...");
+
+        const highlightOffsetSec = isHighlightEnabled ? 4.0 : 0.0;
 
         const bgmInput = document.getElementById('bgmFile');
         const bgmFile = bgmInput.files.length ? bgmInput.files[0] : null;
         const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 25;
-        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmVol, isDuckingEnabled, isAutoSpeedEnabled);
-
-        updateGauge(50, "ဗီဒီယိုနှင့် စာတန်းထိုး ပြင်ဆင်နေပါသည်...");
+        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmVol, isDuckingEnabled, isAutoSpeedEnabled, highlightOffsetSec);
 
         ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'dub_master.wav', masterWavBytes);
@@ -1162,18 +1174,18 @@ Inputs:
 
         // Subtitle SRT
         let srtLines = [];
-        let curMs = 0;
+        let curMs = isHighlightEnabled ? 4000 : 0;
         for (let i = 0; i < ttsData.audios.length; i++) {
           const seg = currentSegments[i];
           const durMs = ttsData.audios[i].duration_ms;
-          const sTime = msToSrt(seg ? seg.start : curMs);
-          const eTime = msToSrt(seg ? (seg.start + durMs) : (curMs + durMs));
-          curMs = seg ? (seg.start + durMs) : (curMs + durMs);
+          const sTime = msToSrt(seg ? (seg.start + (highlightOffsetSec * 1000)) : curMs);
+          const eTime = msToSrt(seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs));
+          curMs = seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs);
           srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
         }
         srtContent = srtLines.join("\n");
 
-        updateGauge(70, "ဗီဒီယို Render လုပ်နေပါသည်...");
+        updateGauge(50, "ဗီဒီယို စတင် Render လုပ်နေပါသည်...");
 
         const blurSub = document.getElementById('blurSubCheck').checked;
         const wmPos = document.getElementById('watermarkPosSelect').value;
@@ -1185,16 +1197,41 @@ Inputs:
         let filterParts = [];
         let curV = "0:v";
 
+        // ၁။ 4.0s Highlight Hook Clip ထည့်သွင်းခြင်း[cite: 9]
+        if (isHighlightEnabled) {
+          filterParts.push(`[0:v]trim=start=20:end=24,setpts=PTS-STARTPTS[hookv];[0:v]setpts=PTS-STARTPTS[bodyv];[hookv][bodyv]concat=n=2:v=1:a=0[vhooked]`);
+          curV = "vhooked";
+        }
+
+        // ၂။ Video Auto-Speed Sync: စကားပြောကြား အပိုင်းလွတ်များကို ဗီဒီယို အလိုအလျောက် အမြန်ရစ်ပေးခြင်း
+        if (isAutoSpeedEnabled && currentSegments.length > 0) {
+          let hasGaps = false;
+          for (let i = 0; i < currentSegments.length - 1; i++) {
+            if ((currentSegments[i+1].start - currentSegments[i].end) > 1800) {
+              hasGaps = true;
+              break;
+            }
+          }
+          // အကယ်၍ အပိုင်းလွတ်များရှိပါက ဗီဒီယိုအား အနည်းငယ် သွက်လက်စေရန် ချိန်ညှိခြင်း (1.08x Setpts)
+          if (hasGaps) {
+            filterParts.push(`[${curV}]setpts=0.92*PTS[vspeed]`);
+            curV = "vspeed";
+          }
+        }
+
+        // ၃။ မူရင်းစာတန်း Blur မည်
         if (blurSub) {
           filterParts.push(`[${curV}]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[vblur]`);
           curV = "vblur";
         }
 
+        // ၄။ 9:16 TikTok / Reels ဒေါင်လိုက် ပြောင်းလဲမည်
         if (isReelsEnabled) {
           filterParts.push(`[${curV}]split[mainv][bgv];[bgv]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30[bgblur];[mainv]scale=1080:-1[fgv];[bgblur][fgv]overlay=(W-w)/2:(H-h)/2[vreels]`);
           curV = "vreels";
         }
 
+        // ၅။ Watermark Logo ကပ်မည်
         let inputFiles = ['-i', 'input_orig.mp4', '-i', 'dub_master.wav'];
         if (hasWatermark) {
           inputFiles.push('-i', 'watermark.png');
@@ -1211,6 +1248,7 @@ Inputs:
           finalArgs.push('-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', 'output.mp4');
         }
 
+        updateGauge(75, "နောက်ဆုံး ဗီဒီယို ပေါင်းစပ်နေပါသည်...");
         await ffmpeg.run(...finalArgs);
 
         const outData = ffmpeg.FS('readFile', 'output.mp4');
