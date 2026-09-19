@@ -28,7 +28,6 @@ os.makedirs(BASE_TEMP, exist_ok=True)
 export_tasks = {}
 
 def get_user_dir(session_id: str):
-    """User တစ်ဦးချင်းစီအတွက် သီးသန့် folder ဖန်တီးပေးခြင်း"""
     user_dir = os.path.join(BASE_TEMP, session_id)
     os.makedirs(user_dir, exist_ok=True)
     return user_dir
@@ -63,7 +62,7 @@ def adjust_speed_and_fit(audio_path, target_duration_ms, output_path):
     else:
         return audio + AudioSegment.silent(duration=(target_duration_ms - current_ms))
 
-async def generate_speech(text, voice, pitch_hz, rate_pct, output_file):
+async def generate_speech(text, voice, pitch_hz, rate_pct, output_file, ref_audio_path=None):
     clean_text = text.strip()
     if not clean_text:
         AudioSegment.silent(duration=500).export(output_file, format="mp3")
@@ -84,6 +83,17 @@ async def serve_home():
     if not os.path.exists(html_file):
         return HTMLResponse("<h3>templates/index.html မတွေ့ရှိပါ။</h3>", status_code=404)
     return FileResponse(html_file)
+
+@app.post("/api/upload-voice-sample")
+async def upload_voice_sample(voice_file: UploadFile = File(...)):
+    ext = os.path.splitext(voice_file.filename)[1] or ".wav"
+    sample_id = f"sample_{int(asyncio.get_event_loop().time() * 1000)}{ext}"
+    sample_path = os.path.join(BASE_TEMP, sample_id)
+
+    with open(sample_path, "wb") as buffer:
+        shutil.copyfileobj(voice_file.file, buffer)
+
+    return {"status": "success", "voice_path": sample_path, "sample_id": sample_id}
 
 @app.post("/api/transcribe")
 async def transcribe_video(
@@ -124,7 +134,7 @@ async def transcribe_video(
     except Exception as e:
         err_msg = str(e)
         if "11001" in err_msg or "getaddrinfo" in err_msg:
-            return JSONResponse(status_code=500, content={"error": "အင်တာနက်လိုင်း ချိတ်ဆက်၍မရပါ (DNS Failed)။"})
+            return JSONResponse(status_code=500, content={"error": "အင်တာနက်လိုင်း ချိတ်ဆက်၍မရပါ (DNS/Connection Failed)။"})
         return JSONResponse(status_code=500, content={"error": err_msg})
 
 @app.post("/api/preview-audio")
@@ -133,11 +143,12 @@ async def preview_audio(
     text: str = Form(...),
     voice: str = Form(...),
     pitch: int = Form(0),
-    speed: int = Form(0)
+    speed: int = Form(0),
+    ref_voice_path: str = Form(None)
 ):
     user_dir = get_user_dir(session_id)
     out_file = os.path.join(user_dir, f"preview_{uuid.uuid4().hex[:6]}.mp3")
-    await generate_speech(text, voice, pitch, speed, out_file)
+    await generate_speech(text, voice, pitch, speed, out_file, ref_audio_path=ref_voice_path)
     return FileResponse(out_file, media_type="audio/mpeg")
 
 @app.get("/api/progress/{task_id}")
@@ -165,7 +176,10 @@ async def start_export(
     burn_sub: bool = Form(True),
     blur_sub: bool = Form(True),
     blur_h: int = Form(12),
-    font_size: int = Form(22)
+    font_size: int = Form(22),
+    font_name: str = Form("Pyidaungsu"),
+    auto_speed_video: bool = Form(True),
+    ref_voice_path: str = Form(None)
 ):
     user_dir = get_user_dir(session_id)
 
@@ -180,49 +194,99 @@ async def start_export(
             await asyncio.sleep(0.2)
 
             final_audio = AudioSegment.empty()
-            last_end = 0
             srt_lines = []
+            cur_timeline_ms = 0
+            video_clips_paths = []
 
             for idx, (seg, mm_text) in enumerate(zip(segments, translations)):
                 start_ms = seg["start"]
                 end_ms = seg["end"]
-                target_dur = end_ms - start_ms
-
-                if start_ms > last_end:
-                    final_audio += AudioSegment.silent(duration=(start_ms - last_end))
+                orig_dur_ms = end_ms - start_ms
 
                 raw_file = os.path.join(user_dir, f"tts_{idx}.mp3")
                 fit_file = os.path.join(user_dir, f"fit_{idx}.mp3")
+                await generate_speech(mm_text, voice, pitch, speed, raw_file, ref_audio_path=ref_voice_path)
 
-                await generate_speech(mm_text, voice, pitch, speed, raw_file)
-                synced = adjust_speed_and_fit(raw_file, target_dur, fit_file)
-                final_audio += synced
-                last_end = end_ms
+                # TTS အသံ ကြာချိန်ကို စစ်ဆေးခြင်း
+                try:
+                    gen_audio = AudioSegment.from_file(raw_file)
+                    actual_audio_ms = len(gen_audio)
+                except Exception:
+                    actual_audio_ms = max(500, orig_dur_ms)
+                    gen_audio = AudioSegment.silent(duration=actual_audio_ms)
 
-                start_str = ms_to_srt_time(start_ms)
-                end_str = ms_to_srt_time(end_ms)
-                srt_lines.append(f"{idx+1}\n{start_str} --> {end_str}\n{mm_text}\n")
+                # Auto-Speed စနစ် (Narrator Video Speed Adjuster)
+                if auto_speed_video:
+                    clip_dur_ms = actual_audio_ms
+                    final_audio += gen_audio
+
+                    start_sec = start_ms / 1000.0
+                    end_sec = end_ms / 1000.0
+                    target_sec = max(0.4, actual_audio_ms / 1000.0)
+                    orig_sec = max(0.4, orig_dur_ms / 1000.0)
+
+                    clip_out = os.path.join(user_dir, f"clip_{idx}.mp4")
+
+                    # မူရင်းပြကွက်က အသံထက် ပိုကြာနေပါက Video ကို Speed မြှင့်ခြင်း
+                    if orig_sec > target_sec:
+                        speed_factor = min(orig_sec / target_sec, 3.0)
+                        pts_val = round(1.0 / speed_factor, 4)
+                        vf = f"trim=start={start_sec}:end={end_sec},setpts={pts_val}*(PTS-STARTPTS)"
+                    else:
+                        vf = f"trim=start={start_sec}:end={end_sec},setpts=PTS-STARTPTS"
+
+                    cmd_clip = f'ffmpeg -y -ss {start_sec} -to {end_sec} -i "{video_path}" -filter:v "{vf}" -an -c:v libx264 -preset ultrafast "{clip_out}" -loglevel quiet'
+                    await asyncio.to_thread(os.system, cmd_clip)
+                    video_clips_paths.append(clip_out)
+
+                    # Subtitle SRT Timeline
+                    sub_start = ms_to_srt_time(cur_timeline_ms)
+                    cur_timeline_ms += clip_dur_ms
+                    sub_end = ms_to_srt_time(cur_timeline_ms)
+                    srt_lines.append(f"{idx+1}\n{sub_start} --> {sub_end}\n{mm_text}\n")
+                else:
+                    synced = adjust_speed_and_fit(raw_file, orig_dur_ms, fit_file)
+                    final_audio += synced
+                    sub_start = ms_to_srt_time(start_ms)
+                    sub_end = ms_to_srt_time(end_ms)
+                    srt_lines.append(f"{idx+1}\n{sub_start} --> {sub_end}\n{mm_text}\n")
 
                 cur_pct = 10 + int(((idx + 1) / total) * 65)
                 export_tasks[task_id] = {
                     "percent": cur_pct,
-                    "status": f"အသံထုတ်ပြီး စက္ကန့်ညှိနေသည် ({idx+1}/{total}) ကြောင်း...",
+                    "status": f"ဗီဒီယို Speed ညှိပြီး အသံထုတ်နေသည် ({idx+1}/{total}) ကြောင်း...",
                     "done": False
                 }
 
-            export_tasks[task_id] = {"percent": 80, "status": "Subtitle ဖိုင် ဖန်တီးနေပါသည်...", "done": False}
-            audio_out = os.path.join(user_dir, "final_dub.mp3")
+            export_tasks[task_id] = {"percent": 78, "status": "Subtitle ဖိုင် ဖန်တီးနေပါသည်...", "done": False}
+            audio_out = os.path.join(user_dir, f"final_dub_{task_id}.mp3")
             final_audio.export(audio_out, format="mp3")
 
-            out_srt = os.path.join(user_dir, "output.srt")
+            out_srt = os.path.join(user_dir, f"output_{task_id}.srt")
             with open(out_srt, "w", encoding="utf-8") as f:
                 f.write("\n".join(srt_lines))
 
-            export_tasks[task_id] = {"percent": 85, "status": "FFmpeg ဖြင့် ဗီဒီယို ပေါင်းစပ်နေပါသည်...", "done": False}
+            # Video Source ဆုံးဖြတ်ခြင်း (Auto-Speed Clip များကို ဆက်စပ်ခြင်း)
+            if auto_speed_video and video_clips_paths:
+                export_tasks[task_id] = {"percent": 82, "status": "Auto-Speed ဗီဒီယို အပိုင်းများကို ပေါင်းစပ်နေပါသည်...", "done": False}
+                concat_txt = os.path.join(user_dir, f"concat_{task_id}.txt")
+                with open(concat_txt, "w", encoding="utf-8") as f:
+                    for cp in video_clips_paths:
+                        c_name = os.path.basename(cp)
+                        f.write(f"file '{c_name}'\n")
+                
+                merged_video = os.path.join(user_dir, f"merged_{task_id}.mp4")
+                cmd_concat = f'ffmpeg -y -f concat -safe 0 -i "{concat_txt}" -c copy "{merged_video}" -loglevel quiet'
+                await asyncio.to_thread(os.system, cmd_concat)
+                input_v_src = merged_video
+            else:
+                input_v_src = video_path
+
+            export_tasks[task_id] = {"percent": 88, "status": "FFmpeg Subtitle & Video Merge ပြုလုပ်နေပါသည်...", "done": False}
 
             out_video = os.path.join(user_dir, f"output_{task_id}.mp4")
             escaped_srt = out_srt.replace("\\", "/").replace(":", "\\:")
-            sub_filter = f"subtitles='{escaped_srt}':force_style='FontSize={font_size},PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2'"
+            sub_filter = f"subtitles='{escaped_srt}':force_style='FontName={font_name},FontSize={font_size},PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2'"
 
             v_filters = []
             if blur_sub:
@@ -250,7 +314,7 @@ async def start_export(
                 final_a = "1:a:0"
 
             full_filter = ";".join(filter_parts)
-            cmd = f'ffmpeg -y -i "{video_path}" -i "{audio_out}" -filter_complex "{full_filter}" -map "{final_v}" -map "{final_a}" -c:v libx264 -preset fast -c:a aac -shortest "{out_video}" -loglevel quiet'
+            cmd = f'ffmpeg -y -i "{input_v_src}" -i "{audio_out}" -filter_complex "{full_filter}" -map "{final_v}" -map "{final_a}" -c:v libx264 -preset fast -c:a aac -shortest "{out_video}" -loglevel quiet'
             await asyncio.to_thread(os.system, cmd)
 
             export_tasks[task_id] = {
