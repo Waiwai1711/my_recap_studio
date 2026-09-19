@@ -49,7 +49,7 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
-# Telegram Bot သို့ Inline Buttons များဖြင့် Photo & Slip ပို့ခြင်း
+# Telegram Bot သို့ Inline Buttons ဖြင့် Alert ပို့ခြင်း
 async def send_telegram_payment_alert(req_id: int, user_email: str, package_type: str, amount: int, payment_method: str, photo_path: str):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return None
@@ -90,7 +90,7 @@ async def send_telegram_payment_alert(req_id: int, user_email: str, package_type
         pass
     return None
 
-# Telegram Webhook Handler (Telegram ပေါ်မှ ခလုတ်နှိပ်သည့်အခါ တိုက်ရိုက် အလုပ်လုပ်မည့် Endpoint)
+# Telegram Inline Buttons Webhook
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -128,7 +128,7 @@ async def telegram_webhook(request: Request):
             if target_user:
                 target_user.package_credits += int(pay_req.package_type)
             pay_req.status = "approved"
-            result_text = f"✅ အောင်မြင်ပါပြီ! #{req_id} ({pay_req.user_email}) သို့ {pay_req.package_type} ပုဒ် ထည့်သွင်းပေးပြီးပါပြီ။"
+            result_text = f"✅ အောင်မြင်ပါပြီ! #{req_id} ({pay_req.user_email}) သို့ {pay_req.package_type} ပုဒ် ထည့်ပေးပြီးပါပြီ။"
         else:
             pay_req.status = "rejected"
             result_text = f"❌ ငွေလွှဲပြေစာ #{req_id} ကို ပယ်ဖျက်လိုက်ပါပြီ။"
@@ -136,7 +136,6 @@ async def telegram_webhook(request: Request):
         db.commit()
         db.close()
 
-        # Telegram ပေါ်ရှိ Message နှင့် Buttons များအား Update လုပ်ခြင်း
         async with httpx.AsyncClient() as client:
             await client.post(
                 f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery",
@@ -268,6 +267,8 @@ async def get_user_data(request: Request):
         user.last_reset_date = today
         db.commit()
 
+    is_admin = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
+
     data = {
         "logged_in": True,
         "email": user.email,
@@ -275,7 +276,7 @@ async def get_user_data(request: Request):
         "avatar": user.avatar,
         "daily_credits": user.daily_credits_left,
         "package_credits": user.package_credits,
-        "is_admin": (user.email.strip().lower() == ADMIN_EMAIL.lower())
+        "is_admin": is_admin
     }
     db.close()
     return data
@@ -314,7 +315,6 @@ async def submit_payment(
     db.commit()
     db.refresh(pay_req)
 
-    # Telegram သို့ Inline Buttons များဖြင့် ပို့ဆောင်ခြင်း
     t_msg_id = await send_telegram_payment_alert(pay_req.id, user_email, package_type, amount, payment_method, slip_path)
     if t_msg_id:
         pay_req.telegram_msg_id = t_msg_id
@@ -415,6 +415,7 @@ class BatchTTSRequest(BaseModel):
     pitch: int = 0
     speed: int = 10
 
+# ADMIN အား UNLIMITED ပေးထားသော TTS GENERATOR ENDPOINT
 @app.post("/api/tts/batch-generate")
 async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
     user_email = request.cookies.get("user_email")
@@ -427,20 +428,25 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
         db.close()
         return JSONResponse(status_code=401, content={"error": "User မရှိပါ။"})
 
-    today = date.today()
-    if user.last_reset_date != today:
-        user.daily_credits_left = 2
-        user.last_reset_date = today
+    is_admin_user = (user.email.strip().lower() == ADMIN_EMAIL.lower()) or user.is_admin
 
-    if user.daily_credits_left > 0:
-        user.daily_credits_left -= 1
-    elif user.package_credits > 0:
-        user.package_credits -= 1
-    else:
-        db.close()
-        return JSONResponse(status_code=403, content={"error": "ယနေ့အတွက် အခမဲ့ ၂ ပုဒ် ကုန်ဆုံးသွားပါပြီ။ ဆက်လက်သုံးလိုပါက Package ဝယ်ယူပေးပါခင်ဗျာ။"})
+    # Admin မဟုတ်မှသာ Credit စစ်ဆေးမည် (Admin ဖြစ်ပါက Unlimited ထုတ်နိုင်သည်)
+    if not is_admin_user:
+        today = date.today()
+        if user.last_reset_date != today:
+            user.daily_credits_left = 2
+            user.last_reset_date = today
 
-    db.commit()
+        if user.daily_credits_left > 0:
+            user.daily_credits_left -= 1
+        elif user.package_credits > 0:
+            user.package_credits -= 1
+        else:
+            db.close()
+            return JSONResponse(status_code=403, content={"error": "ယနေ့အတွက် အခမဲ့ ၂ ပုဒ် ကုန်ဆုံးသွားပါပြီ။ ဆက်လက်သုံးလိုပါက Package ဝယ်ယူပေးပါခင်ဗျာ။"})
+
+        db.commit()
+
     db.close()
 
     actual_voice = "my-MM-ThihaNeural" if "Thiha" in payload.voice else "my-MM-NilarNeural"
