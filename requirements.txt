@@ -9,3 +9,4 @@ sqlalchemy
 authlib
 httpx
 python-dotenv
+psycopg2-binary
