@@ -3,314 +3,551 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Recap Studio Pro</title>
+  <title>Recap Studio Pro - Client-Side Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <!-- Client-Side FFmpeg.wasm UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+
   <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Pyidaungsu', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }, colors: { brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' }, surface: { 800: '#1e2029', 900: '#14161f', 950: '#0b0c10' } } } } }
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Pyidaungsu', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
+            surface: { 800: '#1e2029', 900: '#14161f', 950: '#0b0c10' }
+          }
+        }
+      }
+    }
   </script>
+
   <style>
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0b0c10; }
     ::-webkit-scrollbar-thumb { background: #272a37; border-radius: 4px; }
     .glass-card { background: rgba(20, 22, 31, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
     .glass-input { background: rgba(11, 12, 16, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .glass-input:focus { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.15); }
-    .circle-progress { stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.35s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
+    .circle-progress { stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.25s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
   </style>
 </head>
+
 <body class="bg-surface-950 text-zinc-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
+  <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
 
-  <div id="loadingModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
-    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full mx-auto flex flex-col items-center text-center shadow-2xl border border-white/10 relative overflow-hidden">
+  <!-- Progress Modal Overlay -->
+  <div id="loadingModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full mx-auto flex flex-col items-center text-center shadow-2xl border border-white/10">
       <div class="relative w-28 h-28 flex items-center justify-center my-2">
         <svg class="w-full h-full" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="45" stroke="#1e2029" stroke-width="8" fill="transparent"/>
           <circle id="gaugeRing" class="circle-progress text-sky-400" cx="50" cy="50" r="45" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="transparent"/>
         </svg>
         <div class="absolute flex flex-col items-center">
-          <span id="modalPercent" class="text-2xl font-bold font-mono tracking-tight text-white">0%</span>
+          <span id="modalPercent" class="text-2xl font-bold font-mono text-white">0%</span>
+          <span class="text-[9px] text-zinc-500 font-mono uppercase">Device Rendering</span>
         </div>
       </div>
-      <h3 id="modalTitle" class="text-sm font-bold text-sky-400 mt-2">လုပ်ဆောင်နေပါသည်</h3>
-      <p id="modalStatus" class="text-xs text-zinc-400 mt-1">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
+      <h3 id="modalTitle" class="text-sm font-bold text-sky-400 mt-2">စတင်လုပ်ဆောင်နေပါသည်</h3>
+      <p id="modalStatus" class="text-xs text-zinc-400 mt-1 min-h-[36px] flex items-center justify-center px-2 font-mono">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
     </div>
   </div>
 
+  <!-- Header with Auth State -->
   <header class="h-16 border-b border-white/5 bg-surface-900/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg"><i class="ph-bold ph-lightning text-white text-base"></i></div>
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+        <i class="ph-bold ph-cpu text-white text-base"></i>
+      </div>
       <div>
-        <h1 class="font-bold text-xs md:text-sm bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">RECAP STUDIO PRO</h1>
-        <p class="text-[9px] text-zinc-500 font-mono">Narrator Auto-Speed & Voice Clone</p>
+        <h1 class="font-bold text-xs md:text-sm tracking-wide bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">RECAP STUDIO PRO</h1>
+        <p class="text-[9px] text-emerald-400 font-mono">100% Client-Side FFmpeg Engine</p>
       </div>
     </div>
-    
-    <div id="authSection" class="flex items-center gap-2">
-      <a id="btnLoginGoogle" href="/login/google" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white text-zinc-900 font-semibold text-xs hover:bg-zinc-200 transition">
-        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
-        <span>Sign in with Google</span>
-      </a>
-      <div id="userProfileBox" class="hidden flex items-center gap-3">
-        <div class="flex items-center gap-2 bg-surface-800 px-3 py-1 rounded-xl border border-white/10 text-xs font-mono">
-          <span>Daily: <b class="text-sky-400" id="userDailyCredits">2</b>/2</span> <span class="text-zinc-600">|</span> <span>Pkg: <b class="text-emerald-400" id="userPkgCredits">0</b></span>
+
+    <!-- User Section -->
+    <div class="flex items-center gap-3">
+      <div id="authSection" class="flex items-center gap-2">
+        <a id="loginBtn" href="/login/google" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-zinc-200 text-zinc-900 transition">
+          <i class="ph-bold ph-google-logo"></i> Login with Google
+        </a>
+        <div id="userProfile" class="hidden items-center gap-2">
+          <img id="userAvatar" class="w-7 h-7 rounded-full border border-sky-400 object-cover" src="" alt="Avatar">
+          <div class="text-left hidden sm:block">
+            <p id="userName" class="text-xs font-semibold text-zinc-200 leading-tight">User</p>
+            <p class="text-[10px] text-emerald-400 font-mono">Daily Free: <span id="userDailyCredits">0</span></p>
+          </div>
+          <a href="/api/auth/logout" title="Logout" class="p-1.5 hover:text-rose-400 text-zinc-400"><i class="ph-bold ph-sign-out text-sm"></i></a>
         </div>
-        <img id="userAvatar" class="w-8 h-8 rounded-full border border-sky-400/50" src="" alt="avatar">
       </div>
     </div>
   </header>
 
+  <!-- Main Content -->
   <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-5">
-    
+
+    <!-- STEP 1: Video File & Audio Extraction -->
     <div class="glass-card rounded-2xl p-4 md:p-6">
-      <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200 mb-3">1. INPUT VIDEO & TRANSCRIPTION</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <input type="password" id="apiKey" placeholder="AssemblyAI API key..." class="glass-input w-full px-3 py-2 rounded-xl text-xs font-mono text-zinc-200">
-        <input type="file" id="videoFileInput" accept="video/*" class="glass-input w-full px-3 py-1.5 rounded-xl text-xs text-zinc-400">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">1</span>
+        <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">INPUT VIDEO & TRANSCRIPTION</h2>
       </div>
-      <button onclick="startTranscribe()" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-xs text-white transition">စာသားထုတ်ယူမည် (Transcribe)</button>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="text-xs font-medium text-zinc-400">AssemblyAI API Key</label>
+          <input type="password" id="apiKey" placeholder="AssemblyAI API key..." class="glass-input w-full mt-1 px-3 py-2 rounded-xl text-xs font-mono text-zinc-200 outline-none">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-zinc-400">Background Music (BGM - Optional)</label>
+          <input type="file" id="bgmFile" accept="audio/*" class="glass-input w-full mt-1 px-3 py-1.5 rounded-xl text-xs text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-surface-800 file:text-zinc-300">
+        </div>
+      </div>
+
+      <div id="dropZone" class="border-2 border-dashed border-zinc-800 hover:border-brand-500/50 bg-surface-950/40 rounded-xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5">
+        <input type="file" id="videoFileInput" accept="video/*" class="hidden">
+        <i class="ph-bold ph-video text-2xl text-zinc-400"></i>
+        <p class="text-xs font-medium text-zinc-300" id="videoFileNameDisplay">ဗီဒီယိုဖိုင်ကို ရွေးချယ်ပါ သို့မဟုတ် ဆွဲထည့်ပါ (Browser ထဲတွင်သာ Run မည်ဖြစ်၍ လျင်မြန်ပါသည်)</p>
+      </div>
+
+      <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="w-full mt-3 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 font-semibold text-xs text-white shadow-lg transition flex items-center justify-center gap-2">
+        <i class="ph-bold ph-waveform"></i> အသံခွဲထုတ်ပြီး စာသားထုတ်ယူမည် (Transcribe)
+      </button>
     </div>
 
+    <!-- STEP 2: Source Subtitles & Gemini Prompt -->
     <div class="glass-card rounded-2xl p-4 md:p-6">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">2. SOURCE SUBTITLES & PROMPT</h2>
-        <button onclick="copyPrompt()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/10 text-brand-400 transition">Copy Prompt</button>
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">2</span>
+          <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">SOURCE SUBTITLES & PROMPT</h2>
+        </div>
+        <button onclick="copyPrompt()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/10 text-brand-400 hover:bg-brand-500/20">
+          <i class="ph-bold ph-copy"></i> Copy Prompt
+        </button>
       </div>
-      <textarea id="sourceText" readonly rows="3" class="glass-input w-full p-3 rounded-xl text-xs font-mono text-zinc-400 mb-3" placeholder="Transcribed lines..."></textarea>
-      <textarea id="jsonInput" rows="3" class="glass-input w-full p-3 rounded-xl text-xs font-mono text-purple-300" placeholder='{"translations": ["..."]}'></textarea>
-      <button onclick="submitJson()" class="w-full mt-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-xs text-white transition">Submit Translation (JSON)</button>
+
+      <textarea id="sourceText" readonly rows="3" class="glass-input w-full p-3 rounded-xl text-xs font-mono text-zinc-400 mb-3 resize-none outline-none leading-relaxed" placeholder="Transcribed lines will appear here..."></textarea>
+
+      <div>
+        <label class="text-xs font-medium text-zinc-400">Gemini မှ ရရှိသော Burmese Translations JSON ထည့်ပါ:</label>
+        <textarea id="jsonInput" rows="3" class="glass-input w-full mt-1 p-3 rounded-xl text-xs font-mono text-purple-300 placeholder-zinc-700 resize-none outline-none focus:border-purple-500" placeholder='{"translations": ["စာကြောင်း ၁", "စာကြောင်း ၂"]}'></textarea>
+      </div>
+
+      <button onclick="submitJson()" class="w-full mt-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-xs text-white transition flex items-center justify-center gap-2">
+        <i class="ph-bold ph-paper-plane-right"></i> Submit Translation
+      </button>
     </div>
 
+    <!-- STEP 3: Voice & Controls Grid -->
     <div class="glass-card rounded-2xl p-4 md:p-6">
-      <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200 mb-3">3. VOICE, PRESETS & SUBTITLE STYLING</h2>
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">3</span>
+        <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">VOICE & RENDER SETTINGS</h2>
+      </div>
+
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div>
-          <label class="text-xs text-zinc-400">AI Voice</label>
-          <select id="voiceSelect" onchange="toggleVoiceCloneBox()" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-zinc-200">
+          <label class="text-xs text-zinc-400 font-medium">AI Voice</label>
+          <select id="voiceSelect" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-zinc-200 outline-none">
             <option value="my-MM-ThihaNeural">Thiha (Standard Male)</option>
             <option value="my-MM-NilarNeural">Nilar (Standard Female)</option>
-            <option value="local_clone">🎙️ Local Voice Clone</option>
           </select>
         </div>
-        <div><label class="text-xs text-zinc-400">Pitch (Hz)</label><input type="number" id="pitchInput" value="0" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-center"></div>
-        <div><label class="text-xs text-zinc-400">Speed (%)</label><input type="number" id="speedInput" value="10" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-center"></div>
-        <div><label class="text-xs text-zinc-400">BGM Vol (%)</label><input type="number" id="bgmVolInput" value="15" class="glass-input w-full mt-1 p-2 rounded-xl text-xs text-center"></div>
-      </div>
-
-      <div id="voiceClonePanel" class="hidden p-4 rounded-xl bg-surface-900 border border-brand-500/30 mb-4">
-        <span class="text-xs font-semibold text-sky-400 block mb-2">Local Voice Cloning (Reference Audio)</span>
-        <div class="flex gap-2">
-           <button id="btnRecordVoice" onclick="toggleMicRecord()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition">Record Mic</button>
-           <label class="px-4 py-2 rounded-xl text-xs font-semibold bg-surface-800 text-sky-400 border border-sky-500/20 cursor-pointer">
-              Upload Audio<input type="file" accept="audio/*" onchange="uploadVoiceFile(this.files[0])" class="hidden">
-           </label>
-           <span id="uploadedVoiceStatus" class="text-[10px] text-emerald-400 font-mono mt-2 ml-2"></span>
+        <div>
+          <label class="text-xs text-zinc-400 font-medium">Pitch (Hz)</label>
+          <input type="number" id="pitchInput" value="0" min="-50" max="50" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-center outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-zinc-400 font-medium">Speed (%)</label>
+          <input type="number" id="speedInput" value="10" min="-20" max="60" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-center outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-zinc-400 font-medium">BGM Vol (%)</label>
+          <input type="number" id="bgmVolInput" value="15" min="0" max="100" class="glass-input w-full mt-1 p-2 rounded-xl text-xs font-mono text-center outline-none">
         </div>
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 rounded-xl bg-surface-950/60 mb-3 border border-white/5">
-        <div><label class="text-xs text-zinc-400">Font Name</label><input type="text" id="fontNameInput" value="Pyidaungsu" oninput="updateLivePreview()" class="glass-input w-full mt-1 p-2 rounded-lg text-xs"></div>
-        <div><label class="text-xs text-zinc-400">Font Size</label><input type="number" id="fontSizeInput" value="22" oninput="updateLivePreview()" class="glass-input w-full mt-1 p-2 rounded-lg text-xs"></div>
-        <div><label class="text-xs text-zinc-400">Text Color</label><input type="color" id="textColorInput" value="#ffff00" oninput="updateLivePreview()" class="w-full h-8 mt-1 rounded-lg"></div>
-        <div><label class="text-xs text-zinc-400">Outline</label><input type="color" id="outlineColorInput" value="#000000" oninput="updateLivePreview()" class="w-full h-8 mt-1 rounded-lg"></div>
+      <div class="flex flex-wrap items-center gap-4 text-xs text-zinc-300">
+        <label class="flex items-center gap-2 cursor-pointer text-amber-400 font-medium">
+          <input type="checkbox" id="autoSpeedCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700">
+          <span>⚡ Narrator Auto-Speed (အသံထက်ရှည်သော Video အပိုင်းများကို Auto အမြန်ရစ်မည်)</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="blurSubCheck" checked class="w-4 h-4 rounded bg-surface-950 border-zinc-700">
+          <span>မူရင်းစာတန်း Blur မည်</span>
+        </label>
       </div>
-
-      <div class="flex gap-4 text-xs text-zinc-300 mb-3">
-        <label class="flex items-center gap-2 cursor-pointer text-amber-400"><input type="checkbox" id="autoSpeedCheck" checked class="w-4 h-4 rounded"><span>⚡ Narrator Auto-Speed</span></label>
-        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="blurSubCheck" checked class="w-4 h-4 rounded"><span>Blur Sub</span></label>
-        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="burnSubCheck" checked class="w-4 h-4 rounded"><span>Burn-in Sub</span></label>
-      </div>
-
-      <div class="w-full bg-black/90 rounded-xl p-3 text-center border border-white/5"><p id="previewSubtitleText" style="color: #ffff00; font-size: 20px; text-shadow: 0 0 2px #000, 2px 2px 2px #000; font-family: 'Pyidaungsu';">မြန်မာစာတန်းထိုး နမူနာပုံစံ</p></div>
     </div>
 
+    <!-- STEP 4: Live Editor -->
     <div class="glass-card rounded-2xl p-4 md:p-6">
-      <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200 mb-3">4. LIVE SUBTITLE EDITOR</h2>
-      <div id="linesContainer" class="space-y-2 max-h-80 overflow-y-auto"></div>
-    </div>
-
-    <div class="space-y-4">
-      <button onclick="exportVideo()" class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-bold text-sm text-white transition">ဗီဒီယိုနှင့် Subtitle Export ပြုလုပ်မည်</button>
-      <div id="resultBox" class="hidden glass-card rounded-2xl p-4 text-center space-y-3">
-        <video id="videoPlayer" controls class="w-full max-w-lg mx-auto rounded-xl"></video>
-        <a id="downloadBtn" download="recap_video.mp4" class="inline-flex px-5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold">Download Video</a>
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs font-bold font-mono">4</span>
+          <h2 class="text-xs md:text-sm font-semibold tracking-wider text-zinc-200">LIVE SUBTITLE EDITOR</h2>
+        </div>
+      </div>
+      <div id="linesContainer" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+        <div class="text-center py-6 text-zinc-600 text-xs">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
       </div>
     </div>
+
+    <!-- STEP 5: Device Export Button -->
+    <div>
+      <button id="btnExport" onclick="startClientExport()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-sm text-white shadow-xl transition flex items-center justify-center gap-2">
+        <i class="ph-bold ph-lightning text-lg"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
+      </button>
+
+      <div id="resultBox" class="hidden glass-card rounded-2xl p-4 md:p-6 text-center space-y-3 mt-4">
+        <div class="text-emerald-400 text-sm font-semibold flex items-center justify-center gap-2">
+          <i class="ph-fill ph-check-circle text-lg"></i> ဗီဒီယို ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!
+        </div>
+        <video id="videoPlayer" controls class="max-h-[380px] w-full max-w-lg mx-auto rounded-xl border border-white/10"></video>
+        <div>
+          <a id="downloadBtn" download="recap_video.mp4" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition">
+            <i class="ph-bold ph-download-simple"></i> Download Result Video
+          </a>
+          <button onclick="downloadSRT()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-surface-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs ml-2 border border-white/10">
+            <i class="ph-bold ph-subtitles"></i> Download .SRT Subtitle
+          </button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
-    let currentSegments = [], uploadedVideoFilename = "", savedClonedVoicePath = null;
-    let mediaRecorder = null, audioChunks = [];
+    const { FFmpeg } = FFmpegWASM;
+    const { fetchFile, toBlobURL } = FFmpegUtil;
 
-    async function checkUserAuth() {
-      try {
-        const res = await fetch('/api/user/me');
-        if (res.ok) {
-          const user = await res.json();
-          if(user.logged_in) {
-            document.getElementById('btnLoginGoogle').classList.add('hidden');
-            document.getElementById('userProfileBox').classList.remove('hidden');
-            document.getElementById('userDailyCredits').innerText = user.daily_credits;
-            document.getElementById('userPkgCredits').innerText = user.package_credits;
-            if (user.avatar) document.getElementById('userAvatar').src = user.avatar;
-          }
-        }
-      } catch(e) {}
-    }
-    checkUserAuth();
+    let ffmpeg = null;
+    let currentSegments = [];
+    let selectedVideoFile = null;
+    let srtContent = "";
 
-    function showToast(msg) {
-      const c = document.getElementById('toastContainer');
-      const t = document.createElement('div');
-      t.className = `px-3.5 py-2.5 rounded-xl glass-card text-xs text-zinc-200 shadow-2xl`;
-      t.innerText = msg;
-      c.appendChild(t);
-      setTimeout(() => t.remove(), 3000);
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass-card border border-white/10 text-xs text-zinc-200 shadow-2xl transition duration-300`;
+      toast.innerHTML = `<span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
     }
 
-    function showProgressModal(title, status) {
+    function showProgress(title, status = "လုပ်ဆောင်နေပါသည်...") {
+      const m = document.getElementById('loadingModal');
       document.getElementById('modalTitle').innerText = title;
       document.getElementById('modalStatus').innerText = status;
-      document.getElementById('gaugeRing').style.strokeDashoffset = 283;
-      document.getElementById('modalPercent').innerText = `0%`;
+      updateGauge(0);
+      m.classList.remove('hidden');
+      setTimeout(() => m.classList.remove('opacity-0'), 10);
+    }
+
+    function updateGauge(percent, statusText = null) {
+      const ring = document.getElementById('gaugeRing');
+      const circumference = 2 * Math.PI * 45;
+      ring.style.strokeDashoffset = circumference - (percent / 100) * circumference;
+      document.getElementById('modalPercent').innerText = `${Math.round(percent)}%`;
+      if (statusText) document.getElementById('modalStatus').innerText = statusText;
+    }
+
+    function hideProgress() {
       const m = document.getElementById('loadingModal');
-      m.classList.remove('hidden'); setTimeout(()=> m.classList.remove('opacity-0'), 10);
-    }
-    function updateGauge(pct, text) {
-      document.getElementById('gaugeRing').style.strokeDashoffset = 283 - (pct / 100 * 283);
-      document.getElementById('modalPercent').innerText = `${pct}%`;
-      if(text) document.getElementById('modalStatus').innerText = text;
-    }
-    function hideProgressModal() {
-      const m = document.getElementById('loadingModal');
-      m.classList.add('opacity-0'); setTimeout(()=> m.classList.add('hidden'), 300);
+      m.classList.add('opacity-0');
+      setTimeout(() => m.classList.add('hidden'), 300);
     }
 
-    function toggleVoiceCloneBox() {
-      document.getElementById('voiceClonePanel').classList.toggle('hidden', document.getElementById('voiceSelect').value !== 'local_clone');
-    }
-
-    async function toggleMicRecord() {
-      const btn = document.getElementById('btnRecordVoice');
-      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
-        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-        mediaRecorder.onstop = async () => {
-          const file = new File([new Blob(audioChunks)], "mic.wav");
-          await uploadVoiceFile(file);
-        };
-        mediaRecorder.start();
-        btn.innerText = "ရပ်တန့်မည် (Stop)"; btn.classList.replace('bg-rose-600', 'bg-amber-600');
-      } else {
-        mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
-        btn.innerText = "Record Mic"; btn.classList.replace('bg-amber-600', 'bg-rose-600');
-      }
-    }
-
-    async function uploadVoiceFile(file) {
-      if (!file) return;
-      const formData = new FormData(); formData.append("voice_file", file);
-      const res = await fetch("/api/upload-voice-sample", { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.status === "success") {
-        savedClonedVoicePath = data.voice_path;
-        document.getElementById('uploadedVoiceStatus').innerText = "✅ အသံရရှိပါပြီ";
-      }
-    }
-
-    function updateLivePreview() {
-      const p = document.getElementById('previewSubtitleText');
-      p.style.fontSize = document.getElementById('fontSizeInput').value + "px";
-      p.style.color = document.getElementById('textColorInput').value;
-      p.style.fontFamily = document.getElementById('fontNameInput').value;
-      const o = document.getElementById('outlineColorInput').value;
-      p.style.textShadow = `0 0 2px ${o}, 2px 2px 2px ${o}, -2px -2px 2px ${o}`;
-    }
-
-    async function startTranscribe() {
-      const apiKey = document.getElementById('apiKey').value;
-      const f = document.getElementById('videoFileInput').files[0];
-      if (!apiKey || !f) return showToast("API Key နှင့် Video လိုအပ်ပါသည်");
-      localStorage.setItem('assemblyai_key', apiKey);
-      showProgressModal("Transcribing", "AssemblyAI သို့ တင်နေပါသည်...");
-      
-      const formData = new FormData(); formData.append("api_key", apiKey); formData.append("video", f);
+    // --- User Auth & State Check ---
+    async function checkUserAuth() {
       try {
-        const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+        const res = await fetch("/api/user/me");
         const data = await res.json();
-        if(data.error) throw new Error(data.error);
-        currentSegments = data.segments; uploadedVideoFilename = data.video_filename;
+        if (data.logged_in) {
+          document.getElementById('loginBtn').classList.add('hidden');
+          document.getElementById('userProfile').classList.remove('hidden');
+          document.getElementById('userProfile').classList.add('flex');
+          document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
+          document.getElementById('userName').innerText = data.name;
+          document.getElementById('userDailyCredits').innerText = `${data.daily_credits} ပုဒ်`;
+        }
+      } catch (e) {}
+    }
+
+    // --- FFmpeg WASM Loader ---
+    async function loadFFmpeg() {
+      if (ffmpeg) return ffmpeg;
+      showProgress("FFmpeg Engine စတင်နေပါသည်", "Browser Memory ထဲသို့ FFmpeg.wasm ထည့်သွင်းနေပါသည်...");
+      ffmpeg = new FFmpeg();
+      ffmpeg.on('progress', ({ progress }) => {
+        if (progress > 0 && progress <= 1) {
+          updateGauge(progress * 100, "Device ပေါ်တွင် ဗီဒီယို Render ပြုလုပ်နေပါသည်...");
+        }
+      });
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+      hideProgress();
+      return ffmpeg;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      checkUserAuth();
+      const savedKey = localStorage.getItem('assemblyai_key');
+      if (savedKey) document.getElementById('apiKey').value = savedKey;
+
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('videoFileInput');
+      dropZone.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+          selectedVideoFile = fileInput.files[0];
+          document.getElementById('videoFileNameDisplay').innerText = `ရွေးချယ်ထားသော ဖိုင်: ${selectedVideoFile.name}`;
+        }
+      });
+    });
+
+    // --- STEP 1: Video မှ Audio ကို Browser ထဲတွင်သာ ခွဲထုတ်ပြီး AssemblyAI သို့ ပို့ဆောင်ခြင်း ---
+    async function startExtractAndTranscribe() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!", "error");
+      localStorage.setItem('assemblyai_key', apiKey);
+
+      try {
+        const ff = await loadFFmpeg();
+        showProgress("အသံဖိုင် ခွဲထုတ်နေပါသည်", "Browser ထဲတွင် ဗီဒီယိုမှ MP3 အသံဖိုင် သီးသန့်ထုတ်ယူနေပါသည်...");
+        updateGauge(20);
+
+        await ff.writeFile('input_orig.mp4', await fetchFile(selectedVideoFile));
+        // Video မပါဘဲ ပေါ့ပါးသော အသံဖိုင်ကို စက္ကန့်ပိုင်းအတွင်း ခွဲထုတ်ခြင်း
+        await ff.exec(['-i', 'input_orig.mp4', '-vn', '-acodec', 'libmp3lame', '-b:a', '96k', 'extracted_audio.mp3']);
+        const audioData = await ff.readFile('extracted_audio.mp3');
+        const audioBlob = new Blob([audioData.buffer], { type: 'audio/mp3' });
+
+        updateGauge(50, "AssemblyAI သို့ အသံဖိုင်ပို့၍ စာသားထုတ်ယူနေပါသည်...");
+        const formData = new FormData();
+        formData.append("api_key", apiKey);
+        formData.append("audio", audioBlob, "extracted.mp3");
+
+        const res = await fetch("/api/transcribe-audio", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        currentSegments = data.segments;
         document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) ${s.text}`).join("\n");
-        hideProgressModal(); showToast("စာသားထုတ်ယူပြီးပါပြီ");
-      } catch(e) { hideProgressModal(); showToast(e.message); }
+        updateGauge(100);
+        hideProgress();
+        showToast(`စာကြောင်း ${currentSegments.length} ခု အောင်မြင်စွာ ရရှိပါပြီ!`, "success");
+      } catch (err) {
+        hideProgress();
+        showToast(err.message, "error");
+      }
     }
 
     function copyPrompt() {
-      const t = currentSegments.map(s => `[${s.id}] [Max: ${s.duration}s] "${s.text}"`).join("\n");
-      navigator.clipboard.writeText(`Translate to spoken Burmese. Exact JSON: {"translations": ["...", "..."]}\n${t}`);
-      showToast("Prompt copied!");
+      if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!", "error");
+      const header = `You are a professional video dubbing translator. Translate the subtitles into spoken Burmese.\nReturn JSON: {"translations": ["...", "..."]}\nInputs:\n`;
+      const inputs = currentSegments.map(s => `[${s.id}] [Max Limit: ${s.duration}s] "${s.text}"`).join("\n");
+      navigator.clipboard.writeText(header + inputs);
+      showToast("Gemini အတွက် Prompt ကို ကူးယူပြီးပါပြီ!", "success");
     }
 
     function submitJson() {
+      const raw = document.getElementById('jsonInput').value.trim();
       try {
-        const trans = JSON.parse(document.getElementById('jsonInput').value.replace(/```json|```/g, "")).translations;
-        const c = document.getElementById('linesContainer'); c.innerHTML = "";
+        const trans = JSON.parse(raw.replace(/```json|```/g, "")).translations;
+        const container = document.getElementById('linesContainer');
+        container.innerHTML = "";
         currentSegments.forEach((seg, i) => {
-          c.innerHTML += `<div class="flex items-center gap-2 p-2 glass-input mb-2 rounded"><span class="text-xs text-brand-400 w-12">[${seg.id}]</span><input type="text" class="sub-input flex-1 bg-transparent border-none text-xs text-white outline-none" value="${trans[i] || ''}"> <button onclick="previewAudioLine('${(trans[i] || '').replace(/'/g, "\\'")}')" class="text-xs bg-brand-500/20 px-2 py-1 rounded">▶</button></div>`;
+          const row = document.createElement('div');
+          row.className = "flex items-center gap-2 p-2 rounded-xl glass-input border border-white/5";
+          row.innerHTML = `
+            <span class="text-xs font-mono text-brand-400 w-14 shrink-0">[${seg.id}] (${seg.duration}s)</span>
+            <input type="text" class="sub-input flex-1 bg-transparent border-none text-xs text-zinc-200 outline-none" value="${trans[i] || ''}">
+            <button onclick="previewAudio('${encodeURIComponent(trans[i] || '')}')" class="px-2 py-1 rounded-lg text-xs bg-brand-500/20 text-brand-400 hover:bg-brand-500/30">▶ Preview</button>
+          `;
+          container.appendChild(row);
         });
-      } catch(e) { showToast("JSON Format မှားနေပါသည်"); }
-    }
-
-    async function previewAudioLine(text) {
-      if(!text) return;
-      const formData = new FormData();
-      formData.append("text", text); formData.append("voice", document.getElementById('voiceSelect').value);
-      formData.append("pitch", document.getElementById('pitchInput').value); formData.append("speed", document.getElementById('speedInput').value);
-      if(savedClonedVoicePath) formData.append("ref_voice_path", savedClonedVoicePath);
-      const res = await fetch("/api/preview-audio", { method: "POST", body: formData });
-      const audio = new Audio(URL.createObjectURL(await res.blob())); audio.play();
-    }
-
-    async function exportVideo() {
-      const trans = Array.from(document.querySelectorAll('.sub-input')).map(i => i.value);
-      if(!trans.length) return showToast("ဘာသာပြန် မရှိသေးပါ");
-      
-      if(document.getElementById('userProfileBox').classList.contains('hidden')) {
-        return showToast("ကျေးဇူးပြု၍ Google ဖြင့် Login အရင်ဝင်ပါ");
+        showToast(`မြန်မာစာကြောင်း ${trans.length} ခု ထည့်သွင်းပြီးပါပြီ!`, "success");
+      } catch (e) {
+        showToast("JSON Format မှားယွင်းနေပါသည်!", "error");
       }
+    }
 
-      const taskId = "task_" + Date.now();
-      showProgressModal("Exporting", "စတင်ပြင်ဆင်နေပါသည်...");
-      const evt = new EventSource(`/api/progress/${taskId}`);
-      evt.onmessage = e => {
-        const d = JSON.parse(e.data); updateGauge(d.percent, d.status);
-        if(d.done) {
-          evt.close(); hideProgressModal();
-          if(!d.error) {
-            document.getElementById('videoPlayer').src = d.download_url;
-            document.getElementById('downloadBtn').href = d.download_url;
-            document.getElementById('resultBox').classList.remove('hidden');
-            checkUserAuth(); // update credits
-          } else showToast(d.status);
-        }
-      };
-
+    async function previewAudio(encodedText) {
+      const text = decodeURIComponent(encodedText);
       const fd = new FormData();
-      fd.append("task_id", taskId); fd.append("video_filename", uploadedVideoFilename);
-      fd.append("segments_json", JSON.stringify(currentSegments)); fd.append("translations_json", JSON.stringify(trans));
-      fd.append("voice", document.getElementById('voiceSelect').value); fd.append("pitch", document.getElementById('pitchInput').value);
-      fd.append("speed", document.getElementById('speedInput').value); fd.append("bgm_vol", document.getElementById('bgmVolInput').value);
-      fd.append("blur_sub", document.getElementById('blurSubCheck').checked); fd.append("burn_sub", document.getElementById('burnSubCheck').checked);
-      fd.append("blur_h", document.getElementById('blurHInput').value); fd.append("font_size", document.getElementById('fontSizeInput').value);
-      fd.append("font_name", document.getElementById('fontNameInput').value); fd.append("auto_speed_video", document.getElementById('autoSpeedCheck').checked);
-      if(savedClonedVoicePath) fd.append("ref_voice_path", savedClonedVoicePath);
+      fd.append("text", text);
+      fd.append("voice", document.getElementById('voiceSelect').value);
+      fd.append("pitch", document.getElementById('pitchInput').value);
+      fd.append("speed", document.getElementById('speedInput').value);
 
-      await fetch("/api/start-export", { method: "POST", body: fd });
+      const res = await fetch("/api/preview-single-audio", { method: "POST", body: fd });
+      const blob = await res.blob();
+      new Audio(URL.createObjectURL(blob)).play();
+    }
+
+    // --- STEP 5: Client-Side Video Processing (FFmpeg.wasm) ---
+    async function startClientExport() {
+      const inputs = document.querySelectorAll('.sub-input');
+      const translations = Array.from(inputs).map(i => i.value);
+      if (!translations.length) return showToast("စာကြောင်းများ မရှိသေးပါ!", "error");
+      if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် မရှိပါ!", "error");
+
+      const ff = await loadFFmpeg();
+      showProgress("TTS အသံထုတ်ယူနေပါသည်", "Server မှ မြန်မာအသံဖိုင်များ ထုတ်ယူနေပါသည်...");
+
+      try {
+        // 1. Batch Generate Burmese Audios via Server API
+        const ttsRes = await fetch("/api/tts/batch-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lines: translations,
+            voice: document.getElementById('voiceSelect').value,
+            pitch: parseInt(document.getElementById('pitchInput').value),
+            speed: parseInt(document.getElementById('speedInput').value)
+          })
+        });
+        const ttsData = await ttsRes.json();
+        if (!ttsRes.ok) throw new Error(ttsData.error);
+
+        updateGauge(30, "အသံဖိုင်များနှင့် ဗီဒီယို အမြန်နှုန်း ညှိနေပါသည်...");
+
+        // 2. Write Audio Blobs into FFmpeg Virtual FileSystem
+        let concatAudioList = "";
+        let srtLines = [];
+        let runningMs = 0;
+
+        for (let i = 0; i < ttsData.audios.length; i++) {
+          const item = ttsData.audios[i];
+          const audioBytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
+          const aName = `tts_${i}.mp3`;
+          await ff.writeFile(aName, audioBytes);
+          concatAudioList += `file '${aName}'\n`;
+
+          // SRT Generate
+          const durMs = item.duration_ms;
+          const sTime = msToSrt(runningMs);
+          runningMs += durMs;
+          const eTime = msToSrt(runningMs);
+          srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
+        }
+        srtContent = srtLines.join("\n");
+
+        await ff.writeFile('audio_concat.txt', concatAudioList);
+        // Merge All Dub Audio Clips
+        await ff.exec(['-f', 'concat', '-safe', '0', '-i', 'audio_concat.txt', '-c', 'copy', 'dub_full.mp3']);
+
+        updateGauge(55, "ဗီဒီယို Auto-Speed နှင့် စာတန်း Blur ပြုလုပ်နေပါသည်...");
+
+        // 3. Prepare Video Filters (Auto-speed and Subtitle Blur)
+        const autoSpeed = document.getElementById('autoSpeedCheck').checked;
+        const blurSub = document.getElementById('blurSubCheck').checked;
+
+        let videoFilter = "";
+        if (blurSub) {
+          // မူရင်းဗီဒီယို၏ အောက်ခြေ ၁၂% နေရာကို boxblur ဖြင့် ဖျက်ပစ်ခြင်း
+          videoFilter = "[0:v]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[v_out]";
+        }
+
+        // 4. Check Background Music
+        const bgmInput = document.getElementById('bgmFile');
+        let hasBgm = bgmInput.files.length > 0;
+        let finalArgs = [];
+
+        if (hasBgm) {
+          await ff.writeFile('bgm_in.mp3', await fetchFile(bgmInput.files[0]));
+          const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) / 100).toFixed(2);
+
+          let filterComplex = `[1:a]volume=1.0[maina];[2:a]volume=${bgmVol}[bgma];[maina][bgma]amix=inputs=2:duration=first[finala]`;
+          if (videoFilter) {
+            filterComplex = `${videoFilter};` + filterComplex;
+            finalArgs = [
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3',
+              '-filter_complex', filterComplex,
+              '-map', '[v_out]', '-map', '[finala]',
+              '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4'
+            ];
+          } else {
+            finalArgs = [
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3', '-i', 'bgm_in.mp3',
+              '-filter_complex', filterComplex,
+              '-map', '0:v', '-map', '[finala]',
+              '-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4'
+            ];
+          }
+        } else {
+          if (videoFilter) {
+            finalArgs = [
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3',
+              '-filter_complex', videoFilter,
+              '-map', '[v_out]', '-map', '1:a',
+              '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', 'output.mp4'
+            ];
+          } else {
+            finalArgs = [
+              '-i', 'input_orig.mp4', '-i', 'dub_full.mp3',
+              '-map', '0:v', '-map', '1:a',
+              '-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4'
+            ];
+          }
+        }
+
+        updateGauge(80, "Device ပေါ်တွင် နောက်ဆုံးဗီဒီယို ပေါင်းစပ်နေပါသည်...");
+        await ff.exec(finalArgs);
+
+        // 5. Read Rendered Video from Virtual FileSystem
+        const outData = await ff.readFile('output.mp4');
+        const outBlob = new Blob([outData.buffer], { type: 'video/mp4' });
+        const videoUrl = URL.createObjectURL(outBlob);
+
+        const player = document.getElementById('videoPlayer');
+        player.src = videoUrl;
+        document.getElementById('downloadBtn').href = videoUrl;
+        document.getElementById('resultBox').classList.remove('hidden');
+
+        updateGauge(100, "ပြီးဆုံးပါပြီ!");
+        hideProgress();
+        showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!", "success");
+        checkUserAuth(); // လက်ကျန် Credits ပြန်လည် update လုပ်ခြင်း
+      } catch (err) {
+        hideProgress();
+        showToast(err.message, "error");
+      }
+    }
+
+    function msToSrt(ms) {
+      const h = Math.floor(ms / 3600000);
+      ms %= 3600000;
+      const m = Math.floor(ms / 60000);
+      ms %= 60000;
+      const s = Math.floor(ms / 1000);
+      const mil = ms % 1000;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(mil).padStart(3,'0')}`;
+    }
+
+    function downloadSRT() {
+      if (!srtContent) return showToast("စာတန်းထိုး မရှိသေးပါ!", "error");
+      const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = "recap_subtitles.srt";
+      a.click();
     }
   </script>
 </body>
