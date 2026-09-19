@@ -1,5 +1,6 @@
 import os
 import io
+import json
 import base64
 import uuid
 import shutil
@@ -24,7 +25,6 @@ app = FastAPI()
 
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-# WASM နှင့် Web Worker အလုပ်လုပ်စေရန် Security Headers
 @app.middleware("http")
 async def add_wasm_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -40,8 +40,6 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
-
-# Admin Gmail
 ADMIN_EMAIL = "waiphyo171104@gmail.com"
 
 TEMP_DIR = "temp_audios"
@@ -51,41 +49,122 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
-async def send_telegram_alert(text: str, photo_path: str = None):
+# Telegram Bot သို့ Inline Buttons များဖြင့် Photo & Slip ပို့ခြင်း
+async def send_telegram_payment_alert(req_id: int, user_email: str, package_type: str, amount: int, payment_method: str, photo_path: str):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        return
+        return None
     try:
+        caption = (
+            f"🔔 *ငွေလွှဲပြေစာ အသစ်ရောက်ရှိပါသည်!*\n\n"
+            f"🆔 Req ID: `#{req_id}`\n"
+            f"👤 User: `{user_email}`\n"
+            f"📦 Package: *{package_type} ပုဒ်*\n"
+            f"💰 ပမာဏ: *{amount:,} Ks*\n"
+            f"💳 Method: *{payment_method}*\n\n"
+            f"အောက်ပါခလုတ်ကို နှိပ်၍ တိုက်ရိုက် အတည်ပြုနိုင်ပါသည် 👇"
+        )
+        inline_keyboard = {
+            "inline_keyboard": [
+                [
+                    {"text": "✅ Approve (ခွင့်ပြုမည်)", "callback_data": f"approve_{req_id}"},
+                    {"text": "❌ Reject (ပယ်ဖျက်မည်)", "callback_data": f"reject_{req_id}"}
+                ]
+            ]
+        }
         async with httpx.AsyncClient() as client:
             if photo_path and os.path.exists(photo_path):
                 with open(photo_path, "rb") as f:
-                    await client.post(
+                    res = await client.post(
                         f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto",
-                        data={"chat_id": TELEGRAM_CHAT_ID, "caption": text},
+                        data={
+                            "chat_id": TELEGRAM_CHAT_ID,
+                            "caption": caption,
+                            "parse_mode": "Markdown",
+                            "reply_markup": json.dumps(inline_keyboard)
+                        },
                         files={"photo": f}
                     )
-            else:
-                await client.post(
-                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
-                    data={"chat_id": TELEGRAM_CHAT_ID, "text": text}
-                )
+                    if res.status_code == 200:
+                        return res.json().get("result", {}).get("message_id")
     except Exception:
         pass
+    return None
+
+# Telegram Webhook Handler (Telegram ပေါ်မှ ခလုတ်နှိပ်သည့်အခါ တိုက်ရိုက် အလုပ်လုပ်မည့် Endpoint)
+@app.post("/api/telegram/webhook")
+async def telegram_webhook(request: Request):
+    try:
+        data = await request.json()
+        callback_query = data.get("callback_query")
+        if not callback_query:
+            return {"status": "ignored"}
+
+        callback_id = callback_query.get("id")
+        action_data = callback_query.get("data", "")
+        message = callback_query.get("message", {})
+        chat_id = message.get("chat", {}).get("id")
+        msg_id = message.get("message_id")
+
+        if not action_data or ("_" not in action_data):
+            return {"status": "ignored"}
+
+        action, req_id_str = action_data.split("_", 1)
+        req_id = int(req_id_str)
+
+        db = SessionLocal()
+        pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
+        if not pay_req or pay_req.status != "pending":
+            db.close()
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery",
+                    data={"callback_query_id": callback_id, "text": "ဤတောင်းဆိုမှုမှာ ပြီးဆုံးပြီး ဖြစ်ပါသည်", "show_alert": True}
+                )
+            return {"status": "already_processed"}
+
+        target_user = db.query(User).filter(User.email == pay_req.user_email).first()
+
+        if action == "approve":
+            if target_user:
+                target_user.package_credits += int(pay_req.package_type)
+            pay_req.status = "approved"
+            result_text = f"✅ အောင်မြင်ပါပြီ! #{req_id} ({pay_req.user_email}) သို့ {pay_req.package_type} ပုဒ် ထည့်သွင်းပေးပြီးပါပြီ။"
+        else:
+            pay_req.status = "rejected"
+            result_text = f"❌ ငွေလွှဲပြေစာ #{req_id} ကို ပယ်ဖျက်လိုက်ပါပြီ။"
+
+        db.commit()
+        db.close()
+
+        # Telegram ပေါ်ရှိ Message နှင့် Buttons များအား Update လုပ်ခြင်း
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery",
+                data={"callback_query_id": callback_id, "text": result_text}
+            )
+            await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/editMessageCaption",
+                data={
+                    "chat_id": chat_id,
+                    "message_id": msg_id,
+                    "caption": message.get("caption", "") + f"\n\n👉 *Status: {pay_req.status.upper()}*",
+                    "parse_mode": "Markdown"
+                }
+            )
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
     return FileResponse(os.path.join("templates", "index.html"))
 
-# Admin Panel: waiphyo171104@gmail.com ဖြင့် ဝင်ထားမှသာ ဖွင့်ခွင့်ပေးခြင်း
 @app.get("/admin", response_class=HTMLResponse)
 async def serve_admin(request: Request):
     user_email = request.cookies.get("user_email")
     if not user_email or user_email.strip().lower() != ADMIN_EMAIL.lower():
         return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden: Admin သာ ဝင်ရောက်ခွင့်ရှိပါသည်။</h2>", status_code=403)
-    
-    admin_html_path = os.path.join("templates", "admin.html")
-    if not os.path.exists(admin_html_path):
-        return HTMLResponse("<h2>Admin template ဖိုင် မရှိသေးပါ။</h2>", status_code=500)
-    return FileResponse(admin_html_path)
+    return FileResponse(os.path.join("templates", "admin.html"))
 
 @app.get("/login/google")
 async def login_google(request: Request):
@@ -233,12 +312,16 @@ async def submit_payment(
     )
     db.add(pay_req)
     db.commit()
+    db.refresh(pay_req)
+
+    # Telegram သို့ Inline Buttons များဖြင့် ပို့ဆောင်ခြင်း
+    t_msg_id = await send_telegram_payment_alert(pay_req.id, user_email, package_type, amount, payment_method, slip_path)
+    if t_msg_id:
+        pay_req.telegram_msg_id = t_msg_id
+        db.commit()
+
     db.close()
-
-    alert_msg = f"🔔 ငွေလွှဲပြေစာ အသစ်ရောက်ရှိပါသည်!\n\n👤 User: {user_email}\n📦 Package: {package_type} ပုဒ်\n💰 ပမာဏ: {amount:,} Ks\n💳 Payment: {payment_method}\n\nApprove လုပ်ရန် /admin သို့ ဝင်ရောက်ပေးပါ။"
-    await send_telegram_alert(alert_msg, slip_path)
-
-    return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ စစ်ဆေးပြီးပါက Credits တိုးပေးပါမည်။"}
+    return {"status": "success", "message": "ငွေလွှဲပြေစာ ပေးပို့ပြီးပါပြီ။ Admin မှ မကြာမီ စစ်ဆေးပေးပါမည်။"}
 
 @app.get("/api/admin/requests")
 async def get_admin_requests(request: Request):
@@ -273,7 +356,7 @@ async def approve_request(request: Request, req_id: int = Form(...)):
     pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
     if not pay_req or pay_req.status != "pending":
         db.close()
-        return JSONResponse(status_code=400, content={"error": "Request not found or already processed"})
+        return JSONResponse(status_code=400, content={"error": "Request not found or processed"})
 
     target_user = db.query(User).filter(User.email == pay_req.user_email).first()
     if target_user:
