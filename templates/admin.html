@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Recap Studio</title>
+  <title>Admin Dashboard & POS - Recap Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -14,34 +14,58 @@
     body {
       background-color: #0b0c10; color: #f4f4f5;
       font-family: 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif;
-      padding: 20px;
+      padding: 24px 16px; max-width: 1200px; margin: 0 auto;
     }
     .header {
       display: flex; justify-content: space-between; align-items: center;
       padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 24px;
     }
     .header h1 { font-size: 18px; color: #c084fc; display: flex; align-items: center; gap: 8px; }
-    
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
-    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    th { background: rgba(20,22,31,0.8); color: #a1a1aa; font-weight: 600; }
+    .btn-back { background: #272a37; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; }
+
+    .grid-pos {
+      display: grid; grid-template-columns: 360px 1fr; gap: 20px; margin-bottom: 24px;
+    }
+    @media (max-width: 860px) { .grid-pos { grid-template-columns: 1fr; } }
+
+    .card {
+      background: #14161f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); padding: 18px;
+    }
+    .card h3 { font-size: 14px; color: #38bdf8; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .form-group label { font-size: 11px; color: #a1a1aa; font-weight: 600; }
+    .glass-input {
+      background: rgba(11, 12, 16, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f4f4f5; padding: 10px 12px; border-radius: 10px; font-size: 12px; outline: none; width: 100%;
+    }
+    .glass-input:focus { border-color: #38bdf8; }
+
+    .btn-pos {
+      background: linear-gradient(135deg, #059669, #0d9488); color: #fff; border: none;
+      padding: 12px; border-radius: 10px; font-size: 13px; font-weight: bold; width: 100%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-pos:hover { opacity: 0.9; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    th { background: rgba(20,22,31,0.8); color: #a1a1aa; font-weight: 600; font-size: 11px; }
     tr:hover { background: rgba(255,255,255,0.02); }
 
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
+    .badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; font-family: 'JetBrains Mono', monospace; }
     .badge-pending { background: rgba(234,179,8,0.15); color: #facc15; }
     .badge-approved { background: rgba(16,185,129,0.15); color: #34d399; }
     .badge-rejected { background: rgba(239,68,68,0.15); color: #f87171; }
 
     .btn-action {
-      border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px;
+      border: none; padding: 5px 8px; border-radius: 6px; font-size: 11px;
       font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
     }
     .btn-approve { background: #059669; color: #fff; }
     .btn-reject { background: #dc2626; color: #fff; margin-left: 4px; }
-    .btn-back { background: #272a37; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; }
+    .slip-img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
 
-    .slip-img { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
-    
     #imgModal {
       position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none;
       align-items: center; justify-content: center; z-index: 1000;
@@ -54,12 +78,59 @@
 <body>
 
   <div class="header">
-    <h1><i class="ph-bold ph-shield-check"></i> Admin Payment Dashboard</h1>
+    <h1><i class="ph-bold ph-shield-check"></i> Admin & POS Dashboard</h1>
     <a href="/" class="btn-back">← Back to Studio</a>
   </div>
 
-  <div style="background: #14161f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); padding: 16px; overflow-x: auto;">
-    <h3 style="font-size: 14px; color: #38bdf8; margin-bottom: 8px;">ငွေလွှဲပြေစာ တောင်းဆိုမှုများ (Payment Requests)</h3>
+  <div class="grid-pos">
+    <!-- POS TOP-UP FORM -->
+    <div class="card">
+      <h3><i class="ph-bold ph-cash-register"></i> POS Quick Top-up (Credits သွင်းပေးမည်)</h3>
+      <p style="font-size: 11px; color: #a1a1aa; margin-bottom: 14px;">Chat box မှတစ်ဆင့် ငွေလွှဲဝယ်ယူသူများအား အကောင့်ထဲသို့ ပုဒ်ရေ တိုက်ရိုက်ထည့်သွင်းပေးရန်</p>
+
+      <form id="posForm" onsubmit="handlePosTopup(event)">
+        <div class="form-group">
+          <label>User Gmail</label>
+          <input type="email" id="posEmail" required placeholder="user@gmail.com" class="glass-input" style="font-family: 'JetBrains Mono';">
+        </div>
+        <div class="form-group">
+          <label>ထည့်သွင်းပေးမည့် ပုဒ်ရေ (Credits)</label>
+          <input type="number" id="posCredits" required min="1" value="10" class="glass-input" style="font-family: 'JetBrains Mono'; font-weight: bold; color: #fbbf24;">
+        </div>
+        <div class="form-group">
+          <label>မှတ်ချက် (Note / Ref No)</label>
+          <input type="text" id="posNote" placeholder="KPay / 09xxx မှ ဝယ်ယူသည်" class="glass-input">
+        </div>
+        <button type="submit" class="btn-pos">
+          <i class="ph-bold ph-plus-circle"></i> ပုဒ်ရေ ထည့်သွင်းပေးမည်
+        </button>
+      </form>
+    </div>
+
+    <!-- USERS INFO TABLE -->
+    <div class="card" style="overflow-x: auto;">
+      <h3><i class="ph-bold ph-users-three"></i> User Information & Credits စာရင်း</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Gmail</th>
+            <th>Daily Free</th>
+            <th>Pkg Credits</th>
+            <th>Quick Select</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr><td colspan="6" style="text-align: center; color: #71717a;">User စာရင်း ရှာဖွေနေပါသည်...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAYMENT REQUESTS TABLE -->
+  <div class="card" style="overflow-x: auto;">
+    <h3><i class="ph-bold ph-receipt"></i> ငွေလွှဲပြေစာ တောင်းဆိုမှုများ (Payment Requests)</h3>
     <table>
       <thead>
         <tr>
@@ -90,9 +161,77 @@
       document.getElementById('imgModal').classList.add('active');
     }
 
+    // User Gmail ကို POS Form ထဲသို့ အလွယ်တကူ ထည့်ပေးခြင်း
+    function quickFillPOS(email) {
+      document.getElementById('posEmail').value = email;
+      document.getElementById('posEmail').focus();
+    }
+
+    // Load All Users
+    async function loadUsers() {
+      try {
+        const res = await fetch("/api/admin/users");
+        if (!res.ok) return;
+        const users = await res.json();
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = "";
+
+        if (!users.length) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #71717a;">User မရှိသေးပါ</td></tr>`;
+          return;
+        }
+
+        users.forEach(u => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>#${u.id}</td>
+            <td><b style="color: #fff;">${u.name || 'User'}</b> ${u.is_admin ? '<span style="color:#c084fc;">(Admin)</span>' : ''}</td>
+            <td style="font-family: 'JetBrains Mono'; font-size: 11px;">${u.email}</td>
+            <td style="color: #10b981; font-family: 'JetBrains Mono';">${u.is_admin ? '∞' : u.daily_credits}</td>
+            <td style="color: #fbbf24; font-family: 'JetBrains Mono'; font-weight: bold;">${u.is_admin ? '∞' : u.package_credits}</td>
+            <td>
+              <button onclick="quickFillPOS('${u.email}')" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: none; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer;">
+                POS ရွေးမည်
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {}
+    }
+
+    // Handle POS Top-up
+    async function handlePosTopup(e) {
+      e.preventDefault();
+      const email = document.getElementById('posEmail').value.trim();
+      const credits = document.getElementById('posCredits').value;
+      const note = document.getElementById('posNote').value.trim();
+
+      if (!confirm(`${email} ထံသို့ ${credits} ပုဒ် တိုက်ရိုက်သွင်းပေးမည် သေချာပါသလား?`)) return;
+
+      const fd = new FormData();
+      fd.append("user_email", email);
+      fd.append("credits", credits);
+      fd.append("note", note);
+
+      try {
+        const res = await fetch("/api/admin/pos/topup", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        alert(data.message);
+        document.getElementById('posForm').reset();
+        loadUsers();
+        loadRequests();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    // Load Requests
     async function loadRequests() {
       const res = await fetch("/api/admin/requests");
-      if (!res.ok) return alert("Access Denied: Admin သာ ဝင်ခွင့်ရှိပါသည်");
+      if (!res.ok) return;
       const list = await res.json();
       const tbody = document.getElementById('requestTableBody');
       tbody.innerHTML = "";
@@ -106,12 +245,12 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>#${r.id}</td>
-          <td style="font-family: 'JetBrains Mono';">${r.email}</td>
+          <td style="font-family: 'JetBrains Mono'; font-size: 11px;">${r.email}</td>
           <td><b style="color: #fbbf24;">${r.package_type} ပုဒ်</b></td>
-          <td>${r.amount.toLocaleString()} Ks</td>
-          <td>${r.payment_method}</td>
-          <td><img src="${r.slip_url}" class="slip-img" onclick="viewBigSlip('${r.slip_url}')" title="ကြည့်ရန် နှိပ်ပါ"></td>
-          <td style="color: #a1a1aa;">${r.created_at}</td>
+          <td>${r.amount ? r.amount.toLocaleString() + ' Ks' : '-'}</td>
+          <td style="font-size: 11px;">${r.payment_method}</td>
+          <td>${r.slip_url ? `<img src="${r.slip_url}" class="slip-img" onclick="viewBigSlip('${r.slip_url}')" title="ကြည့်ရန် နှိပ်ပါ">` : '<span style="color:#71717a;">POS</span>'}</td>
+          <td style="color: #a1a1aa; font-size: 11px;">${r.created_at}</td>
           <td><span class="badge badge-${r.status}">${r.status.toUpperCase()}</span></td>
           <td>
             ${r.status === 'pending' ? `
@@ -132,6 +271,7 @@
       const data = await res.json();
       alert(data.message);
       loadRequests();
+      loadUsers();
     }
 
     async function rejectReq(id) {
@@ -144,6 +284,7 @@
       loadRequests();
     }
 
+    loadUsers();
     loadRequests();
   </script>
 </body>
