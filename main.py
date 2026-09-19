@@ -42,6 +42,8 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 ADMIN_EMAIL = "waiphyo171104@gmail.com"
 
+BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "https://my-recap-studio.onrender.com").rstrip("/")
+
 TEMP_DIR = "temp_audios"
 SLIPS_DIR = "uploaded_slips"
 os.makedirs(TEMP_DIR, exist_ok=True)
@@ -49,7 +51,7 @@ os.makedirs(SLIPS_DIR, exist_ok=True)
 
 app.mount("/slips", StaticFiles(directory=SLIPS_DIR), name="slips")
 
-# Telegram Bot Alert
+# Telegram Bot Alert (Direct Action URL Method - Webhook မလိုပါ)
 async def send_telegram_payment_alert(req_id: int, user_email: str, package_type: str, amount: int, payment_method: str, photo_path: str):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return None
@@ -63,11 +65,14 @@ async def send_telegram_payment_alert(req_id: int, user_email: str, package_type
             f"💳 Method: *{payment_method}*\n\n"
             f"အောက်ပါခလုတ်ကို နှိပ်၍ တိုက်ရိုက် အတည်ပြုနိုင်ပါသည် 👇"
         )
+        approve_url = f"{BASE_URL}/api/quick-action?action=approve&id={req_id}&key={SECRET_KEY}"
+        reject_url = f"{BASE_URL}/api/quick-action?action=reject&id={req_id}&key={SECRET_KEY}"
+
         inline_keyboard = {
             "inline_keyboard": [
                 [
-                    {"text": "✅ Approve (ခွင့်ပြုမည်)", "callback_data": f"approve_{req_id}"},
-                    {"text": "❌ Reject (ပယ်ဖျက်မည်)", "callback_data": f"reject_{req_id}"}
+                    {"text": "✅ Approve (ခွင့်ပြုမည်)", "url": approve_url},
+                    {"text": "❌ Reject (ပယ်ဖျက်မည်)", "url": reject_url}
                 ]
             ]
         }
@@ -90,68 +95,66 @@ async def send_telegram_payment_alert(req_id: int, user_email: str, package_type
         pass
     return None
 
-@app.post("/api/telegram/webhook")
-async def telegram_webhook(request: Request):
-    try:
-        data = await request.json()
-        callback_query = data.get("callback_query")
-        if not callback_query:
-            return {"status": "ignored"}
+# Webhook မလိုဘဲ Telegram ခလုတ်မှတစ်ဆင့် တိုက်ရိုက် အတည်ပြုပေးသော API
+@app.get("/api/quick-action", response_class=HTMLResponse)
+async def quick_action(action: str, id: int, key: str):
+    if key != SECRET_KEY:
+        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>403 Forbidden: လုံခြုံရေးကုဒ် မှားယွင်းနေပါသည်။</h2>", status_code=403)
 
-        callback_id = callback_query.get("id")
-        action_data = callback_query.get("data", "")
-        message = callback_query.get("message", {})
-        chat_id = message.get("chat", {}).get("id")
-        msg_id = message.get("message_id")
-
-        if not action_data or ("_" not in action_data):
-            return {"status": "ignored"}
-
-        action, req_id_str = action_data.split("_", 1)
-        req_id = int(req_id_str)
-
-        db = SessionLocal()
-        pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == req_id).first()
-        if not pay_req or pay_req.status != "pending":
-            db.close()
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery",
-                    data={"callback_query_id": callback_id, "text": "ဤတောင်းဆိုမှုမှာ ပြီးဆုံးပြီး ဖြစ်ပါသည်", "show_alert": True}
-                )
-            return {"status": "already_processed"}
-
-        target_user = db.query(User).filter(User.email == pay_req.user_email).first()
-
-        if action == "approve":
-            if target_user:
-                target_user.package_credits += int(pay_req.package_type)
-            pay_req.status = "approved"
-            result_text = f"✅ အောင်မြင်ပါပြီ! #{req_id} ({pay_req.user_email}) သို့ {pay_req.package_type} ပုဒ် ထည့်ပေးပြီးပါပြီ။"
-        else:
-            pay_req.status = "rejected"
-            result_text = f"❌ ငွေလွှဲပြေစာ #{req_id} ကို ပယ်ဖျက်လိုက်ပါပြီ။"
-
-        db.commit()
+    db = SessionLocal()
+    pay_req = db.query(PaymentRequest).filter(PaymentRequest.id == id).first()
+    if not pay_req:
         db.close()
+        return HTMLResponse("<h2 style='color:red; text-align:center; margin-top:50px;'>တောင်းဆိုမှု ရှာမတွေ့ပါ သို့မဟုတ် ပျက်ပြယ်သွားပါပြီ။</h2>")
 
-        async with httpx.AsyncClient() as client:
-            await client.post(
-                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery",
-                data={"callback_query_id": callback_id, "text": result_text}
-            )
-            await client.post(
-                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/editMessageCaption",
-                data={
-                    "chat_id": chat_id,
-                    "message_id": msg_id,
-                    "caption": message.get("caption", "") + f"\n\n👉 *Status: {pay_req.status.upper()}*",
-                    "parse_mode": "Markdown"
-                }
-            )
-        return {"status": "success"}
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    if pay_req.status != "pending":
+        status_text = pay_req.status.upper()
+        db.close()
+        return HTMLResponse(f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Status</title></head>
+        <body style="background:#0b0c10; color:#f4f4f5; display:flex; align-items:center; justify-content:center; height:90vh; font-family:sans-serif; text-align:center; margin:0; padding:16px;">
+          <div style="background:#14161f; padding:28px 20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); max-width:360px; width:100%;">
+            <h2 style="color:#facc15; margin-bottom:12px; font-size:20px;">ပြီးဆုံးပြီး ဖြစ်ပါသည်</h2>
+            <p style="color:#a1a1aa; font-size:13px; line-height:1.6;">ဤငွေလွှဲပြေစာသည် <b>{status_text}</b> ပြုလုပ်ပြီးသား ဖြစ်ပါသည်။</p>
+            <p style="color:#71717a; font-size:11px; margin-top:20px;">Telegram သို့ ပြန်သွားနိုင်ပါပြီ</p>
+          </div>
+        </body>
+        </html>
+        """)
+
+    target_user = db.query(User).filter(User.email == pay_req.user_email).first()
+
+    if action == "approve":
+        if target_user:
+            target_user.package_credits += int(pay_req.package_type)
+        pay_req.status = "approved"
+        title = "✅ အောင်မြင်ပါပြီ!"
+        desc = f"<b>{pay_req.user_email}</b> ထံသို့ Package <b>{pay_req.package_type} ပုဒ်</b> ထည့်သွင်းပေးပြီးပါပြီ။"
+        color = "#10b981"
+    else:
+        pay_req.status = "rejected"
+        title = "❌ ပယ်ဖျက်လိုက်ပါပြီ"
+        desc = f"ငွေလွှဲပြေစာ <b>#{id}</b> ကို ပယ်ဖျက်လိုက်ပါပြီ။"
+        color = "#ef4444"
+
+    db.commit()
+    db.close()
+
+    return HTMLResponse(f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Action Completed</title></head>
+    <body style="background:#0b0c10; color:#f4f4f5; display:flex; align-items:center; justify-content:center; height:90vh; font-family:sans-serif; text-align:center; margin:0; padding:16px;">
+      <div style="background:#14161f; padding:28px 20px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); max-width:360px; width:100%;">
+        <h2 style="color:{color}; margin-bottom:12px; font-size:20px;">{title}</h2>
+        <p style="color:#a1a1aa; font-size:13px; line-height:1.6;">{desc}</p>
+        <p style="color:#71717a; font-size:11px; margin-top:20px;">Telegram သို့ ပြန်သွားနိုင်ပါပြီ</p>
+      </div>
+    </body>
+    </html>
+    """)
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
@@ -346,7 +349,7 @@ async def get_all_users(request: Request):
     db.close()
     return result
 
-# POS System: Admin ကိုယ်တိုင် အပြင်မှဝယ်ယူသူများကို ပုဒ်ရေတိုက်ရိုက်သွင်းပေးသည့် API
+# POS System: Admin ကိုယ်တိုင် User ထံသို့ ပုဒ်ရေ တိုက်ရိုက်သွင်းပေးသည့် API
 @app.post("/api/admin/pos/topup")
 async def pos_topup(
     request: Request,
@@ -370,7 +373,6 @@ async def pos_topup(
 
     target_user.package_credits += credits
 
-    # POS မှ အရောင်းမှတ်တမ်းအဖြစ် သိမ်းဆည်းခြင်း
     pos_record = PaymentRequest(
         user_email=clean_email,
         package_type=str(credits),
