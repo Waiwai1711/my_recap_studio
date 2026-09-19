@@ -4,15 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Recap Studio Pro - Client-Side Engine</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <!-- Tailwind CSS & Fonts with crossorigin -->
+  <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+  <script src="https://unpkg.com/@phosphor-icons/web" crossorigin="anonymous"></script>
 
   <!-- Client-Side FFmpeg.wasm Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js" crossorigin="anonymous"></script>
 
   <script>
     tailwind.config = {
@@ -77,7 +79,7 @@
       </div>
     </div>
 
-    <!-- User Section -->
+    <!-- User Profile & Login Button -->
     <div class="flex items-center gap-3">
       <div id="authSection" class="flex items-center gap-2">
         <a id="loginBtn" href="/login/google" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-zinc-200 text-zinc-900 transition">
@@ -268,7 +270,7 @@
       setTimeout(() => m.classList.add('hidden'), 300);
     }
 
-    // Login Status စစ်ဆေးခြင်း
+    // User Login Status စစ်ဆေးခြင်း
     async function checkUserAuth() {
       try {
         const res = await fetch("/api/user/me");
@@ -284,7 +286,7 @@
       } catch (e) {}
     }
 
-    // Client-Side FFmpeg Engine စတင်ခြင်း
+    // FFmpeg.wasm Engine ခေါ်ယူခြင်း
     async function loadFFmpeg() {
       if (ffmpeg) return ffmpeg;
       showProgress("FFmpeg Engine စတင်နေပါသည်", "Browser Memory ထဲသို့ FFmpeg.wasm ထည့်သွင်းနေပါသည်...");
@@ -319,7 +321,7 @@
       });
     });
 
-    // အသံခွဲထုတ်ခြင်း
+    // STEP 1: Video မှ Audio သီးသန့်ခွဲထုတ်ပြီး Transcribe လုပ်ခြင်း
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!", "error");
@@ -398,7 +400,7 @@
       new Audio(URL.createObjectURL(blob)).play();
     }
 
-    // Client-Side Video Processing Pipeline
+    // STEP 5: Client-Side Final Render Engine
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const translations = Array.from(inputs).map(i => i.value);
