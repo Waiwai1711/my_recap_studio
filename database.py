@@ -35,6 +35,7 @@ class PaymentRequest(Base):
     payment_method = Column(String, nullable=False)
     slip_url = Column(String, nullable=False)
     status = Column(String, default="pending")
+    telegram_msg_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 Base.metadata.create_all(bind=engine)
