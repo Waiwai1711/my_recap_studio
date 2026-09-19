@@ -3,6 +3,8 @@ uvicorn[standard]
 python-multipart
 jinja2
 assemblyai
-deep-translator
 edge-tts
 pydub
+sqlalchemy
+authlib
+httpx
