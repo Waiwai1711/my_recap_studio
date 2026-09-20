@@ -489,7 +489,7 @@
         </label>
         <label class="toggle-item" style="color: #38bdf8; font-weight: 600;">
           <input type="checkbox" id="enableSubCheck" checked onchange="toggleSubSection()">
-          <span>💬 မြန်မာစာတန်းထိုး ထည့်သွင်းမည် (Subtitles)</span>
+          <span>💬 မြန်မာစာတန်းထိုး ဗီဒီယိုပေါ် အပြီးရိုက်ထည့်မည် (Hardsub Burn-in)</span>
         </label>
         <label class="toggle-item" style="color: #a78bfa; font-weight: 600;">
           <input type="checkbox" id="enableDuckingCheck" checked>
@@ -510,17 +510,21 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Auto-Classify Button -->
+    <!-- STEP 4: Live Subtitle Editor with Auto-Classify Button & Toggle -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">4</span>
           <h2>LIVE SUBTITLE & MULTI-SPEAKER EDITOR</h2>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <button onclick="autoClassifyVoices()" class="btn btn-ghost" style="font-size: 11px;">
             <i class="ph-bold ph-magic-wand"></i> 🎙️ Auto-Classify Voices
           </button>
+          <label class="toggle-item" style="color: #a78bfa; font-weight: 600;">
+            <input type="checkbox" id="autoClassifyVoiceCheck" checked onchange="autoClassifyVoices()">
+            <span>🎙️ Auto-Voice Diarization (အသံနားထောင်၍ ဇာတ်ကောင် အလိုအလျောက် ခွဲမည်)</span>
+          </label>
           <span id="autoSaveStatus" style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">✓ Auto-saved</span>
         </div>
       </div>
@@ -529,7 +533,7 @@
       </div>
     </div>
 
-    <!-- STEP 5: FINAL EXPORT, SPLITTER & THUMBNAIL -->
+    <!-- STEP 5: FINAL EXPORT, SPLITTER & THUMBNAIL (အသုံးပြုသူလိုလားသော ခလုတ် ၃ ခု တိကျစွာ စီစဉ်ထားသော UI) -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -1098,16 +1102,19 @@ INPUTS:
       const container = document.getElementById('linesContainer');
       container.innerHTML = "";
       const defaultVoice = document.getElementById('voiceSelect').value;
+      const isAutoDiarize = document.getElementById('autoClassifyVoiceCheck')?.checked ?? true;
 
       currentSegments.forEach((seg, i) => {
         const row = document.createElement('div');
         row.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(11,12,16,0.6); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);";
         
         let autoDetectedVoice = defaultVoice;
-        if (seg.speaker === 'B') {
-          autoDetectedVoice = "my-MM-NilarNeural";
-        } else if (seg.speaker === 'A') {
-          autoDetectedVoice = "my-MM-ThihaNeural";
+        if (isAutoDiarize) {
+          if (seg.speaker === 'B') {
+            autoDetectedVoice = "my-MM-NilarNeural";
+          } else if (seg.speaker === 'A') {
+            autoDetectedVoice = "my-MM-ThihaNeural";
+          }
         }
         const voiceVal = savedVoices[i] || autoDetectedVoice;
 
@@ -1126,17 +1133,24 @@ INPUTS:
 
     // Auto Classify Voices Button Function
     function autoClassifyVoices() {
+      const isAutoDiarize = document.getElementById('autoClassifyVoiceCheck')?.checked ?? true;
+      const defaultVoice = document.getElementById('voiceSelect').value;
       const selects = document.querySelectorAll('.sub-voice-select');
+
       selects.forEach((sel, idx) => {
         const seg = currentSegments[idx];
-        if (seg && seg.speaker === 'B') {
-          sel.value = "my-MM-NilarNeural";
+        if (isAutoDiarize && seg) {
+          if (seg.speaker === 'B') {
+            sel.value = "my-MM-NilarNeural";
+          } else {
+            sel.value = "my-MM-ThihaNeural";
+          }
         } else {
-          sel.value = "my-MM-ThihaNeural";
+          sel.value = defaultVoice;
         }
       });
       triggerAutoSave();
-      showToast("အသံ Speaker အလိုက် ဇာတ်ကောင်ခွဲခြား သတ်မှတ်ပြီးပါပြီ!");
+      showToast(isAutoDiarize ? "အသံ Speaker အလိုက် ဇာတ်ကောင်ခွဲခြား သတ်မှတ်ပြီးပါပြီ!" : "Default Voice အတိုင်း ပြန်လည်သတ်မှတ်ပြီးပါပြီ!");
     }
 
     async function previewAudioSync(startTimeSec, encodedText, btnEl) {
@@ -1348,6 +1362,26 @@ INPUTS:
       return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
     }
 
+    function hexToAssColor(hex, opacity = 1.0) {
+      hex = hex.replace("#", "");
+      if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+      const r = hex.substring(0, 2);
+      const g = hex.substring(2, 4);
+      const b = hex.substring(4, 6);
+      const a = Math.round((1 - opacity) * 255).toString(16).padStart(2, "0");
+      return `&H${a}${b}${g}${r}&`.toUpperCase();
+    }
+
+    function msToAssTime(ms) {
+      const h = Math.floor(ms / 3600000);
+      ms %= 3600000;
+      const m = Math.floor(ms / 60000);
+      ms %= 60000;
+      const s = Math.floor(ms / 1000);
+      const cs = Math.floor((ms % 1000) / 10);
+      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+    }
+
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const voiceSelects = document.querySelectorAll('.sub-voice-select');
@@ -1404,16 +1438,46 @@ INPUTS:
         }
 
         let srtLines = [];
+        let assEvents = [];
         let curMs = isHighlightEnabled ? 4000 : 0;
         for (let i = 0; i < ttsData.audios.length; i++) {
           const seg = currentSegments[i];
           const durMs = ttsData.audios[i].duration_ms;
-          const sTime = msToSrt(seg ? (seg.start + (highlightOffsetSec * 1000)) : curMs);
-          const eTime = msToSrt(seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs));
-          curMs = seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs);
+          const sMs = seg ? (seg.start + (highlightOffsetSec * 1000)) : curMs;
+          const eMs = seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs);
+          curMs = eMs;
+
+          const sTime = msToSrt(sMs);
+          const eTime = msToSrt(eMs);
           srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
+
+          const aStart = msToAssTime(sMs);
+          const aEnd = msToAssTime(eMs);
+          assEvents.push(`Dialogue: 0,${aStart},${aEnd},Default,,0,0,0,,${translations[i]}`);
         }
         srtContent = srtLines.join("\n");
+
+        // Hardsub ASS Subtitle Construction
+        const fSize = document.getElementById('subFontSize').value || 24;
+        const fColor = hexToAssColor(document.getElementById('subFontColor').value || '#ffffff');
+        const bColor = hexToAssColor(document.getElementById('subBorderColor').value || '#000000');
+        const bWidth = document.getElementById('subBorderWidth').value || 2;
+        const bMargin = Math.round((parseInt(document.getElementById('subBottomPos').value || 10) / 100) * 720);
+
+        const assContent = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1280
+PlayResY: 720
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Pyidaungsu,${fSize},${fColor},&H000000FF&,${bColor},&H00000000&,-1,0,0,0,100,100,0,0,1,${bWidth},1,2,20,20,${bMargin},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+${assEvents.join("\n")}
+`;
+        ffmpeg.FS('writeFile', 'subtitles.ass', new TextEncoder().encode(assContent));
 
         updateGauge(50, isTurboFast ? "⚡ Turbo Fast Mode ဖြင့် Render ပြုလုပ်နေပါသည်..." : "ဗီဒီယို Render လုပ်နေပါသည်...");
 
@@ -1428,13 +1492,13 @@ INPUTS:
         let filterParts = [];
         let curV = "0:v";
 
-        // 4.0s Highlight Hook Clip
+        // 1. 4.0s Highlight Hook Clip
         if (isHighlightEnabled) {
           filterParts.push(`[0:v]trim=start=20:end=24,setpts=PTS-STARTPTS[hookv];[0:v]setpts=PTS-STARTPTS[bodyv];[hookv][bodyv]concat=n=2:v=1:a=0[vhooked]`);
           curV = "vhooked";
         }
 
-        // Dynamic Video Auto-Speed
+        // 2. Dynamic Video Auto-Speed
         if (isAutoSpeedEnabled && currentSegments.length > 0) {
           let hasGaps = false;
           for (let i = 0; i < currentSegments.length - 1; i++) {
@@ -1449,13 +1513,13 @@ INPUTS:
           }
         }
 
-        // Blur Subtitle
+        // 3. Blur Subtitle
         if (blurSub) {
           filterParts.push(`[${curV}]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[vblur]`);
           curV = "vblur";
         }
 
-        // 9:16 TikTok / Reels
+        // 4. 9:16 TikTok / Reels
         if (isReelsEnabled) {
           const reelsW = isTurboFast ? 720 : 1080;
           const reelsH = isTurboFast ? 1280 : 1920;
@@ -1466,12 +1530,18 @@ INPUTS:
           curV = "vturboscale";
         }
 
-        // Watermark Logo
+        // 5. Watermark Logo
         let inputFiles = ['-i', 'input_orig.mp4', '-i', 'dub_master.wav'];
         if (hasWatermark) {
           inputFiles.push('-i', 'watermark.png');
           const wmInputIdx = 2;
-          filterParts.push(`[${wmInputIdx}:v]scale=120:-1,format=rgba,colorchannelmixer=aa=${wmOpacity}[wmscl];[${curV}][wmscl]overlay=${wmOverlayCoord}[vfinal]`);
+          filterParts.push(`[${wmInputIdx}:v]scale=120:-1,format=rgba,colorchannelmixer=aa=${wmOpacity}[wmscl];[${curV}][wmscl]overlay=${wmOverlayCoord}[vwm]`);
+          curV = "vwm";
+        }
+
+        // 6. Hardsub Burn-in
+        if (isSubEnabled) {
+          filterParts.push(`[${curV}]ass=subtitles.ass[vfinal]`);
           curV = "vfinal";
         }
 
@@ -1493,18 +1563,6 @@ INPUTS:
         const player = document.getElementById('videoPlayer');
         player.innerHTML = "";
         player.src = videoUrl;
-
-        if (isSubEnabled) {
-          const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
-          const track = document.createElement('track');
-          track.kind = 'subtitles';
-          track.label = 'Burmese';
-          track.srclang = 'my';
-          track.src = URL.createObjectURL(vttBlob);
-          track.default = true;
-          player.appendChild(track);
-          if (player.textTracks && player.textTracks[0]) player.textTracks[0].mode = "showing";
-        }
 
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
