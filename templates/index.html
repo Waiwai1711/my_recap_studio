@@ -9,8 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-  <!-- Stable FFmpeg WASM v0.11.6 -->
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
   <style>
@@ -149,7 +147,6 @@
     .toast { background: #14161f; border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 10px; font-size: 12px; color: #f4f4f5; pointer-events: auto; }
     .hidden { display: none !important; }
   </style>
-
   <style id="cueStyleTag"></style>
 </head>
 
@@ -306,7 +303,7 @@
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Direct Gemini AI Auto-Translate (Premium Only) -->
+    <!-- STEP 2: Source Subtitles & Direct Gemini AI Auto-Translate -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -423,7 +420,7 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling Controls with 8px Min Font Size & Real Video Canvas Preview -->
+      <!-- Subtitle Styling Controls with 8px Min Font Size -->
       <div id="subStylingSection" style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
@@ -436,7 +433,6 @@
               <label>Font Size (8px အထိ လျှော့နိုင်သည်)</label>
               <span id="fontSizeDisplay" style="font-size: 11px; color: #38bdf8; font-weight: bold; font-family: 'JetBrains Mono', monospace;">24px</span>
             </div>
-            <!-- min="8" အထိ လျှော့ချထားခြင်း -->
             <input type="range" id="subFontSize" min="8" max="55" value="24" style="width: 100%; accent-color: #38bdf8; cursor: pointer; margin-top: 8px;">
           </div>
         </div>
@@ -463,7 +459,7 @@
           </div>
         </div>
 
-        <!-- REAL VIDEO FRAME SUBTITLE PREVIEW BOX (9:16 DYNAMIC TOGGLE SUPPORT) -->
+        <!-- REAL VIDEO FRAME SUBTITLE PREVIEW BOX (9:16 DYNAMIC PREVIEW) -->
         <div class="form-group" style="margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label style="color: #38bdf8; font-weight: 600;">
@@ -472,13 +468,9 @@
             <span style="font-size: 10px; color: #71717a;">✏️ Click text to edit</span>
           </div>
 
-          <!-- Outer Stage for 9:16 / 16:9 Adaptability -->
           <div id="previewOuterStage" style="background: #090a0f; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 12px; display: flex; justify-content: center; align-items: center; min-height: 240px;">
             <div id="subPreviewBox" style="background: #000; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; width: 100%; max-width: 480px; height: 200px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
-              <!-- 9:16 Blur Background Layer -->
               <video id="previewBgVideoBlur" muted loop playsinline class="hidden" style="position: absolute; width: 100%; height: 100%; object-fit: cover; filter: blur(16px); opacity: 0.55; transform: scale(1.15); pointer-events: none;"></video>
-              
-              <!-- Main Sharp Video Layer -->
               <video id="previewBgVideo" muted loop playsinline style="position: absolute; width: 100%; height: 100%; object-fit: contain; opacity: 0.75; pointer-events: none; z-index: 2;"></video>
               
               <p id="subPreviewText" contenteditable="true" spellcheck="false" style="position: absolute; bottom: 10%; width: 90%; font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; margin: 0; outline: none; cursor: text; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.4; z-index: 10;">
@@ -497,13 +489,12 @@
         </label>
         <label class="toggle-item" style="color: #38bdf8; font-weight: 600;">
           <input type="checkbox" id="enableSubCheck" checked onchange="toggleSubSection()">
-          <span>💬 မြန်မာစာတန်းထိုး ဗီဒီယိုပေါ် အပြီးရိုက်ထည့်မည် (Hardsub Burn-in)</span>
+          <span>💬 မြန်မာစာတန်းထိုး ထည့်သွင်းမည် (Subtitles)</span>
         </label>
         <label class="toggle-item" style="color: #a78bfa; font-weight: 600;">
           <input type="checkbox" id="enableDuckingCheck" checked>
           <span>🎵 BGM Auto-Ducking (စကားပြောချိန် BGM အသံ အလိုအလျောက် တိုးမည်)</span>
         </label>
-        <!-- 9:16 LIVE PREVIEW TOGGLE -->
         <label class="toggle-item" style="color: #f43f5e; font-weight: 600;">
           <input type="checkbox" id="enableReelsCheck" onchange="updateAspectPreview()">
           <span>📱 TikTok / Reels 9:16 ဒေါင်လိုက် ပြောင်းလဲမည် (Auto-Blur Fill)</span>
@@ -519,7 +510,7 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Hybrid Auto-Classify (Sound + Endings) -->
+    <!-- STEP 4: Live Subtitle Editor with Auto-Classify (Endings + Diarization) -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -542,7 +533,7 @@
       </div>
     </div>
 
-    <!-- STEP 5: FINAL EXPORT, SPLITTER & THUMBNAIL (အသုံးပြုသူလိုလားသော ခလုတ် ၃ ခု တိကျစွာ စီစဉ်ထားသော UI) -->
+    <!-- STEP 5: FINAL EXPORT, SPLITTER & AI AUTO-THUMBNAIL -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -555,52 +546,49 @@
         
         <video id="videoPlayer" controls style="max-height: 480px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 14px;"></video>
         
-        <!-- ★ အသုံးပြုသူ တောင်းဆိုထားသော ခလုတ် ၃ ခု တိကျစွာ စီစဉ်ပေးထားခြင်း ★ -->
+        <!-- Action Buttons -->
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 16px;">
-          <!-- 1. Download Full Video (အပြာရောင်ခလုတ်) -->
           <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
             <i class="ph-bold ph-download-simple"></i> 📥 Download Full Video
           </a>
 
-          <!-- 2. Split into Part 1 & Part 2 (ခရမ်းရောင်ခလုတ်) -->
           <button id="btnCliffhangerSplit" onclick="splitCliffhangerHalf()" class="btn btn-purple" style="width: auto;">
             <i class="ph-bold ph-scissors"></i> ✂️ Split into Part 1 & Part 2
           </button>
 
-          <!-- 3. Download Thumbnail (ရွှေဝါရောင်ခလုတ်) -->
-          <button onclick="toggleThumbnailPanel()" class="btn btn-amber" style="width: auto;">
-            <i class="ph-bold ph-camera"></i> 📸 Download Thumbnail
+          <button onclick="generateAutoAIThumbnail()" class="btn btn-amber" style="width: auto;">
+            <i class="ph-bold ph-sparkle"></i> 📸 AI Auto Thumbnail ဖန်တီးမည်
           </button>
         </div>
 
         <div id="splitLinksContainer" style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;"></div>
 
-        <!-- THUMBNAIL PANEL -->
+        <!-- AI AUTO-THUMBNAIL PANEL -->
         <div id="thumbnailSection" class="hidden" style="background: rgba(11,12,16,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; text-align: left;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
             <h4 style="font-size: 12px; color: #fbbf24; display: flex; align-items: center; gap: 6px;">
-              <i class="ph-bold ph-image-square"></i> Recap Thumbnail / Cover Generator (မျက်နှာဖုံးပုံ ထုတ်ယူရန်)
+              <i class="ph-bold ph-image-square"></i> Recap Thumbnail / Cover Preview
             </h4>
-            <span style="font-size: 10px; color: #a1a1aa;">Capture best frame</span>
+            <span style="font-size: 10px; color: #10b981; font-family:'JetBrains Mono';">✓ AI Frame Auto-Selected</span>
           </div>
 
           <div class="grid-2" style="margin-bottom: 8px;">
             <div class="form-group">
-              <label>Cover ပေါ်တွင် ရေးမည့် စာသားခေါင်းစဉ်</label>
-              <input type="text" id="thumbTitleInput" class="glass-input" value="အံ့ဩဖွယ် ဇာတ်သိမ်းခန်း">
+              <label>Cover ပေါ်တွင် ရေးမည့် ခေါင်းစဉ် (AI Auto-Filled / Edit ရသည်)</label>
+              <input type="text" id="thumbTitleInput" class="glass-input" value="အံ့ဩဖွယ် ဇာတ်သိမ်းခန်း" oninput="drawThumbnailCanvas()">
             </div>
             <div class="form-group">
-              <label>Frame ရွေးချယ်ရန် (Video Seek)</label>
-              <input type="range" id="thumbFrameSlider" min="0" max="100" value="25" style="accent-color:#fbbf24; margin-top:8px;" oninput="updateThumbnailPreview()">
+              <label>Frame ရွေးချယ်ရန် (Video Seek Slider)</label>
+              <input type="range" id="thumbFrameSlider" min="0" max="100" value="35" style="accent-color:#fbbf24; margin-top:8px;" oninput="onFrameSliderChange()">
             </div>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-            <button onclick="downloadThumbnailImage()" class="btn btn-amber" style="padding: 8px 14px; font-size: 11px;">
-              <i class="ph-bold ph-download-simple"></i> 📥 Save Thumbnail Image (PNG)
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px;">
+            <canvas id="thumbCanvas" style="max-height: 220px; width: auto; max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);"></canvas>
+            <button onclick="downloadThumbnailImage()" class="btn btn-amber" style="padding: 8px 16px; font-size: 12px; width: auto;">
+              <i class="ph-bold ph-download-simple"></i> 📥 Download Thumbnail Image (PNG)
             </button>
           </div>
-          <canvas id="thumbCanvas" style="display: none;"></canvas>
         </div>
 
       </div>
@@ -621,7 +609,7 @@
     let currentPreviewAudio = null;
     let isUserPremium = false;
 
-    // ===== FONT & STYLING PERSISTENCE (INDEXEDDB & LOCALSTORAGE) =====
+    // FONT & STYLING PERSISTENCE (INDEXEDDB & LOCALSTORAGE)
     const DB_NAME = "RecapStudioDB";
     const STORE_NAME = "fonts";
 
@@ -782,7 +770,6 @@
       }
     }
 
-    // 9:16 DYNAMIC PREVIEW TOGGLE FUNCTION
     function updateAspectPreview() {
       const isReels = document.getElementById('enableReelsCheck').checked;
       const box = document.getElementById('subPreviewBox');
@@ -790,11 +777,11 @@
 
       if (isReels) {
         box.style.maxWidth = "200px";
-        box.style.height = "355px"; // 9:16 vertical ratio
+        box.style.height = "355px";
         if (blurBg) blurBg.classList.remove('hidden');
       } else {
         box.style.maxWidth = "480px";
-        box.style.height = "200px"; // 16:9 standard landscape
+        box.style.height = "200px";
         if (blurBg) blurBg.classList.add('hidden');
       }
     }
@@ -926,7 +913,6 @@
       }
     }
 
-    // Voice Clone Upload Function
     async function uploadVoiceClone() {
       const name = document.getElementById('cloneNameInput').value.trim();
       const file = document.getElementById('cloneAudioInput').files[0];
@@ -1067,7 +1053,6 @@
       }
     }
 
-    // ONE-CLICK DIRECT GEMINI TRANSLATION (PREMIUM ONLY)
     async function directGeminiTranslate() {
       if (!currentSegments.length) return showToast("စာကြောင်းများ Transcribe အရင်လုပ်ပေးပါ!");
       
@@ -1130,15 +1115,11 @@ INPUTS:
       }
     }
 
-    // ★ ပိုမိုတိကျသော HYBRID VOICE CLASSIFIER (စကားဆုံးသံ + အသံလှိုင်း စစ်ဆေးမှု) ★
     function detectVoiceHybrid(seg, text, defaultVoice) {
       if (!seg) return defaultVoice;
 
       const trimmed = text.trim();
-
-      // စာကြောင်းအဆုံးတွင် ရှင်/ရှင့်/ပါရှင် ဖြင့် ဆုံးမှသာ မိန်းကလေးအသံ သတ်မှတ်ခြင်း
       const femaleEndingRegex = /(ရှင်|ရှင့်|ပါရှင်|ပါရှင့်)[!?,.\s]*$/;
-      // စာကြောင်းအဆုံးတွင် ဗျ/ဗျာ/ခင်ဗျ/ခင်ဗျာ ဖြင့် ဆုံးမှသာ ယောက်ျားလေးအသံ သတ်မှတ်ခြင်း
       const maleEndingRegex = /(ဗျ|ဗျာ|ခင်ဗျ|ခင်ဗျာ|ပါဗျ|ပါဗျာ)[!?,.\s]*$/;
 
       if (femaleEndingRegex.test(trimmed)) {
@@ -1148,7 +1129,6 @@ INPUTS:
         return "my-MM-ThihaNeural";
       }
 
-      // စကားဆုံးသံ မပါပါက AssemblyAI မူရင်းအသံလှိုင်း (Speaker Diarization) အတိုင်းသာ တိုက်ရိုက်ခွဲခြားခြင်း
       if (seg.speaker === 'B') {
         return "my-MM-NilarNeural";
       } else if (seg.speaker === 'A') {
@@ -1188,7 +1168,6 @@ INPUTS:
       });
     }
 
-    // Auto Classify Voices Button Function
     function autoClassifyVoices() {
       const isAutoDiarize = document.getElementById('autoClassifyVoiceCheck')?.checked ?? true;
       const defaultVoice = document.getElementById('voiceSelect').value;
@@ -1417,26 +1396,6 @@ INPUTS:
       return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
     }
 
-    function hexToAssColor(hex, opacity = 1.0) {
-      hex = hex.replace("#", "");
-      if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
-      const r = hex.substring(0, 2);
-      const g = hex.substring(2, 4);
-      const b = hex.substring(4, 6);
-      const a = Math.round((1 - opacity) * 255).toString(16).padStart(2, "0");
-      return `&H${a}${b}${g}${r}&`.toUpperCase();
-    }
-
-    function msToAssTime(ms) {
-      const h = Math.floor(ms / 3600000);
-      ms %= 3600000;
-      const m = Math.floor(ms / 60000);
-      ms %= 60000;
-      const s = Math.floor(ms / 1000);
-      const cs = Math.floor((ms % 1000) / 10);
-      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
-    }
-
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const voiceSelects = document.querySelectorAll('.sub-voice-select');
@@ -1450,7 +1409,6 @@ INPUTS:
       const isReelsEnabled = document.getElementById('enableReelsCheck').checked;
       const isAutoSpeedEnabled = document.getElementById('autoSpeedCheck').checked;
       const isHighlightEnabled = document.getElementById('enableHighlightCheck').checked;
-      const isOutroEnabled = document.getElementById('enableOutroCheck').checked;
       const isTurboFast = document.getElementById('turboFastCheck').checked;
 
       showProgress("TTS အသံထုတ်ယူနေပါသည်", "ဇာတ်ကောင်အလိုက် Multi-Speaker အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
@@ -1493,7 +1451,6 @@ INPUTS:
         }
 
         let srtLines = [];
-        let assEvents = [];
         let curMs = isHighlightEnabled ? 4000 : 0;
         for (let i = 0; i < ttsData.audios.length; i++) {
           const seg = currentSegments[i];
@@ -1502,37 +1459,9 @@ INPUTS:
           const eMs = seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs);
           curMs = eMs;
 
-          const sTime = msToSrt(sMs);
-          const eTime = msToSrt(eMs);
-          srtLines.push(`${i+1}\n${sTime} --> ${eTime}\n${translations[i]}\n`);
-
-          const aStart = msToAssTime(sMs);
-          const aEnd = msToAssTime(eMs);
-          assEvents.push(`Dialogue: 0,${aStart},${aEnd},Default,,0,0,0,,${translations[i]}`);
+          srtLines.push(`${i+1}\n${msToSrt(sMs)} --> ${msToSrt(eMs)}\n${translations[i]}\n`);
         }
         srtContent = srtLines.join("\n");
-
-        // Hardsub ASS Subtitle Construction
-        const fSize = document.getElementById('subFontSize').value || 24;
-        const fColor = hexToAssColor(document.getElementById('subFontColor').value || '#ffffff');
-        const bColor = hexToAssColor(document.getElementById('subBorderColor').value || '#000000');
-        const bWidth = document.getElementById('subBorderWidth').value || 2;
-        const bMargin = Math.round((parseInt(document.getElementById('subBottomPos').value || 10) / 100) * 720);
-
-        const assContent = `[Script Info]
-ScriptType: v4.00+
-PlayResX: 1280
-PlayResY: 720
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Pyidaungsu,${fSize},${fColor},&H000000FF&,${bColor},&H00000000&,-1,0,0,0,100,100,0,0,1,${bWidth},1,2,20,20,${bMargin},1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-${assEvents.join("\n")}
-`;
-        ffmpeg.FS('writeFile', 'subtitles.ass', new TextEncoder().encode(assContent));
 
         updateGauge(50, isTurboFast ? "⚡ Turbo Fast Mode ဖြင့် Render ပြုလုပ်နေပါသည်..." : "ဗီဒီယို Render လုပ်နေပါသည်...");
 
@@ -1547,13 +1476,13 @@ ${assEvents.join("\n")}
         let filterParts = [];
         let curV = "0:v";
 
-        // 1. 4.0s Highlight Hook Clip
+        // 1. Hook
         if (isHighlightEnabled) {
           filterParts.push(`[0:v]trim=start=20:end=24,setpts=PTS-STARTPTS[hookv];[0:v]setpts=PTS-STARTPTS[bodyv];[hookv][bodyv]concat=n=2:v=1:a=0[vhooked]`);
           curV = "vhooked";
         }
 
-        // 2. Dynamic Video Auto-Speed
+        // 2. Speed
         if (isAutoSpeedEnabled && currentSegments.length > 0) {
           let hasGaps = false;
           for (let i = 0; i < currentSegments.length - 1; i++) {
@@ -1568,13 +1497,13 @@ ${assEvents.join("\n")}
           }
         }
 
-        // 3. Blur Subtitle
+        // 3. Blur
         if (blurSub) {
           filterParts.push(`[${curV}]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[vblur]`);
           curV = "vblur";
         }
 
-        // 4. 9:16 TikTok / Reels
+        // 4. 9:16 Reels
         if (isReelsEnabled) {
           const reelsW = isTurboFast ? 720 : 1080;
           const reelsH = isTurboFast ? 1280 : 1920;
@@ -1585,18 +1514,12 @@ ${assEvents.join("\n")}
           curV = "vturboscale";
         }
 
-        // 5. Watermark Logo
+        // 5. Watermark
         let inputFiles = ['-i', 'input_orig.mp4', '-i', 'dub_master.wav'];
         if (hasWatermark) {
           inputFiles.push('-i', 'watermark.png');
           const wmInputIdx = 2;
-          filterParts.push(`[${wmInputIdx}:v]scale=120:-1,format=rgba,colorchannelmixer=aa=${wmOpacity}[wmscl];[${curV}][wmscl]overlay=${wmOverlayCoord}[vwm]`);
-          curV = "vwm";
-        }
-
-        // 6. Hardsub Burn-in
-        if (isSubEnabled) {
-          filterParts.push(`[${curV}]ass=subtitles.ass[vfinal]`);
+          filterParts.push(`[${wmInputIdx}:v]scale=120:-1,format=rgba,colorchannelmixer=aa=${wmOpacity}[wmscl];[${curV}][wmscl]overlay=${wmOverlayCoord}[vfinal]`);
           curV = "vfinal";
         }
 
@@ -1619,6 +1542,23 @@ ${assEvents.join("\n")}
         player.innerHTML = "";
         player.src = videoUrl;
 
+        // Subtitles via WebVTT Native Track
+        if (isSubEnabled) {
+          const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
+          const track = document.createElement('track');
+          track.kind = 'subtitles';
+          track.label = 'Burmese';
+          track.srclang = 'my';
+          track.src = URL.createObjectURL(vttBlob);
+          track.default = true;
+          player.appendChild(track);
+          player.onloadedmetadata = () => {
+            if (player.textTracks && player.textTracks[0]) {
+              player.textTracks[0].mode = "showing";
+            }
+          };
+        }
+
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
 
@@ -1630,13 +1570,18 @@ ${assEvents.join("\n")}
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
         hideProgress();
         showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!");
+
+        // AI Auto Thumbnail Generation Trigger
+        player.onloadeddata = () => {
+          generateAutoAIThumbnail();
+        };
       } catch (err) {
         hideProgress();
-        showToast("Export မအောင်မြင်ပါ: " + err.message + " (Credits မနုတ်ပါခင်ဗျာ)");
+        showToast("Export မအောင်မြင်ပါ: " + err.message);
       }
     }
 
-    // CLIFFHANGER HALF SPLITTER (5 MIN+)
+    // CLIFFHANGER HALF SPLITTER
     async function splitCliffhangerHalf() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.duration) return showToast("ဗီဒီယို အရင် Render လုပ်ပါ!");
@@ -1669,25 +1614,54 @@ ${assEvents.join("\n")}
       }
     }
 
-    // THUMBNAIL LOGIC
-    function toggleThumbnailPanel() {
-      const panel = document.getElementById('thumbnailSection');
-      panel.classList.toggle('hidden');
+    // ★ AI AUTO-THUMBNAIL ENGINE ★
+    function generateAutoAIThumbnail() {
+      const player = document.getElementById('videoPlayer');
+      if (!player || !player.src) return;
+
+      document.getElementById('thumbnailSection').classList.remove('hidden');
+
+      // AI Catchy Title Generator
+      const inputs = document.querySelectorAll('.sub-input');
+      const sampleLines = Array.from(inputs).map(i => i.value).filter(t => t.trim().length > 3);
+      
+      let aiTitle = "အံ့ဩဖွယ် ဇာတ်သိမ်းခန်း";
+      if (sampleLines.length > 0) {
+        const punchy = sampleLines.find(l => l.includes("ဘာ") || l.includes("ဘယ်သူ") || l.includes("သတ်") || l.includes("ဖြစ်"));
+        aiTitle = punchy ? punchy.substring(0, 22) : sampleLines[Math.floor(sampleLines.length / 3)].substring(0, 22);
+      }
+      document.getElementById('thumbTitleInput').value = aiTitle;
+
+      // AI Climax Frame Selection (ဗီဒီယို ကြာချိန်၏ ၃၅% ~ ၄၀% အခန်း)
+      const seekRatio = 0.35;
+      document.getElementById('thumbFrameSlider').value = Math.round(seekRatio * 100);
+
+      const targetTime = (player.duration || 10) * seekRatio;
+      player.currentTime = targetTime;
+
+      player.addEventListener('seeked', function onSeekedOnce() {
+        drawThumbnailCanvas();
+        player.removeEventListener('seeked', onSeekedOnce);
+      });
     }
 
-    function updateThumbnailPreview() {
+    function onFrameSliderChange() {
       const player = document.getElementById('videoPlayer');
       const slider = document.getElementById('thumbFrameSlider');
       if (player && player.duration) {
         player.currentTime = (slider.value / 100) * player.duration;
+        player.addEventListener('seeked', function onSliderSeeked() {
+          drawThumbnailCanvas();
+          player.removeEventListener('seeked', onSliderSeeked);
+        });
       }
     }
 
-    function downloadThumbnailImage() {
+    function drawThumbnailCanvas() {
       const player = document.getElementById('videoPlayer');
-      if (!player || !player.videoWidth) return showToast("ဗီဒီယို မရှိသေးပါ!");
-
       const canvas = document.getElementById('thumbCanvas');
+      if (!player || !player.videoWidth) return;
+
       canvas.width = player.videoWidth;
       canvas.height = player.videoHeight;
       const ctx = canvas.getContext('2d');
@@ -1696,32 +1670,36 @@ ${assEvents.join("\n")}
 
       const titleText = document.getElementById('thumbTitleInput').value.trim();
       if (titleText) {
-        const fontSize = Math.max(36, Math.floor(canvas.width / 16));
+        const fontSize = Math.max(34, Math.floor(canvas.width / 16));
         ctx.font = `bold ${fontSize}px 'CustomUserFont', 'Pyidaungsu', sans-serif`;
         ctx.textAlign = "center";
 
         const gradHeight = fontSize * 2.2;
-        const gradY = canvas.height * 0.15;
+        const gradY = canvas.height * 0.12;
         const grad = ctx.createLinearGradient(0, gradY, 0, gradY + gradHeight);
         grad.addColorStop(0, "rgba(0,0,0,0.85)");
-        grad.addColorStop(1, "rgba(0,0,0,0.4)");
+        grad.addColorStop(1, "rgba(0,0,0,0.45)");
         ctx.fillStyle = grad;
         ctx.fillRect(0, gradY, canvas.width, gradHeight);
 
-        ctx.lineWidth = Math.max(4, Math.floor(fontSize / 8));
+        ctx.lineWidth = Math.max(4, Math.floor(fontSize / 7));
         ctx.strokeStyle = "#000000";
         ctx.strokeText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
 
         ctx.fillStyle = "#facc15";
         ctx.fillText(titleText, canvas.width / 2, gradY + fontSize * 1.4);
       }
+    }
 
+    function downloadThumbnailImage() {
+      drawThumbnailCanvas();
+      const canvas = document.getElementById('thumbCanvas');
       const imgUrl = canvas.toDataURL("image/png");
       const a = document.createElement('a');
       a.href = imgUrl;
-      a.download = "recap_cover_thumbnail.png";
+      a.download = "recap_ai_cover.png";
       a.click();
-      showToast("Thumbnail အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!");
+      showToast("AI Cover Thumbnail အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!");
     }
 
     function msToSrt(ms) {
@@ -1732,26 +1710,6 @@ ${assEvents.join("\n")}
       const s = Math.floor(ms / 1000);
       const mil = ms % 1000;
       return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(mil).padStart(3,'0')}`;
-    }
-
-    function downloadSRT() {
-      if (!srtContent) return showToast("စာတန်းထိုး မရှိသေးပါ!");
-      const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = "recap_subtitles.srt";
-      a.click();
-    }
-
-    function downloadScriptTXT() {
-      const inputs = document.querySelectorAll('.sub-input');
-      const lines = Array.from(inputs).map(i => i.value).filter(t => t.trim() !== "");
-      if (!lines.length) return showToast("ဘာသာပြန် စာသား မရှိသေးပါ!");
-      const blob = new Blob([lines.join("\n\n")], { type: 'text/plain;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = "recap_voice_script.txt";
-      a.click();
     }
   </script>
 </body>
