@@ -6,7 +6,7 @@
   <title>Recap Studio Pro</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Pyidaungsu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
@@ -101,7 +101,7 @@
       justify-content: center; gap: 8px; text-decoration: none; transition: all 0.2s;
     }
     .btn-blue { background: linear-gradient(135deg, #2563eb, #0284c7); color: #fff; width: 100%; }
-    .btn-purple { background: #9333ea; color: #fff; width: 100%; margin-top: 12px; }
+    .btn-purple { background: #9333ea; color: #fff; width: 100%; }
     .btn-green {
       background: linear-gradient(135deg, #059669, #0d9488);
       color: #fff; width: 100%; padding: 16px; font-size: 14px;
@@ -315,7 +315,6 @@
         </div>
         
         <div style="display: flex; gap: 6px;">
-          <!-- ONE-CLICK GEMINI AUTO TRANSLATE (PREMIUM FEATURE) -->
           <button onclick="directGeminiTranslate()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
             <i class="ph-bold ph-sparkle"></i> ✨ Auto Translate with Gemini (💎 Premium)
           </button>
@@ -337,7 +336,7 @@
       </button>
     </div>
 
-    <!-- STEP 3: Voice, Watermark, Real Video Subtitle Preview Settings -->
+    <!-- STEP 3: Voice, Logo, Styling & Real Video Preview -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -366,6 +365,16 @@
           <label>BGM Max Vol (%)</label>
           <input type="number" id="bgmVolInput" value="25" min="0" max="100" class="glass-input" style="text-align: center;">
         </div>
+      </div>
+
+      <!-- Voice Clone Section -->
+      <div style="background: rgba(147, 51, 234, 0.1); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 14px;">
+        <p style="font-size: 12px; color: #c084fc; font-weight: bold; margin-bottom: 4px;">🎙️ Custom Voice Clone (ကိုယ်ပိုင်အသံနမူနာ တင်ရန်)</p>
+        <div class="grid-2">
+          <input type="text" id="cloneNameInput" placeholder="Voice အမည် (ဥပမာ- ကိုယ်ပိုင်အသံ)" class="glass-input">
+          <input type="file" id="cloneAudioInput" accept="audio/*" class="glass-input" style="padding:6px;">
+        </div>
+        <button onclick="uploadVoiceClone()" class="btn btn-purple" style="margin-top:8px; font-size:11px; padding:6px 12px; width:auto;">Save Voice Clone</button>
       </div>
 
       <!-- Highlight Hook Clip & Outro Card Features -->
@@ -453,7 +462,7 @@
           </div>
         </div>
 
-        <!-- ★ REAL VIDEO FRAME SUBTITLE PREVIEW BOX ★ -->
+        <!-- REAL VIDEO FRAME SUBTITLE PREVIEW BOX -->
         <div class="form-group" style="margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label style="color: #38bdf8; font-weight: 600;">
@@ -501,21 +510,26 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Multi-Speaker Support -->
+    <!-- STEP 4: Live Subtitle Editor with Auto-Classify Button -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">4</span>
           <h2>LIVE SUBTITLE & MULTI-SPEAKER EDITOR</h2>
         </div>
-        <span id="autoSaveStatus" style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">✓ Auto-saved</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button onclick="autoClassifyVoices()" class="btn btn-ghost" style="font-size: 11px;">
+            <i class="ph-bold ph-magic-wand"></i> 🎙️ Auto-Classify Voices
+          </button>
+          <span id="autoSaveStatus" style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">✓ Auto-saved</span>
+        </div>
       </div>
       <div id="linesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
         <div style="text-align: center; padding: 20px; color: #71717a; font-size: 12px;">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
       </div>
     </div>
 
-    <!-- STEP 5: Final Export, Thumbnail & TikTok 1-Min Parts Splitter -->
+    <!-- STEP 5: FINAL EXPORT, SPLITTER & THUMBNAIL (အသုံးပြုသူလိုလားသော ခလုတ် ၃ ခု တိကျစွာ စီစဉ်ထားသော UI) -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -526,28 +540,30 @@
           <i class="ph-fill ph-check-circle" style="font-size: 18px;"></i> ဗီဒီယို ဖန်တီးမှု အောင်မြင်စွာ ပြီးဆုံးပါပြီ!
         </div>
         
-        <video id="videoPlayer" controls style="max-height: 480px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;"></video>
+        <video id="videoPlayer" controls style="max-height: 480px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 14px;"></video>
         
-        <!-- Action Buttons -->
+        <!-- ★ အသုံးပြုသူ တောင်းဆိုထားသော ခလုတ် ၃ ခု တိကျစွာ စီစဉ်ပေးထားခြင်း ★ -->
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 16px;">
+          <!-- 1. Download Full Video (အပြာရောင်ခလုတ်) -->
           <a id="downloadBtn" download="recap_video.mp4" class="btn btn-blue" style="width: auto;">
-            <i class="ph-bold ph-download-simple"></i> Download Full Video
+            <i class="ph-bold ph-download-simple"></i> 📥 Download Full Video
           </a>
-          <button id="btnSplitParts" onclick="splitVideoIntoParts()" class="btn btn-purple" style="width: auto; margin-top:0;">
-            <i class="ph-bold ph-scissors"></i> TikTok 1-Min Parts ပိုင်းထုတ်မည်
+
+          <!-- 2. Split into Part 1 & Part 2 (ခရမ်းရောင်ခလုတ်) -->
+          <button id="btnCliffhangerSplit" onclick="splitCliffhangerHalf()" class="btn btn-purple" style="width: auto;">
+            <i class="ph-bold ph-scissors"></i> ✂️ Split into Part 1 & Part 2
           </button>
-          <button id="btnDownloadSRT" onclick="downloadSRT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px;">
-            <i class="ph-bold ph-subtitles"></i> Download .SRT
-          </button>
-          <button onclick="downloadScriptTXT()" class="btn btn-ghost" style="padding: 10px 14px; font-size: 12px; color: #fbbf24;">
-            <i class="ph-bold ph-file-text"></i> Download Script (.TXT)
+
+          <!-- 3. Download Thumbnail (ရွှေဝါရောင်ခလုတ်) -->
+          <button onclick="toggleThumbnailPanel()" class="btn btn-amber" style="width: auto;">
+            <i class="ph-bold ph-camera"></i> 📸 Download Thumbnail
           </button>
         </div>
 
-        <div id="splitPartsContainer" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px;"></div>
+        <div id="splitLinksContainer" style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;"></div>
 
-        <!-- ★ COVER / THUMBNAIL AUTO-GENERATOR SECTION ★ -->
-        <div style="background: rgba(11,12,16,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; text-align: left;">
+        <!-- THUMBNAIL PANEL -->
+        <div id="thumbnailSection" class="hidden" style="background: rgba(11,12,16,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; text-align: left;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
             <h4 style="font-size: 12px; color: #fbbf24; display: flex; align-items: center; gap: 6px;">
               <i class="ph-bold ph-image-square"></i> Recap Thumbnail / Cover Generator (မျက်နှာဖုံးပုံ ထုတ်ယူရန်)
@@ -567,8 +583,8 @@
           </div>
 
           <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-            <button onclick="downloadThumbnail()" class="btn btn-amber" style="padding: 8px 14px; font-size: 11px;">
-              <i class="ph-bold ph-camera"></i> 📸 Thumbnail Image (PNG) ဒေါင်းလုဒ်ဆွဲမည်
+            <button onclick="downloadThumbnailImage()" class="btn btn-amber" style="padding: 8px 14px; font-size: 11px;">
+              <i class="ph-bold ph-download-simple"></i> 📥 Save Thumbnail Image (PNG)
             </button>
           </div>
           <canvas id="thumbCanvas" style="display: none;"></canvas>
@@ -880,6 +896,25 @@
       }
     }
 
+    // Voice Clone Upload
+    async function uploadVoiceClone() {
+      const name = document.getElementById('cloneNameInput').value.trim();
+      const file = document.getElementById('cloneAudioInput').files[0];
+      if (!name || !file) return showToast("အမည်နှင့် အသံဖိုင် ရွေးချယ်ပေးပါခင်ဗျာ!");
+      
+      const fd = new FormData();
+      fd.append("name", name);
+      fd.append("audio", file);
+      
+      try {
+        const res = await fetch("/api/voice/clone", { method: "POST", body: fd });
+        const d = await res.json();
+        showToast(d.message || d.error);
+      } catch (e) {
+        showToast("Voice Clone သိမ်းဆည်း၍ မရပါ");
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       checkUserAuth();
       restoreStyleSettings();
@@ -986,6 +1021,7 @@
 
         currentSegments = data.segments;
         document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) [Speaker ${s.speaker||'A'}] ${s.text}`).join("\n");
+        renderSubEditor([]);
         updateGauge(100);
         hideProgress();
         showToast(`ဇာတ်ကောင်အလိုက် စာကြောင်း ${currentSegments.length} ခု ရရှိပါပြီ!`);
@@ -995,7 +1031,7 @@
       }
     }
 
-    // ★ ONE-CLICK DIRECT GEMINI TRANSLATION (PREMIUM ONLY) ★
+    // ONE-CLICK DIRECT GEMINI TRANSLATION (PREMIUM ONLY)
     async function directGeminiTranslate() {
       if (!currentSegments.length) return showToast("စာကြောင်းများ Transcribe အရင်လုပ်ပေးပါ!");
       
@@ -1086,6 +1122,21 @@ INPUTS:
         `;
         container.appendChild(row);
       });
+    }
+
+    // Auto Classify Voices Button Function
+    function autoClassifyVoices() {
+      const selects = document.querySelectorAll('.sub-voice-select');
+      selects.forEach((sel, idx) => {
+        const seg = currentSegments[idx];
+        if (seg && seg.speaker === 'B') {
+          sel.value = "my-MM-NilarNeural";
+        } else {
+          sel.value = "my-MM-ThihaNeural";
+        }
+      });
+      triggerAutoSave();
+      showToast("အသံ Speaker အလိုက် ဇာတ်ကောင်ခွဲခြား သတ်မှတ်ပြီးပါပြီ!");
     }
 
     async function previewAudioSync(startTimeSec, encodedText, btnEl) {
@@ -1472,48 +1523,45 @@ INPUTS:
       }
     }
 
-    // ===== BATCH SPLITTER (1-MINUTE TIKTOK PARTS CUTTER) =====
-    async function splitVideoIntoParts() {
+    // CLIFFHANGER HALF SPLITTER
+    async function splitCliffhangerHalf() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.duration) return showToast("ဗီဒီယို အရင် Render လုပ်ပါ!");
+      if (player.duration < 300) return showToast("၅ မိနစ် (စက္ကန့် ၃၀၀) ကျော်သော ဗီဒီယိုများအတွက်သာ ဖြစ်ပါသည်ခင်ဗျာ!");
 
-      const container = document.getElementById('splitPartsContainer');
-      container.innerHTML = "";
-      showProgress("TikTok Parts ခွဲထုတ်နေပါသည်", "၁ မိနစ်စီ အပိုင်းလိုက် ခွဲခြမ်းနေပါသည်...");
-
-      const partDuration = 60;
-      const totalParts = Math.ceil(player.duration / partDuration);
+      showProgress("Cliffhanger Splitting...", "အလှည့်အပြောင်း နေရာမှ တစ်ဝက်စီ အလိုအလျောက် ပိုင်းဖြတ်နေပါသည်...");
+      updateGauge(40);
+      const halfTime = Math.floor(player.duration / 2);
 
       try {
-        for (let i = 0; i < totalParts; i++) {
-          const start = i * partDuration;
-          const outPartName = `recap_part_${i + 1}.mp4`;
+        await ffmpeg.run('-ss', '0', '-i', 'output.mp4', '-t', `${halfTime}`, '-c', 'copy', 'part1.mp4');
+        await ffmpeg.run('-ss', `${halfTime}`, '-i', 'output.mp4', '-c', 'copy', 'part2.mp4');
 
-          updateGauge(((i + 1) / totalParts) * 100, `Part ${i + 1} ထုတ်လုပ်နေပါသည်...`);
-          await ffmpeg.run('-ss', `${start}`, '-i', 'output.mp4', '-t', `${partDuration}`, '-c', 'copy', outPartName);
+        const p1 = new Blob([ffmpeg.FS('readFile', 'part1.mp4').buffer], { type: 'video/mp4' });
+        const p2 = new Blob([ffmpeg.FS('readFile', 'part2.mp4').buffer], { type: 'video/mp4' });
 
-          const partData = ffmpeg.FS('readFile', outPartName);
-          const partBlob = new Blob([partData.buffer], { type: 'video/mp4' });
-          const partUrl = URL.createObjectURL(partBlob);
-
-          const btn = document.createElement('a');
-          btn.href = partUrl;
-          btn.download = outPartName;
-          btn.className = "btn btn-ghost";
-          btn.style.cssText = "padding: 8px 12px; font-size: 11px; border: 1px solid rgba(255,255,255,0.2);";
-          btn.innerHTML = `<i class="ph-bold ph-download-simple"></i> Download Part ${i + 1}`;
-          container.appendChild(btn);
-        }
-
+        document.getElementById('splitLinksContainer').innerHTML = `
+          <a href="${URL.createObjectURL(p1)}" download="recap_part1_cliffhanger.mp4" class="btn btn-purple" style="font-size:11px; width:auto;">
+            📥 Part 1 (အစမှ ${Math.floor(halfTime/60)}:00 ထိ)
+          </a>
+          <a href="${URL.createObjectURL(p2)}" download="recap_part2_cliffhanger.mp4" class="btn btn-purple" style="font-size:11px; width:auto;">
+            📥 Part 2 (${Math.floor(halfTime/60)}:00 မှ အဆုံးထိ)
+          </a>
+        `;
         hideProgress();
-        showToast(`ဗီဒီယိုကို အပိုင်း ${totalParts} ပိုင်းအဖြစ် အောင်မြင်စွာ ခွဲထုတ်ပြီးပါပြီ!`);
+        showToast("Cliffhanger Part 1 & Part 2 ခွဲထုတ်ပြီးပါပြီ!");
       } catch (e) {
         hideProgress();
-        showToast("Parts ခွဲထုတ်၍ မရပါ: " + e.message);
+        showToast("ခွဲထုတ်၍ မရပါ: " + e.message);
       }
     }
 
-    // ===== THUMBNAIL / COVER GENERATOR LOGIC =====
+    // THUMBNAIL LOGIC
+    function toggleThumbnailPanel() {
+      const panel = document.getElementById('thumbnailSection');
+      panel.classList.toggle('hidden');
+    }
+
     function updateThumbnailPreview() {
       const player = document.getElementById('videoPlayer');
       const slider = document.getElementById('thumbFrameSlider');
@@ -1522,7 +1570,7 @@ INPUTS:
       }
     }
 
-    function downloadThumbnail() {
+    function downloadThumbnailImage() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.videoWidth) return showToast("ဗီဒီယို မရှိသေးပါ!");
 
@@ -1560,7 +1608,7 @@ INPUTS:
       a.href = imgUrl;
       a.download = "recap_cover_thumbnail.png";
       a.click();
-      showToast("Cover Thumbnail အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!");
+      showToast("Thumbnail အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!");
     }
 
     function msToSrt(ms) {
