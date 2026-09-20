@@ -529,7 +529,7 @@
       </div>
     </div>
 
-    <!-- STEP 5: FINAL EXPORT, SPLITTER & THUMBNAIL (အသုံးပြုသူလိုလားသော ခလုတ် ၃ ခု တိကျစွာ စီစဉ်ထားသော UI) -->
+    <!-- STEP 5: FINAL EXPORT, SPLITTER & THUMBNAIL -->
     <div>
       <button id="btnExport" onclick="startClientExport()" class="btn btn-green">
         <i class="ph-bold ph-lightning"></i> User Device ဖြင့် ဗီဒီယို တိုက်ရိုက် Render လုပ်မည် (Client-Side Export)
@@ -896,7 +896,7 @@
       }
     }
 
-    // Voice Clone Upload
+    // Voice Clone Upload Function
     async function uploadVoiceClone() {
       const name = document.getElementById('cloneNameInput').value.trim();
       const file = document.getElementById('cloneAudioInput').files[0];
@@ -1523,7 +1523,7 @@ INPUTS:
       }
     }
 
-    // CLIFFHANGER HALF SPLITTER
+    // CLIFFHANGER HALF SPLITTER (5 MIN+)
     async function splitCliffhangerHalf() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.duration) return showToast("ဗီဒီယို အရင် Render လုပ်ပါ!");
