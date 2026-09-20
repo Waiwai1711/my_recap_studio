@@ -423,7 +423,7 @@
         </div>
       </div>
 
-      <!-- Subtitle Styling Controls with Vertical Margin & Real Video Canvas Preview -->
+      <!-- Subtitle Styling Controls with 8px Min Font Size & Real Video Canvas Preview -->
       <div id="subStylingSection" style="background: rgba(11,12,16,0.6); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
         <div class="grid-2" style="margin-bottom: 12px;">
           <div class="form-group">
@@ -433,10 +433,11 @@
           </div>
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label>Font Size (လက်ဖြင့် ဆွဲချိန်ပါ)</label>
+              <label>Font Size (8px အထိ လျှော့နိုင်သည်)</label>
               <span id="fontSizeDisplay" style="font-size: 11px; color: #38bdf8; font-weight: bold; font-family: 'JetBrains Mono', monospace;">24px</span>
             </div>
-            <input type="range" id="subFontSize" min="14" max="55" value="24" style="width: 100%; accent-color: #38bdf8; cursor: pointer; margin-top: 8px;">
+            <!-- ★ min="8" အထိ လျှော့ချထားခြင်း ★ -->
+            <input type="range" id="subFontSize" min="8" max="55" value="24" style="width: 100%; accent-color: #38bdf8; cursor: pointer; margin-top: 8px;">
           </div>
         </div>
 
@@ -462,7 +463,7 @@
           </div>
         </div>
 
-        <!-- REAL VIDEO FRAME SUBTITLE PREVIEW BOX -->
+        <!-- ★ REAL VIDEO FRAME SUBTITLE PREVIEW BOX (9:16 DYNAMIC TOGGLE SUPPORT) ★ -->
         <div class="form-group" style="margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label style="color: #38bdf8; font-weight: 600;">
@@ -471,12 +472,19 @@
             <span style="font-size: 10px; color: #71717a;">✏️ Click text to edit</span>
           </div>
 
-          <div id="subPreviewBox" style="background: #000; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; height: 180px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-            <video id="previewBgVideo" muted loop playsinline style="position: absolute; width: 100%; height: 100%; object-fit: contain; opacity: 0.65; pointer-events: none;"></video>
-            
-            <p id="subPreviewText" contenteditable="true" spellcheck="false" style="position: absolute; bottom: 10%; width: 90%; font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; margin: 0; outline: none; cursor: text; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.4; z-index: 10;">
-              အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
-            </p>
+          <!-- Outer Stage for 9:16 / 16:9 Adaptability -->
+          <div id="previewOuterStage" style="background: #090a0f; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 12px; display: flex; justify-content: center; align-items: center; min-height: 240px;">
+            <div id="subPreviewBox" style="background: #000; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; width: 100%; max-width: 480px; height: 200px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+              <!-- 9:16 Blur Background Layer -->
+              <video id="previewBgVideoBlur" muted loop playsinline class="hidden" style="position: absolute; width: 100%; height: 100%; object-fit: cover; filter: blur(16px); opacity: 0.55; transform: scale(1.15); pointer-events: none;"></video>
+              
+              <!-- Main Sharp Video Layer -->
+              <video id="previewBgVideo" muted loop playsinline style="position: absolute; width: 100%; height: 100%; object-fit: contain; opacity: 0.75; pointer-events: none; z-index: 2;"></video>
+              
+              <p id="subPreviewText" contenteditable="true" spellcheck="false" style="position: absolute; bottom: 10%; width: 90%; font-family: 'Pyidaungsu', sans-serif; font-size: 24px; color: #ffffff; font-weight: bold; text-align: center; margin: 0; outline: none; cursor: text; paint-order: stroke fill; letter-spacing: 0.5px; line-height: 1.4; z-index: 10;">
+                အသံထွက်နှင့် စာတန်းထိုး နမူနာ ကြည့်ရှုခြင်း
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -495,8 +503,9 @@
           <input type="checkbox" id="enableDuckingCheck" checked>
           <span>🎵 BGM Auto-Ducking (စကားပြောချိန် BGM အသံ အလိုအလျောက် တိုးမည်)</span>
         </label>
+        <!-- ★ 9:16 LIVE PREVIEW TOGGLE ★ -->
         <label class="toggle-item" style="color: #f43f5e; font-weight: 600;">
-          <input type="checkbox" id="enableReelsCheck">
+          <input type="checkbox" id="enableReelsCheck" onchange="updateAspectPreview()">
           <span>📱 TikTok / Reels 9:16 ဒေါင်လိုက် ပြောင်းလဲမည် (Auto-Blur Fill)</span>
         </label>
         <label class="toggle-item" style="color: #fbbf24; font-weight: 500;">
@@ -510,7 +519,7 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Auto-Classify Button & Toggle -->
+    <!-- STEP 4: Live Subtitle Editor with Hybrid Auto-Classify (Sound + Text) -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -523,7 +532,7 @@
           </button>
           <label class="toggle-item" style="color: #a78bfa; font-weight: 600;">
             <input type="checkbox" id="autoClassifyVoiceCheck" checked onchange="autoClassifyVoices()">
-            <span>🎙️ Auto-Voice Diarization (အသံနားထောင်၍ ဇာတ်ကောင် အလိုအလျောက် ခွဲမည်)</span>
+            <span>🎙️ Auto-Voice Diarization (အသံရော စာသားပါ ခွဲခြားမည်)</span>
           </label>
           <span id="autoSaveStatus" style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">✓ Auto-saved</span>
         </div>
@@ -773,6 +782,23 @@
       }
     }
 
+    // ★ 9:16 DYNAMIC PREVIEW TOGGLE FUNCTION ★
+    function updateAspectPreview() {
+      const isReels = document.getElementById('enableReelsCheck').checked;
+      const box = document.getElementById('subPreviewBox');
+      const blurBg = document.getElementById('previewBgVideoBlur');
+
+      if (isReels) {
+        box.style.maxWidth = "200px";
+        box.style.height = "355px"; // 9:16 vertical ratio
+        if (blurBg) blurBg.classList.remove('hidden');
+      } else {
+        box.style.maxWidth = "480px";
+        box.style.height = "200px"; // 16:9 standard landscape
+        if (blurBg) blurBg.classList.add('hidden');
+      }
+    }
+
     function updateSubPreview() {
       const p = document.getElementById('subPreviewText');
       const size = document.getElementById('subFontSize').value || 24;
@@ -925,6 +951,7 @@
       loadSavedFont();
       updateSubPreview();
       toggleSubSection();
+      updateAspectPreview();
 
       const sizeSlider = document.getElementById('subFontSize');
       sizeSlider.addEventListener('input', (e) => {
@@ -979,6 +1006,7 @@
       const fileInput = document.getElementById('videoFileInput');
       const videoPrev = document.getElementById('inputVideoPreview');
       const bgVideo = document.getElementById('previewBgVideo');
+      const bgVideoBlur = document.getElementById('previewBgVideoBlur');
 
       dropZone.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
@@ -993,6 +1021,10 @@
           if (bgVideo) {
             bgVideo.src = vUrl;
             bgVideo.play().catch(()=>{});
+          }
+          if (bgVideoBlur) {
+            bgVideoBlur.src = vUrl;
+            bgVideoBlur.play().catch(()=>{});
           }
         }
       });
@@ -1098,6 +1130,32 @@ INPUTS:
       }
     }
 
+    // ★ HYBRID VOICE CLASSIFIER (အသံရော စာသားပါ စစ်ဆေးသော စနစ်) ★
+    function detectVoiceHybrid(seg, text, defaultVoice) {
+      if (!seg) return defaultVoice;
+
+      const femaleRegex = /(ရှင်|ရှင့်|မမ|ညီမ|မိန်းမ|သမီး|အမေ|ကောင်မလေး|ဟယ်|တော်|အန်တီ)/;
+      const maleRegex = /(ဗျာ|ခင်ဗျ|ခင်ဗျာ|ညီလေး|ကောင်လေး|ညီအစ်ကို|အစ်ကို|အဖေ|ဦးလေး)/;
+
+      // စာသားထဲတွင် မိန်းမစကားလုံး အထင်အရှားပါပါက Nilar ချက်ချင်းသတ်မှတ်
+      if (femaleRegex.test(text)) {
+        return "my-MM-NilarNeural";
+      }
+      // ယောက်ျားစကားလုံးပါပါက Thiha သတ်မှတ်
+      if (maleRegex.test(text)) {
+        return "my-MM-ThihaNeural";
+      }
+
+      // စာသားထဲတွင် မပါပါက AssemblyAI ၏ Speaker Diarization (အသံလှိုင်း) ဖြင့် ခွဲခြားခြင်း
+      if (seg.speaker === 'B') {
+        return "my-MM-NilarNeural";
+      } else if (seg.speaker === 'A') {
+        return "my-MM-ThihaNeural";
+      }
+
+      return defaultVoice;
+    }
+
     function renderSubEditor(translations, savedVoices = []) {
       const container = document.getElementById('linesContainer');
       container.innerHTML = "";
@@ -1108,13 +1166,10 @@ INPUTS:
         const row = document.createElement('div');
         row.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(11,12,16,0.6); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);";
         
+        const lineText = translations[i] || '';
         let autoDetectedVoice = defaultVoice;
         if (isAutoDiarize) {
-          if (seg.speaker === 'B') {
-            autoDetectedVoice = "my-MM-NilarNeural";
-          } else if (seg.speaker === 'A') {
-            autoDetectedVoice = "my-MM-ThihaNeural";
-          }
+          autoDetectedVoice = detectVoiceHybrid(seg, lineText, defaultVoice);
         }
         const voiceVal = savedVoices[i] || autoDetectedVoice;
 
@@ -1124,33 +1179,31 @@ INPUTS:
             <option value="my-MM-ThihaNeural" ${voiceVal.includes('Thiha') ? 'selected' : ''}>👨 Spk ${seg.speaker||'A'} (Thiha)</option>
             <option value="my-MM-NilarNeural" ${voiceVal.includes('Nilar') ? 'selected' : ''}>👩 Spk ${seg.speaker||'B'} (Nilar)</option>
           </select>
-          <input type="text" class="sub-input" oninput="triggerAutoSave()" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${translations[i] || ''}">
-          <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(translations[i] || '')}', this)" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
+          <input type="text" class="sub-input" oninput="triggerAutoSave()" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${lineText}">
+          <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(lineText)}', this)" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
         `;
         container.appendChild(row);
       });
     }
 
-    // Auto Classify Voices Button Function
+    // Auto Classify Voices Button Function (အသံရော စာသားပါ စစ်ဆေးပြီး သတ်မှတ်ခြင်း)
     function autoClassifyVoices() {
       const isAutoDiarize = document.getElementById('autoClassifyVoiceCheck')?.checked ?? true;
       const defaultVoice = document.getElementById('voiceSelect').value;
       const selects = document.querySelectorAll('.sub-voice-select');
+      const inputs = document.querySelectorAll('.sub-input');
 
       selects.forEach((sel, idx) => {
         const seg = currentSegments[idx];
+        const txt = inputs[idx] ? inputs[idx].value : "";
         if (isAutoDiarize && seg) {
-          if (seg.speaker === 'B') {
-            sel.value = "my-MM-NilarNeural";
-          } else {
-            sel.value = "my-MM-ThihaNeural";
-          }
+          sel.value = detectVoiceHybrid(seg, txt, defaultVoice);
         } else {
           sel.value = defaultVoice;
         }
       });
       triggerAutoSave();
-      showToast(isAutoDiarize ? "အသံ Speaker အလိုက် ဇာတ်ကောင်ခွဲခြား သတ်မှတ်ပြီးပါပြီ!" : "Default Voice အတိုင်း ပြန်လည်သတ်မှတ်ပြီးပါပြီ!");
+      showToast(isAutoDiarize ? "အသံလှိုင်းနှင့် မြန်မာစာသားနှစ်မျိုးလုံးကို စစ်ဆေး၍ ဇာတ်ကောင်ခွဲခြားပြီးပါပြီ!" : "Default Voice အတိုင်း ပြန်လည်သတ်မှတ်ပြီးပါပြီ!");
     }
 
     async function previewAudioSync(startTimeSec, encodedText, btnEl) {
