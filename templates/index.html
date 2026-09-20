@@ -436,7 +436,7 @@
               <label>Font Size (8px အထိ လျှော့နိုင်သည်)</label>
               <span id="fontSizeDisplay" style="font-size: 11px; color: #38bdf8; font-weight: bold; font-family: 'JetBrains Mono', monospace;">24px</span>
             </div>
-            <!-- ★ min="8" အထိ လျှော့ချထားခြင်း ★ -->
+            <!-- min="8" အထိ လျှော့ချထားခြင်း -->
             <input type="range" id="subFontSize" min="8" max="55" value="24" style="width: 100%; accent-color: #38bdf8; cursor: pointer; margin-top: 8px;">
           </div>
         </div>
@@ -463,7 +463,7 @@
           </div>
         </div>
 
-        <!-- ★ REAL VIDEO FRAME SUBTITLE PREVIEW BOX (9:16 DYNAMIC TOGGLE SUPPORT) ★ -->
+        <!-- REAL VIDEO FRAME SUBTITLE PREVIEW BOX (9:16 DYNAMIC TOGGLE SUPPORT) -->
         <div class="form-group" style="margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label style="color: #38bdf8; font-weight: 600;">
@@ -503,7 +503,7 @@
           <input type="checkbox" id="enableDuckingCheck" checked>
           <span>🎵 BGM Auto-Ducking (စကားပြောချိန် BGM အသံ အလိုအလျောက် တိုးမည်)</span>
         </label>
-        <!-- ★ 9:16 LIVE PREVIEW TOGGLE ★ -->
+        <!-- 9:16 LIVE PREVIEW TOGGLE -->
         <label class="toggle-item" style="color: #f43f5e; font-weight: 600;">
           <input type="checkbox" id="enableReelsCheck" onchange="updateAspectPreview()">
           <span>📱 TikTok / Reels 9:16 ဒေါင်လိုက် ပြောင်းလဲမည် (Auto-Blur Fill)</span>
@@ -519,7 +519,7 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Hybrid Auto-Classify (Sound + Text) -->
+    <!-- STEP 4: Live Subtitle Editor with Hybrid Auto-Classify (Sound + Endings) -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -782,7 +782,7 @@
       }
     }
 
-    // ★ 9:16 DYNAMIC PREVIEW TOGGLE FUNCTION ★
+    // 9:16 DYNAMIC PREVIEW TOGGLE FUNCTION
     function updateAspectPreview() {
       const isReels = document.getElementById('enableReelsCheck').checked;
       const box = document.getElementById('subPreviewBox');
@@ -1130,23 +1130,25 @@ INPUTS:
       }
     }
 
-    // ★ HYBRID VOICE CLASSIFIER (အသံရော စာသားပါ စစ်ဆေးသော စနစ်) ★
+    // ★ ပိုမိုတိကျသော HYBRID VOICE CLASSIFIER (စကားဆုံးသံ + အသံလှိုင်း စစ်ဆေးမှု) ★
     function detectVoiceHybrid(seg, text, defaultVoice) {
       if (!seg) return defaultVoice;
 
-      const femaleRegex = /(ရှင်|ရှင့်|မမ|ညီမ|မိန်းမ|သမီး|အမေ|ကောင်မလေး|ဟယ်|တော်|အန်တီ)/;
-      const maleRegex = /(ဗျာ|ခင်ဗျ|ခင်ဗျာ|ညီလေး|ကောင်လေး|ညီအစ်ကို|အစ်ကို|အဖေ|ဦးလေး)/;
+      const trimmed = text.trim();
 
-      // စာသားထဲတွင် မိန်းမစကားလုံး အထင်အရှားပါပါက Nilar ချက်ချင်းသတ်မှတ်
-      if (femaleRegex.test(text)) {
+      // စာကြောင်းအဆုံးတွင် ရှင်/ရှင့်/ပါရှင် ဖြင့် ဆုံးမှသာ မိန်းကလေးအသံ သတ်မှတ်ခြင်း
+      const femaleEndingRegex = /(ရှင်|ရှင့်|ပါရှင်|ပါရှင့်)[!?,.\s]*$/;
+      // စာကြောင်းအဆုံးတွင် ဗျ/ဗျာ/ခင်ဗျ/ခင်ဗျာ ဖြင့် ဆုံးမှသာ ယောက်ျားလေးအသံ သတ်မှတ်ခြင်း
+      const maleEndingRegex = /(ဗျ|ဗျာ|ခင်ဗျ|ခင်ဗျာ|ပါဗျ|ပါဗျာ)[!?,.\s]*$/;
+
+      if (femaleEndingRegex.test(trimmed)) {
         return "my-MM-NilarNeural";
       }
-      // ယောက်ျားစကားလုံးပါပါက Thiha သတ်မှတ်
-      if (maleRegex.test(text)) {
+      if (maleEndingRegex.test(trimmed)) {
         return "my-MM-ThihaNeural";
       }
 
-      // စာသားထဲတွင် မပါပါက AssemblyAI ၏ Speaker Diarization (အသံလှိုင်း) ဖြင့် ခွဲခြားခြင်း
+      // စကားဆုံးသံ မပါပါက AssemblyAI မူရင်းအသံလှိုင်း (Speaker Diarization) အတိုင်းသာ တိုက်ရိုက်ခွဲခြားခြင်း
       if (seg.speaker === 'B') {
         return "my-MM-NilarNeural";
       } else if (seg.speaker === 'A') {
@@ -1186,7 +1188,7 @@ INPUTS:
       });
     }
 
-    // Auto Classify Voices Button Function (အသံရော စာသားပါ စစ်ဆေးပြီး သတ်မှတ်ခြင်း)
+    // Auto Classify Voices Button Function
     function autoClassifyVoices() {
       const isAutoDiarize = document.getElementById('autoClassifyVoiceCheck')?.checked ?? true;
       const defaultVoice = document.getElementById('voiceSelect').value;
@@ -1203,7 +1205,7 @@ INPUTS:
         }
       });
       triggerAutoSave();
-      showToast(isAutoDiarize ? "အသံလှိုင်းနှင့် မြန်မာစာသားနှစ်မျိုးလုံးကို စစ်ဆေး၍ ဇာတ်ကောင်ခွဲခြားပြီးပါပြီ!" : "Default Voice အတိုင်း ပြန်လည်သတ်မှတ်ပြီးပါပြီ!");
+      showToast(isAutoDiarize ? "စကားဆုံးသံနှင့် မူရင်းအသံလှိုင်းကို စစ်ဆေး၍ ဇာတ်ကောင်ခွဲခြားပြီးပါပြီ!" : "Default Voice အတိုင်း ပြန်လည်သတ်မှတ်ပြီးပါပြီ!");
     }
 
     async function previewAudioSync(startTimeSec, encodedText, btnEl) {
