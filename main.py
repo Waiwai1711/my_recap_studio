@@ -294,9 +294,33 @@ class BatchTTSRequest(BaseModel):
     speed: int = 10
 
 BAD_WORDS = ["လိုး", "လီး", "မအေလိုး", "ဖာသယ်မ", "စောက်ဖုတ်"]
-def censor_text(t: str) -> str:
+
+# TTS Pronunciation Dictionary (စကားလုံးနှင့် ဂဏန်း အသံထွက် အမှားပြင်ဆင်မှုများ)
+PRONUNCIATION_DICT = {
+    r"\bJohn\b": "ဂျွန်",
+    r"\bJack\b": "ဂျက်",
+    r"\bDavid\b": "ဒေးဗစ်",
+    r"\bPolice\b": "ရဲ",
+    r"\bCar\b": "ကား",
+    r"\bGun\b": "သေနတ်",
+    r"\bZombie\b": "ဖုတ်ကောင်",
+    r"\bBoss\b": "သူဌေး",
+    r"\bDoctor\b": "ဆရာဝန်",
+    r"\b100\b": "တစ်ရာ",
+    r"\b10\b": "တစ်ဆယ်",
+    r"\b1\b": "တစ်",
+    r"\b2\b": "နှစ်",
+    r"\b3\b": "သုံး",
+    r"\b4\b": "လေး",
+    r"\b5\b": "ငါး"
+}
+
+def clean_and_normalize_text(t: str) -> str:
     res = t
-    for w in BAD_WORDS: res = re.sub(w, "***", res)
+    for w in BAD_WORDS:
+        res = re.sub(w, "***", res)
+    for pattern, replacement in PRONUNCIATION_DICT.items():
+        res = re.sub(pattern, replacement, res, flags=re.IGNORECASE)
     return res
 
 @app.post("/api/tts/batch-generate")
@@ -316,7 +340,7 @@ async def batch_generate_tts(request: Request, payload: BatchTTSRequest):
 
     audio_results = []
     for idx, item in enumerate(payload.items):
-        clean_text = censor_text(item.text.strip())
+        clean_text = clean_and_normalize_text(item.text.strip())
         if not clean_text:
             audio_results.append({"index": idx, "audio_b64": "", "duration_ms": 500})
             continue
@@ -351,7 +375,7 @@ async def consume_credit(request: Request):
 
 @app.post("/api/preview-single-audio")
 async def preview_single_audio(text: str = Form(...), voice: str = Form("my-MM-ThihaNeural"), pitch: int = Form(0), speed: int = Form(10)):
-    clean_text = censor_text(text.strip())
+    clean_text = clean_and_normalize_text(text.strip())
     actual_voice = "my-MM-NilarNeural" if "Nilar" in voice else "my-MM-ThihaNeural"
     communicate = edge_tts.Communicate(clean_text, actual_voice, pitch=f"{pitch:+d}Hz" if pitch!=0 else "+0Hz", rate=f"{speed:+d}%" if speed!=0 else "+0%")
     temp_file = os.path.join(TEMP_DIR, f"prev_{uuid.uuid4().hex[:6]}.mp3")
