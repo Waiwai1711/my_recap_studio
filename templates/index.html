@@ -1411,7 +1411,8 @@ INPUTS:
       const isHighlightEnabled = document.getElementById('enableHighlightCheck').checked;
       const isTurboFast = document.getElementById('turboFastCheck').checked;
 
-      showProgress("TTS အသံထုတ်ယူနေပါသည်", "ဇာတ်ကောင်အလိုက် Multi-Speaker အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
+      // ၁။ ပထမဦးစွာ အသံများကို သီးသန့် အရင်စမ်းထုတ်ခြင်း (Audio Pre-generation)
+      showProgress("TTS အသံများ အရင်ထုတ်ယူနေပါသည်", "အသံဖိုင်များကို Server မှ တစ်ခုချင်း စုဆောင်းနေပါသည်...");
 
       try {
         const payloadItems = translations.map((text, idx) => ({
@@ -1429,9 +1430,10 @@ INPUTS:
           })
         });
         const ttsData = await ttsRes.json();
-        if (!ttsRes.ok) throw new Error(ttsData.error);
+        if (!ttsRes.ok) throw new Error(ttsData.error || "TTS အသံထုတ်ယူမှု မအောင်မြင်ပါ");
 
-        updateGauge(25, "အသံနှင့် ဗီဒီယို ပြင်ဆင်နေပါသည်...");
+        showToast("✓ အသံဖိုင်များ အောင်မြင်စွာ ထုတ်ယူပြီးပါပြီ။ ဗီဒီယိုနှင့် ပေါင်းစပ်နေပါသည်...");
+        updateGauge(30, "အသံနှင့် ဗီဒီယိုကို FFmpeg ဖြင့် ပေါင်းစပ်နေပါသည်...");
 
         const highlightOffsetSec = isHighlightEnabled ? 4.0 : 0.0;
         const bgmInput = document.getElementById('bgmFile');
@@ -1439,6 +1441,7 @@ INPUTS:
         const bgmType = document.getElementById('bgmLibrarySelect').value;
         const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 25;
         
+        // ၂။ အသံများ အဆင်သင့်ဖြစ်မှ Master Audio Buffer တည်ဆောက်ခြင်း
         const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmType, bgmVol, isDuckingEnabled, isAutoSpeedEnabled, highlightOffsetSec);
 
         ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
@@ -1458,12 +1461,11 @@ INPUTS:
           const sMs = seg ? (seg.start + (highlightOffsetSec * 1000)) : curMs;
           const eMs = seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs);
           curMs = eMs;
-
           srtLines.push(`${i+1}\n${msToSrt(sMs)} --> ${msToSrt(eMs)}\n${translations[i]}\n`);
         }
         srtContent = srtLines.join("\n");
 
-        updateGauge(50, isTurboFast ? "⚡ Turbo Fast Mode ဖြင့် Render ပြုလုပ်နေပါသည်..." : "ဗီဒီယို Render လုပ်နေပါသည်...");
+        updateGauge(60, "ဗီဒီယို Filter များနှင့် ပုံစံဖော်နေပါသည်...");
 
         const blurSub = document.getElementById('blurSubCheck').checked;
         const wmPos = document.getElementById('watermarkPosSelect').value;
@@ -1476,13 +1478,11 @@ INPUTS:
         let filterParts = [];
         let curV = "0:v";
 
-        // 1. Hook
         if (isHighlightEnabled) {
           filterParts.push(`[0:v]trim=start=20:end=24,setpts=PTS-STARTPTS[hookv];[0:v]setpts=PTS-STARTPTS[bodyv];[hookv][bodyv]concat=n=2:v=1:a=0[vhooked]`);
           curV = "vhooked";
         }
 
-        // 2. Speed
         if (isAutoSpeedEnabled && currentSegments.length > 0) {
           let hasGaps = false;
           for (let i = 0; i < currentSegments.length - 1; i++) {
@@ -1497,13 +1497,11 @@ INPUTS:
           }
         }
 
-        // 3. Blur
         if (blurSub) {
           filterParts.push(`[${curV}]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[vblur]`);
           curV = "vblur";
         }
 
-        // 4. 9:16 Reels
         if (isReelsEnabled) {
           const reelsW = isTurboFast ? 720 : 1080;
           const reelsH = isTurboFast ? 1280 : 1920;
@@ -1514,7 +1512,6 @@ INPUTS:
           curV = "vturboscale";
         }
 
-        // 5. Watermark
         let inputFiles = ['-i', 'input_orig.mp4', '-i', 'dub_master.wav'];
         if (hasWatermark) {
           inputFiles.push('-i', 'watermark.png');
@@ -1531,7 +1528,7 @@ INPUTS:
           finalArgs.push('-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', 'output.mp4');
         }
 
-        updateGauge(75, "အပြီးသတ် ဗီဒီယို ထုတ်လုပ်နေပါသည်...");
+        updateGauge(80, "အပြီးသတ် ဗီဒီယို ဖိုင်ထုတ်လုပ်နေပါသည်...");
         await ffmpeg.run(...finalArgs);
 
         const outData = ffmpeg.FS('readFile', 'output.mp4');
@@ -1542,7 +1539,6 @@ INPUTS:
         player.innerHTML = "";
         player.src = videoUrl;
 
-        // Subtitles via WebVTT Native Track
         if (isSubEnabled) {
           const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
           const track = document.createElement('track');
@@ -1571,7 +1567,6 @@ INPUTS:
         hideProgress();
         showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!");
 
-        // AI Auto Thumbnail Generation Trigger
         player.onloadeddata = () => {
           generateAutoAIThumbnail();
         };
