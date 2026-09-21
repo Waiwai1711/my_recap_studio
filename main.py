@@ -162,7 +162,6 @@ async def get_user_data(request: Request):
     db.close()
     return data
 
-# Voice Clone Upload API
 @app.post("/api/voice/clone")
 async def upload_clone_voice(request: Request, name: str = Form(...), audio: UploadFile = File(...)):
     user_email = request.cookies.get("user_email")
@@ -176,7 +175,6 @@ async def upload_clone_voice(request: Request, name: str = Form(...), audio: Upl
 
     return {"status": "success", "message": f"Voice Clone '{name}' အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ!", "voice_url": f"/cloned/{fname}"}
 
-# History, Logo Presets & Telegram
 @app.get("/api/history")
 async def get_history(request: Request):
     user_email = request.cookies.get("user_email")
@@ -234,7 +232,6 @@ async def send_video_to_telegram(request: Request, video: UploadFile = File(...)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# AssemblyAI & Gemini Direct
 @app.post("/api/transcribe-audio")
 async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(...)):
     aai.settings.api_key = api_key.strip()
@@ -259,6 +256,7 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
 
 class GeminiDirectRequest(BaseModel):
     segments: List[dict]
+    story_style: Optional[str] = "third_person"  # "third_person" သို့မဟုတ် "first_person"
 
 @app.post("/api/translate/gemini-direct")
 async def translate_gemini_direct(request: Request, payload: GeminiDirectRequest):
@@ -270,13 +268,41 @@ async def translate_gemini_direct(request: Request, payload: GeminiDirectRequest
     db.close()
     if not is_premium: return JSONResponse(status_code=403, content={"error": "💎 Direct Gemini သည် Premium User များသာ သီးသန့်ဖြစ်ပါသည်။"})
 
-    prompt_text = """You are an expert Burmese Movie Recap Narrator. Translate the following lines into short Burmese recap style (4-8 words, fit duration). Return STRICT JSON format only: {"translations": ["...", "..."]}
-INPUTS:
+    # Dynamic Storytelling Style Prompt
+    if payload.story_style == "first_person":
+        style_instructions = """STORYTELLING PERSPECTIVE: First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြောပြသည့် စတိုင် - POV Style).
+- Narration perspective: Speak as the protagonist ("ကျွန်တော်/ငါ...").
+- Example recap phrases: "ရွာထဲက မြေရိုင်းတွေကို အကုန်ငှားလိုက်တော့...", "ကျွန်တော့်ကို လူတွေက အရူးလို့ ထင်ကြတယ်...", "ကျွန်တော် အိမ်ပြန်ရောက်တဲ့အခါ...", "ဒီလိုနဲ့ ကျွန်တော် စတင်ပြီး...".
+- Highly engaging, suspenseful, and personal."""
+    else:
+        style_instructions = """STORYTELLING PERSPECTIVE: Third-Person Cinema Narrator (ပြင်ပ ဇာတ်ကြောင်းပြန်ပြောပြသူ စတိုင် - Observer Style).
+- Narration perspective: Describe what is happening to the characters from an external observer's view.
+- Example recap phrases: "ဒီရုပ်ရှင်မှာတော့...", "အမျိုးသမီးတစ်ယောက်ဟာ...", "ဆမ်ဟာ သမီးလေးကို...", "ဒါပေမဲ့ မထင်မှတ်ထားတဲ့ အဖြစ်တစ်ခုကြောင့်...", "ဒီလိုနဲ့ပဲ ကောင်မလေးဟာ...".
+- Emotional, calm, cinematic, and deeply narrative."""
+
+    prompt_text = f"""You are a master Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
+CRITICAL TASK:
+Do NOT just translate raw conversational dialogues word-by-word. Transform these segments into an engaging Burmese movie recap narrative.
+
+{style_instructions}
+
+STRICT RULES:
+1. PUNCHY & FIT DURATION:
+   - Each line MUST be between 5 to 9 Burmese words only.
+   - It MUST strictly match the given line duration limit (pace suitable for voiceover).
+2. NO CHATTER:
+   - Avoid trivial filler words. Deliver the story events clearly.
+3. OUTPUT FORMAT:
+   - Return STRICT JSON format only: {{"translations": ["...", "..."]}}
+   - The total number of translations in the array MUST match the exact number of input segments.
+
+INPUT SEGMENTS:
 """
     for seg in payload.segments: prompt_text += f"[{seg.get('id')}] [Duration: {seg.get('duration')}s] \"{seg.get('text')}\"\n"
+    
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        async with httpx.AsyncClient(timeout=50.0) as client:
             resp = await client.post(url, json={"contents": [{"parts": [{"text": prompt_text}]}]})
             data = resp.json()
             raw_content = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -295,7 +321,6 @@ class BatchTTSRequest(BaseModel):
 
 BAD_WORDS = ["လိုး", "လီး", "မအေလိုး", "ဖာသယ်မ", "စောက်ဖုတ်"]
 
-# TTS Pronunciation Dictionary (စကားလုံးနှင့် ဂဏန်း အသံထွက် အမှားပြင်ဆင်မှုများ)
 PRONUNCIATION_DICT = {
     r"\bJohn\b": "ဂျွန်",
     r"\bJack\b": "ဂျက်",
@@ -317,8 +342,7 @@ PRONUNCIATION_DICT = {
 
 def clean_and_normalize_text(t: str) -> str:
     res = t
-    for w in BAD_WORDS:
-        res = re.sub(w, "***", res)
+    for w in BAD_WORDS: res = re.sub(w, "***", res)
     for pattern, replacement in PRONUNCIATION_DICT.items():
         res = re.sub(pattern, replacement, res, flags=re.IGNORECASE)
     return res
