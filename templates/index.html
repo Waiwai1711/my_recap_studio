@@ -34,10 +34,10 @@
     }
 
     .header {
-      height: 64px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      min-height: 64px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(20, 22, 31, 0.85); backdrop-filter: blur(12px);
-      position: sticky; top: 0; z-index: 40; padding: 0 20px;
-      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 40; padding: 8px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand-icon {
@@ -48,6 +48,22 @@
     }
     .brand h1 { font-size: 14px; font-weight: 700; color: #fff; }
     .brand p { font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace; }
+
+    /* Nav Bar Mode Switcher */
+    .nav-mode-switcher {
+      display: flex; background: rgba(11, 12, 16, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px; padding: 4px; gap: 4px;
+    }
+    .mode-btn {
+      border: none; background: transparent; color: #a1a1aa;
+      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px;
+      cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: linear-gradient(135deg, #0ea5e9, #3b82f6); color: #fff;
+      box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+    }
 
     .container {
       max-width: 900px; width: 100%; margin: 0 auto;
@@ -84,7 +100,7 @@
       outline: none; width: 100%;
     }
     .glass-input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
-    textarea.glass-input { resize: none; font-family: 'JetBrains Mono', monospace; line-height: 1.5; }
+    textarea.glass-input { resize: none; font-family: 'Pyidaungsu', sans-serif; line-height: 1.6; }
 
     .dropzone {
       border: 2px dashed rgba(255, 255, 255, 0.15); background: rgba(11, 12, 16, 0.4);
@@ -109,12 +125,6 @@
 
     .toggles { display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: #d4d4d8; }
     .toggle-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-
-    .highlight-card {
-      background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 12px;
-    }
 
     .modal-overlay {
       position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.85);
@@ -180,16 +190,13 @@
         <h3 style="font-size: 15px; font-weight: bold; color: #fbbf24;">💎 Package ဝယ်ယူရန်</h3>
         <button onclick="closePackageModal()" style="background: transparent; border: none; color: #71717a; font-size: 20px; cursor: pointer;">✕</button>
       </div>
-
       <div class="pkg-grid"></div>
-
       <div style="background: rgba(11,12,16,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
         <p style="color: #38bdf8; font-weight: bold; margin-bottom: 4px;">ငွေလွှဲရမည့် အကောင့်များ -</p>
         <p>• KPay / WavePay / AYA Pay</p>
         <p>• Name: <b style="color: #fff;">Wai Phyo Aung</b></p>
         <p>• Phone: <b style="color: #10b981; font-family: 'JetBrains Mono', monospace;">09799437346</b></p>
       </div>
-
       <div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
         <div class="form-group">
           <label>ငွေလွှဲခဲ့သည့် App ရွေးပါ</label>
@@ -228,7 +235,7 @@
     </div>
   </div>
 
-  <!-- Header -->
+  <!-- Header with Nav Mode Switcher -->
   <header class="header">
     <div class="brand">
       <div class="brand-icon">
@@ -238,6 +245,16 @@
         <h1>RECAP STUDIO PRO</h1>
         <p>100% Client-Side Engine</p>
       </div>
+    </div>
+
+    <!-- ★ NAV BAR RECAP STYLE SELECTOR ★ -->
+    <div class="nav-mode-switcher">
+      <button id="btnModeThird" class="mode-btn active" onclick="switchRecapMode('third_person')">
+        <i class="ph-bold ph-film-slate"></i> 🎬 Third-Person Cinema (Gemini Script Direct)
+      </button>
+      <button id="btnModeFirst" class="mode-btn" onclick="switchRecapMode('first_person')">
+        <i class="ph-bold ph-chats-circle"></i> 🎭 First-Person Dialogue (With AssemblyAI)
+      </button>
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px;">
@@ -267,21 +284,26 @@
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">1</span>
-          <h2>INPUT VIDEO & TRANSCRIPTION</h2>
+          <h2>INPUT VIDEO & SETTINGS</h2>
         </div>
+        <span id="modeBadge" style="font-size: 11px; padding: 4px 10px; border-radius: 8px; background: rgba(14,165,233,0.15); color: #38bdf8; font-weight: bold;">
+          🎬 Third-Person Mode (AssemblyAI မလိုပါ)
+        </span>
       </div>
 
       <div class="grid-2">
-        <div class="form-group">
+        <!-- AssemblyAI Box (First-Person Mode တွင်သာ ပြမည်) -->
+        <div class="form-group hidden" id="assemblyAiBox">
           <label>AssemblyAI API Key</label>
           <input type="password" id="apiKey" placeholder="AssemblyAI API key..." class="glass-input" style="font-family: 'JetBrains Mono', monospace;">
         </div>
-        <div class="form-group">
+        
+        <div class="form-group" style="grid-column: span 2;" id="bgmGroup">
           <label><i class="ph-bold ph-music-notes"></i> BGM ရွေးချယ်မှု (Custom သို့မဟုတ် Library)</label>
           <div style="display: flex; gap: 8px;">
             <select id="bgmLibrarySelect" class="glass-input" style="flex: 1;">
               <option value="none">-- မူပိုင်ခွင့်လွတ် BGM ရွေးပါ --</option>
-              <option value="cinematic">🎬 Cinematic Emotional (ဆွေးမြေ့ဖွယ်)</option>
+              <option value="cinematic" selected>🎬 Cinematic Emotional (ဆွေးမြေ့ဖွယ်)</option>
               <option value="suspense">🕵️ Suspense / Mystery (သည်းထိတ်ရင်ဖို)</option>
               <option value="action">🔥 Action / Dramatic (သွက်လက်)</option>
             </select>
@@ -298,56 +320,48 @@
 
       <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);"></video>
 
-      <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue" style="margin-top: 12px;">
+      <!-- Transcribe Button (First-Person Mode တွင်သာ ပြမည်) -->
+      <button id="btnTranscribe" onclick="startExtractAndTranscribe()" class="btn btn-blue hidden" style="margin-top: 12px;">
         <i class="ph-bold ph-waveform"></i> အသံခွဲထုတ်ပြီး စာသားထုတ်ယူမည် (Transcribe)
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles, Storytelling Style & Gemini Auto-Translate -->
+    <!-- STEP 2: Script Input (Plain Text Support - No JSON Required!) -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">2</span>
-          <h2>RECAP STORYTELLING & TRANSLATION</h2>
-        </div>
-        
-        <div style="display: flex; gap: 6px;">
-          <button onclick="directGeminiTranslate()" class="btn btn-amber" style="padding: 6px 12px; font-size: 11px;">
-            <i class="ph-bold ph-sparkle"></i> ✨ Auto Translate with Gemini (💎 Premium)
-          </button>
-          <button onclick="copyPrompt()" class="btn btn-ghost" title="Copy Prompt for Manual Gemini">
-            <i class="ph-bold ph-copy"></i> Copy Prompt
-          </button>
+          <h2 id="step2Title">MOVIE RECAP SCRIPT (GEMINI စာသားထည့်ရန်)</h2>
         </div>
       </div>
 
-      <!-- STORYTELLING STYLE SELECTOR -->
-      <div class="form-group" style="margin-bottom: 12px; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 12px; padding: 10px 12px;">
-        <label style="color: #38bdf8; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-          <i class="ph-bold ph-film-slate"></i> Narration Style ရွေးချယ်ရန် (ဇာတ်ကြောင်းပြော ပုံစံ)
-        </label>
-        <select id="storyStyleSelect" class="glass-input" style="font-weight: 600; color: #fff; cursor: pointer;">
-          <option value="third_person">🎬 Third-Person Cinema Narrator (ပြင်ပ ဇာတ်ကြောင်းပြော - Video 1 စတိုင်)</option>
-          <option value="first_person">🎭 First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြော - Short & Punchy)</option>
-        </select>
-        <p id="styleHintText" style="font-size: 10px; color: #a1a1aa; margin-top: 4px;">
-          💡 ရုပ်ရှင်ကားကြီးများအတွက် ပြင်ပမှ အကဲခတ်သူ ရှုထောင့်ဖြင့် အေးအေးဆေးဆေး ဇာတ်ကြောင်းပြန်ပြောင်း ပြောပြပေးမည်။
+      <!-- Third-Person Help Info -->
+      <div id="thirdPersonHelpBox" style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+        <p style="font-size: 12px; color: #38bdf8; font-weight: bold; margin-bottom: 4px;">
+          💡 Third-Person Cinema Mode ပြုလုပ်နည်း-
+        </p>
+        <p style="font-size: 11px; color: #d4d4d8; line-height: 1.6;">
+          ၁။ Gemini AI ထဲသို့ ဗီဒီယို Upload တင်ပြီး <i>"ဒီဗီဒီယိုအတွက် မြန်မာလို Movie Recap Script ရေးပေးပါ"</i> ဟု မေးပါ။<br>
+          ၂။ Gemini မှ ရရှိလာသော <b>စာသားများကို JSON မလိုဘဲ ဒီအတိုင်း (Copy & Paste) ကူးထည့်ပေးရုံပါပဲ</b>။
         </p>
       </div>
 
-      <textarea id="sourceText" readonly rows="3" class="glass-input" placeholder="Transcribed lines will appear here..." style="margin-bottom: 12px;"></textarea>
+      <!-- First-Person Transcribed Lines Box (Hidden in Third-Person) -->
+      <textarea id="sourceText" readonly rows="3" class="glass-input hidden" placeholder="Transcribed lines will appear here..." style="margin-bottom: 12px;"></textarea>
 
       <div class="form-group">
-        <label>Gemini မှ ရရှိသော Burmese Translations JSON ထည့်ပါ:</label>
-        <textarea id="jsonInput" rows="3" class="glass-input" style="color: #c084fc;" placeholder='{"translations": ["ဒီလိုနဲ့ပဲ ကောင်မလေးဟာ အိမ်ကနေ ထွက်သွားခဲ့တယ်", "ဒါပေမဲ့ ဆမ်ဟာ သမီးလေးကို လုံးဝ လက်မလွှတ်နိုင်ခဲ့ပါဘူး"]}'></textarea>
+        <label id="scriptInputLabel">Gemini မှ ရေးပေးလိုက်သော မြန်မာ Script စာသားများကို ကူးထည့်ပါ (စာပိုဒ် သို့မဟုတ် တစ်ကြောင်းချင်း):</label>
+        <textarea id="scriptTextInput" rows="5" class="glass-input" placeholder="ဒီရုပ်ရှင်မှာတော့ မိသားစုတစ်ခုဟာ မထင်မှတ်တဲ့ ဒုက္ခတစ်ခုနဲ့ ရင်ဆိုင်ခဲ့ရတယ်...
+ဖခင်ဖြစ်သူ မျက်စိမမြင်ရတော့တဲ့အပြင် သားဖြစ်သူပါ ပျောက်ဆုံးသွားခဲ့ပါတယ်...
+သမီးလေးကိုခေါ်ပြီး နေရာအသစ်ကို ပြောင်းရွှေ့ခဲ့ရပေမဲ့..."></textarea>
       </div>
 
-      <button onclick="submitJson()" class="btn btn-purple">
-        <i class="ph-bold ph-paper-plane-right"></i> Submit Translation
+      <button onclick="submitRecapScript()" class="btn btn-purple" style="margin-top: 8px;">
+        <i class="ph-bold ph-paper-plane-right"></i> Submit Script (အသံနှင့် စာတန်းထိုး ခွဲထုတ်မည်)
       </button>
     </div>
 
-    <!-- STEP 3: Voice, Logo, Styling & Real Video Preview -->
+    <!-- STEP 3: Voice, Watermark & Styling -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
@@ -358,7 +372,7 @@
 
       <div class="grid-4">
         <div class="form-group">
-          <label>Default Voice</label>
+          <label>Narrator Voice</label>
           <select id="voiceSelect" class="glass-input">
             <option value="my-MM-ThihaNeural">Thiha (Male)</option>
             <option value="my-MM-NilarNeural">Nilar (Female)</option>
@@ -366,7 +380,7 @@
         </div>
         <div class="form-group">
           <label>Pitch (Hz)</label>
-          <input type="number" id="pitchInput" value="0" min="-50" max="50" class="glass-input" style="text-align: center;">
+          <input type="number" id="pitchInput" value="-2" min="-50" max="50" class="glass-input" style="text-align: center;">
         </div>
         <div class="form-group">
           <label>Base Speed (%)</label>
@@ -374,45 +388,12 @@
         </div>
         <div class="form-group">
           <label>BGM Max Vol (%)</label>
-          <input type="number" id="bgmVolInput" value="25" min="0" max="100" class="glass-input" style="text-align: center;">
+          <input type="number" id="bgmVolInput" value="20" min="0" max="100" class="glass-input" style="text-align: center;">
         </div>
       </div>
 
-      <!-- Voice Clone Section -->
-      <div style="background: rgba(147, 51, 234, 0.1); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 14px;">
-        <p style="font-size: 12px; color: #c084fc; font-weight: bold; margin-bottom: 4px;">🎙️ Custom Voice Clone (ကိုယ်ပိုင်အသံနမူနာ တင်ရန်)</p>
-        <div class="grid-2">
-          <input type="text" id="cloneNameInput" placeholder="Voice အမည် (ဥပမာ- ကိုယ်ပိုင်အသံ)" class="glass-input">
-          <input type="file" id="cloneAudioInput" accept="audio/*" class="glass-input" style="padding:6px;">
-        </div>
-        <button onclick="uploadVoiceClone()" class="btn btn-purple" style="margin-top:8px; font-size:11px; padding:6px 12px; width:auto;">Save Voice Clone</button>
-      </div>
-
-      <!-- Highlight Hook Clip & Outro Card Features -->
-      <div class="grid-2">
-        <div class="highlight-card" style="margin-bottom: 0;">
-          <div style="text-align: left;">
-            <div style="display: flex; align-items: center; gap: 6px; color: #10b981; font-weight: 700; font-size: 12px;">
-              <i class="ph-bold ph-sparkle"></i> 4.0s Highlight Hook Clip
-            </div>
-            <p style="font-size: 10px; color: #a1a1aa; margin-top: 2px;">ဗီဒီယိုအစတွင် Teaser ထည့်မည်</p>
-          </div>
-          <input type="checkbox" id="enableHighlightCheck" checked style="width: 18px; height: 18px; accent-color: #10b981;">
-        </div>
-
-        <div class="highlight-card" style="margin-bottom: 0; background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.3);">
-          <div style="text-align: left;">
-            <div style="display: flex; align-items: center; gap: 6px; color: #fbbf24; font-weight: 700; font-size: 12px;">
-              <i class="ph-bold ph-cards"></i> "Part 2 Coming Soon" Outro
-            </div>
-            <p style="font-size: 10px; color: #a1a1aa; margin-top: 2px;">ဗီဒီယိုအဆုံးတွင် ကတ်ပြားထည့်မည်</p>
-          </div>
-          <input type="checkbox" id="enableOutroCheck" checked style="width: 18px; height: 18px; accent-color: #fbbf24;">
-        </div>
-      </div>
-
-      <!-- Watermark Settings with Opacity Slider -->
-      <div class="grid-3" style="background: rgba(11,12,16,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-top: 12px; margin-bottom: 14px;">
+      <!-- Watermark Settings -->
+      <div class="grid-3" style="background: rgba(11,12,16,0.4); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-top: 4px; margin-bottom: 14px;">
         <div class="form-group">
           <label><i class="ph-bold ph-image"></i> Page Logo / Watermark (PNG)</label>
           <input type="file" id="watermarkInput" accept="image/png,image/jpeg" class="glass-input" style="padding: 6px 10px;">
@@ -473,11 +454,11 @@
           </div>
         </div>
 
-        <!-- REAL VIDEO FRAME SUBTITLE PREVIEW BOX (9:16 DYNAMIC PREVIEW) -->
+        <!-- REAL VIDEO FRAME SUBTITLE PREVIEW BOX -->
         <div class="form-group" style="margin-top: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label style="color: #38bdf8; font-weight: 600;">
-              <i class="ph-bold ph-video-camera"></i> Video Frame Subtitle Preview (ဗီဒီယိုပေါ်တွင် လက်တွေ့ကြည့်ရှုခြင်း)
+              <i class="ph-bold ph-video-camera"></i> Video Frame Subtitle Preview
             </label>
             <span style="font-size: 10px; color: #71717a;">✏️ Click text to edit</span>
           </div>
@@ -495,7 +476,7 @@
         </div>
       </div>
 
-      <!-- Advanced Feature Toggles with Turbo Speed Option -->
+      <!-- Feature Toggles -->
       <div class="toggles">
         <label class="toggle-item" style="color: #10b981; font-weight: 700;">
           <input type="checkbox" id="turboFastCheck" checked>
@@ -513,10 +494,6 @@
           <input type="checkbox" id="enableReelsCheck" onchange="updateAspectPreview()">
           <span>📱 TikTok / Reels 9:16 ဒေါင်လိုက် ပြောင်းလဲမည် (Auto-Blur Fill)</span>
         </label>
-        <label class="toggle-item" style="color: #fbbf24; font-weight: 500;">
-          <input type="checkbox" id="autoSpeedCheck" checked>
-          <span>⚡ Dynamic Video & Audio Speed Sync (စကားမပြောသည့် အပိုင်းလွတ်များကို အလိုအလျောက် အမြန်ရစ်မည်)</span>
-        </label>
         <label class="toggle-item">
           <input type="checkbox" id="blurSubCheck" checked>
           <span>မူရင်းစာတန်း Blur မည်</span>
@@ -524,26 +501,19 @@
       </div>
     </div>
 
-    <!-- STEP 4: Live Subtitle Editor with Auto-Classify (Endings + Diarization) -->
+    <!-- STEP 4: Live Subtitle Editor -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">4</span>
-          <h2>LIVE SUBTITLE & MULTI-SPEAKER EDITOR</h2>
+          <h2>LIVE SUBTITLE EDITOR</h2>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <button onclick="autoClassifyVoices()" class="btn btn-ghost" style="font-size: 11px;">
-            <i class="ph-bold ph-magic-wand"></i> 🎙️ Auto-Classify Voices
-          </button>
-          <label class="toggle-item" style="color: #a78bfa; font-weight: 600;">
-            <input type="checkbox" id="autoClassifyVoiceCheck" checked onchange="autoClassifyVoices()">
-            <span>🎙️ Auto-Voice Diarization (အသံရော စာသားပါ ခွဲခြားမည်)</span>
-          </label>
+        <div style="display: flex; gap: 8px; align-items: center;">
           <span id="autoSaveStatus" style="font-size: 10px; color: #10b981; font-family: 'JetBrains Mono', monospace;">✓ Auto-saved</span>
         </div>
       </div>
       <div id="linesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
-        <div style="text-align: center; padding: 20px; color: #71717a; font-size: 12px;">ဘာသာပြန်စာကြောင်းများ မရှိသေးပါ။</div>
+        <div style="text-align: center; padding: 20px; color: #71717a; font-size: 12px;">Script စာကြောင်းများ မရှိသေးပါ။ အပေါ်တွင် စာသားထည့်သွင်းပေးပါခင်ဗျာ။</div>
       </div>
     </div>
 
@@ -622,6 +592,47 @@
     let selectedPackageType = "10";
     let currentPreviewAudio = null;
     let isUserPremium = false;
+    let activeRecapMode = "third_person"; // "third_person" သို့မဟုတ် "first_person"
+
+    // MODE SWITCHER LOGIC
+    function switchRecapMode(mode) {
+      activeRecapMode = mode;
+      const btnThird = document.getElementById('btnModeThird');
+      const btnFirst = document.getElementById('btnModeFirst');
+      const badge = document.getElementById('modeBadge');
+      const assemblyBox = document.getElementById('assemblyAiBox');
+      const btnTranscribe = document.getElementById('btnTranscribe');
+      const sourceText = document.getElementById('sourceText');
+      const thirdHelp = document.getElementById('thirdPersonHelpBox');
+      const bgmGroup = document.getElementById('bgmGroup');
+      const label = document.getElementById('scriptInputLabel');
+
+      if (mode === 'third_person') {
+        btnThird.classList.add('active');
+        btnFirst.classList.remove('active');
+        badge.innerText = "🎬 Third-Person Mode (AssemblyAI မလိုပါ)";
+        badge.style.color = "#38bdf8";
+
+        assemblyBox.classList.add('hidden');
+        btnTranscribe.classList.add('hidden');
+        sourceText.classList.add('hidden');
+        thirdHelp.classList.remove('hidden');
+        bgmGroup.style.gridColumn = "span 2";
+        label.innerText = "Gemini မှ ရေးပေးလိုက်သော မြန်မာ Script စာသားများကို ကူးထည့်ပါ (JSON မလိုပါ):";
+      } else {
+        btnFirst.classList.add('active');
+        btnThird.classList.remove('active');
+        badge.innerText = "🎭 First-Person Mode (AssemblyAI ဖြင့် Dialogue ခွဲမည်)";
+        badge.style.color = "#a78bfa";
+
+        assemblyBox.classList.remove('hidden');
+        btnTranscribe.classList.remove('hidden');
+        sourceText.classList.remove('hidden');
+        thirdHelp.classList.add('hidden');
+        bgmGroup.style.gridColumn = "span 1";
+        label.innerText = "Gemini မှ ရရှိသော JSON သို့မဟုတ် စာကြောင်းများ ထည့်ပါ:";
+      }
+    }
 
     // FONT & STYLING PERSISTENCE (INDEXEDDB & LOCALSTORAGE)
     const DB_NAME = "RecapStudioDB";
@@ -843,36 +854,6 @@
       }
     }
 
-    function triggerAutoSave() {
-      const inputs = document.querySelectorAll('.sub-input');
-      const voiceSelects = document.querySelectorAll('.sub-voice-select');
-      const lines = Array.from(inputs).map(i => i.value);
-      const voices = Array.from(voiceSelects).map(s => s.value);
-
-      if (currentSegments.length && lines.length) {
-        localStorage.setItem("recap_saved_project", JSON.stringify({
-          segments: currentSegments,
-          translations: lines,
-          voices: voices
-        }));
-        document.getElementById('autoSaveStatus').innerText = "✓ Saved just now";
-      }
-    }
-
-    function restoreAutoSavedProject() {
-      const saved = localStorage.getItem("recap_saved_project");
-      if (!saved) return;
-      try {
-        const data = JSON.parse(saved);
-        if (data.segments && data.translations && data.segments.length) {
-          currentSegments = data.segments;
-          document.getElementById('sourceText').value = currentSegments.map(s => `[${s.id}] (${s.duration}s) [Speaker ${s.speaker||'A'}] ${s.text}`).join("\n");
-          renderSubEditor(data.translations, data.voices || []);
-          showToast("ယခင် မူကြမ်းစာကြောင်းများ ပြန်လည်ရယူပြီးပါပြီ!");
-        }
-      } catch (e) {}
-    }
-
     async function initFFmpegOnStart() {
       if (isFFmpegReady) return;
       showProgress("FFmpeg Engine ဒေါင်းလုဒ်ဆွဲနေပါသည်", "Browser ထဲတွင် Engine အား ပြင်ဆင်နေပါသည်...");
@@ -918,30 +899,11 @@
           }
 
           await initFFmpegOnStart();
-          restoreAutoSavedProject();
         } else {
           document.getElementById('loginGate').classList.remove('hidden');
         }
       } catch (e) {
         document.getElementById('loginGate').classList.remove('hidden');
-      }
-    }
-
-    async function uploadVoiceClone() {
-      const name = document.getElementById('cloneNameInput').value.trim();
-      const file = document.getElementById('cloneAudioInput').files[0];
-      if (!name || !file) return showToast("အမည်နှင့် အသံဖိုင် ရွေးချယ်ပေးပါခင်ဗျာ!");
-      
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("audio", file);
-      
-      try {
-        const res = await fetch("/api/voice/clone", { method: "POST", body: fd });
-        const d = await res.json();
-        showToast(d.message || d.error);
-      } catch (e) {
-        showToast("Voice Clone သိမ်းဆည်း၍ မရပါ");
       }
     }
 
@@ -952,16 +914,7 @@
       updateSubPreview();
       toggleSubSection();
       updateAspectPreview();
-
-      const styleSelect = document.getElementById('storyStyleSelect');
-      styleSelect.addEventListener('change', (e) => {
-        const hint = document.getElementById('styleHintText');
-        if (e.target.value === 'first_person') {
-          hint.innerText = "💡 တိုတိုတုတ်တုတ်နှင့် စကားပြောစစ်စစ် Recap ပုံစံဖြင့် ဘာသာပြန်ပေးမည်။";
-        } else {
-          hint.innerText = "💡 ရုပ်ရှင်ကားကြီးများအတွက် ပြင်ပမှ အကဲခတ်သူ ရှုထောင့်ဖြင့် အေးအေးဆေးဆေး ဇာတ်ကြောင်းပြန်ပြောင်း ပြောပြပေးမည်။";
-        }
-      });
+      switchRecapMode('third_person');
 
       const sizeSlider = document.getElementById('subFontSize');
       sizeSlider.addEventListener('input', (e) => {
@@ -986,31 +939,6 @@
           });
         }
       });
-
-      const fontInput = document.getElementById('fontFileInput');
-      fontInput.addEventListener('change', async (e) => {
-        if (e.target.files.length) {
-          selectedFontFile = e.target.files[0];
-          try {
-            const fontBuffer = await selectedFontFile.arrayBuffer();
-            const customFont = new FontFace("CustomUserFont", fontBuffer);
-            await customFont.load();
-            document.fonts.add(customFont);
-            document.getElementById('subPreviewText').style.fontFamily = "'CustomUserFont', 'Pyidaungsu', sans-serif";
-            
-            await saveFontToDB(selectedFontFile.name, fontBuffer);
-            document.getElementById('fontStatusText').innerText = `✓ သိမ်းဆည်းထားသော ဖောင့်: ${selectedFontFile.name}`;
-
-            updateSubPreview();
-            showToast(`ဖောင့် '${selectedFontFile.name}' ကို အောင်မြင်စွာ သိမ်းဆည်းလိုက်ပါပြီ!`);
-          } catch (err) {
-            showToast("ဖောင့်ဖိုင် Load လုပ်၍ မရပါ");
-          }
-        }
-      });
-
-      const savedKey = localStorage.getItem('assemblyai_key');
-      if (savedKey) document.getElementById('apiKey').value = savedKey;
 
       const dropZone = document.getElementById('dropZone');
       const fileInput = document.getElementById('videoFileInput');
@@ -1040,11 +968,11 @@
       });
     });
 
+    // FIRST-PERSON ONLY: AssemblyAI Transcription
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!");
       if (!isFFmpegReady) await initFFmpegOnStart();
-      localStorage.setItem('assemblyai_key', apiKey);
 
       try {
         showProgress("အသံဖိုင် ခွဲထုတ်နေပါသည်", "ဗီဒီယိုမှ MP3 အသံဖိုင် ထုတ်ယူနေပါသည်...");
@@ -1077,162 +1005,70 @@
       }
     }
 
-    async function directGeminiTranslate() {
-      if (!currentSegments.length) return showToast("စာကြောင်းများ Transcribe အရင်လုပ်ပေးပါ!");
-      
-      if (!isUserPremium) {
-        openPackageModal();
-        return showToast("💎 Direct Gemini Auto-Translation သည် Premium User များသာ အသုံးပြုနိုင်ပါသည်ခင်ဗျာ!");
+    // ★ SMART SCRIPT SUBMIT (PLAIN TEXT OR JSON AUTO-SPLITTER) ★
+    function submitRecapScript() {
+      const raw = document.getElementById('scriptTextInput').value.trim();
+      if (!raw) return showToast("ကျေးဇူးပြု၍ စာသားများ အရင်ထည့်ပေးပါခင်ဗျာ!");
+
+      let lines = [];
+
+      // JSON ပုံစံဖြင့် ထည့်သွင်းထားပါက JSON ဖတ်မည်
+      if (raw.startsWith("{") || raw.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(raw.replace(/```json|```/g, ""));
+          lines = Array.isArray(parsed) ? parsed : (parsed.translations || []);
+        } catch (e) {}
       }
 
-      const style = document.getElementById('storyStyleSelect').value;
-      showProgress("Gemini မှ ဇာတ်ကြောင်းပြော ရေးသားပေးနေပါသည်", "ရွေးချယ်ထားသော စတိုင်အတိုင်း မြန်မာစာတန်းများ ထုတ်ယူနေပါသည်...");
-      updateGauge(40);
-
-      try {
-        const res = await fetch("/api/translate/gemini-direct", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ segments: currentSegments, story_style: style })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        const trans = data.translations;
-        document.getElementById('jsonInput').value = JSON.stringify({ translations: trans }, null, 2);
-        renderSubEditor(trans);
-        triggerAutoSave();
-
-        updateGauge(100);
-        hideProgress();
-        showToast(`Gemini စာကြောင်း ${trans.length} ခု အလိုအလျောက် ထည့်သွင်းပြီးပါပြီ!`);
-      } catch (e) {
-        hideProgress();
-        showToast(e.message);
+      // Plain Text (ရိုးရိုးစာကြောင်း/စာပိုဒ်) ဖြစ်ပါက စာကြောင်းအလိုက် ခွဲထုတ်ခြင်း
+      if (!lines || lines.length === 0) {
+        // စာကြောင်းတစ်ကြောင်းချင်းစီ (Enter) သို့မဟုတ် မြန်မာပုဒ်မ (။) ဖြင့် အလိုအလျောက် ပိုင်းဖြတ်ခြင်း
+        const splitByNewlines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        
+        if (splitByNewlines.length > 1) {
+          lines = splitByNewlines;
+        } else {
+          // စာပိုဒ်တစ်ခုတည်းဆိုပါက ပုဒ်မ သို့မဟုတ် စကားဆက်ဖြင့် ခွဲထုတ်ခြင်း
+          lines = raw.split(/[။\n]/).map(l => l.trim()).filter(l => l.length > 0);
+        }
       }
+
+      if (!lines.length) return showToast("စာကြောင်းများ ခွဲထုတ်၍ မရပါ!");
+
+      // ဗီဒီယို ကြာချိန်ကို စစ်ဆေး၍ စာကြောင်းတစ်ခုချင်းစီအတွက် အချိန်ခွဲဝေခြင်း
+      const vPrev = document.getElementById('inputVideoPreview');
+      const totalDuration = (vPrev && vPrev.duration) ? vPrev.duration : (lines.length * 4.0);
+      const segmentDuration = Math.max(3.0, (totalDuration / lines.length));
+
+      currentSegments = lines.map((text, idx) => ({
+        id: idx + 1,
+        start: Math.round(idx * segmentDuration * 1000),
+        end: Math.round((idx + 1) * segmentDuration * 1000),
+        duration: parseFloat(segmentDuration.toFixed(2)),
+        speaker: 'A'
+      }));
+
+      renderSubEditor(lines);
+      showToast(`ဇာတ်ကြောင်းပြော စာကြောင်း ${lines.length} ခု အောင်မြင်စွာ ခွဲထုတ်ပြီးပါပြီ!`);
     }
 
-    function copyPrompt() {
-      if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
-      const style = document.getElementById('storyStyleSelect').value;
-      
-      let header = "";
-      if (style === 'first_person') {
-        header = `You are a professional movie recap dubber. Translate the following video segments into spoken Burmese.
-CRITICAL RULES:
-1. EXTREMELY SHORT & PUNCHY: Keep each line between 4 to 8 Burmese words only.
-2. DURATION LIMIT: The text MUST fit into the given duration (max 3-4 syllables per second). Never write long sentences.
-3. RECAP TONE: Use exciting, casual Burmese movie recap style.
-4. Output STRICT JSON format only: {"translations": ["...", "..."]}
-
-INPUTS:
-`;
-      } else {
-        header = `You are an elite Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
-CRITICAL TASK:
-Transform these video transcript lines into an engaging, cohesive, emotional Burmese movie recap narration.
-
-STORYTELLING PERSPECTIVE: Elite Third-Person Cinema Narrator (အဆင့်မြင့် ရုပ်ရှင်ဇာတ်ကြောင်းပြောစစ်စစ် - Video 1 Style).
-1. THIRD-PERSON OBSERVER: Always narrate from an outside perspective ("ဒီရုပ်ရှင်မှာတော့...", "ကောင်လေးဟာ...", "ဆမ်ဟာ...", "ဒီလိုနဲ့ပဲ..."). Never use raw spoken dialogue.
-2. HOOK & FLOW: Line 1 MUST be a powerful narrative hook to grab attention. Use smooth story transitions ("ဒါပေမဲ့ မထင်မှတ်ထားဘဲ...", "တကယ်တော့ အဖြစ်မှန်က...").
-3. NATURAL SPOKEN BURMESE: Use spoken connectors ("...တယ်", "...ခဲ့ပါတယ်", "...ပေမဲ့"). Do NOT use bookish words ("...သည်", "...၍").
-4. WORD LIMIT: Keep strictly between 5 to 8 spoken Burmese words per line to fit the duration.
-
-STRICT OUTPUT FORMAT:
-- Output STRICT JSON only: {"translations": ["...", "..."]}
-- The array length MUST strictly match the exact number of input segments.
-
-INPUT SEGMENTS:
-`;
-      }
-
-      const inputs = currentSegments.map(s => `[${s.id}] [Duration: ${s.duration}s] "${s.text}"`).join("\n");
-      navigator.clipboard.writeText(header + inputs);
-      showToast(style === 'first_person' ? "Short & Punchy Prompt ကူးယူပြီးပါပြီ!" : "Third-Person Cinema Prompt ကူးယူပြီးပါပြီ!");
-    }
-
-    function submitJson() {
-      const raw = document.getElementById('jsonInput').value.trim();
-      try {
-        const trans = JSON.parse(raw.replace(/```json|```/g, "")).translations;
-        renderSubEditor(trans);
-        triggerAutoSave();
-        showToast(`မြန်မာစာကြောင်း ${trans.length} ခု ထည့်သွင်းပြီးပါပြီ!`);
-      } catch (e) {
-        showToast("JSON Format မှားယွင်းနေပါသည်!");
-      }
-    }
-
-    function detectVoiceHybrid(seg, text, defaultVoice) {
-      if (!seg) return defaultVoice;
-
-      const trimmed = text.trim();
-      const femaleEndingRegex = /(ရှင်|ရှင့်|ပါရှင်|ပါရှင့်)[!?,.\s]*$/;
-      const maleEndingRegex = /(ဗျ|ဗျာ|ခင်ဗျ|ခင်ဗျာ|ပါဗျ|ပါဗျာ)[!?,.\s]*$/;
-
-      if (femaleEndingRegex.test(trimmed)) {
-        return "my-MM-NilarNeural";
-      }
-      if (maleEndingRegex.test(trimmed)) {
-        return "my-MM-ThihaNeural";
-      }
-
-      if (seg.speaker === 'B') {
-        return "my-MM-NilarNeural";
-      } else if (seg.speaker === 'A') {
-        return "my-MM-ThihaNeural";
-      }
-
-      return defaultVoice;
-    }
-
-    function renderSubEditor(translations, savedVoices = []) {
+    function renderSubEditor(translations) {
       const container = document.getElementById('linesContainer');
       container.innerHTML = "";
-      const defaultVoice = document.getElementById('voiceSelect').value;
-      const isAutoDiarize = document.getElementById('autoClassifyVoiceCheck')?.checked ?? true;
 
       currentSegments.forEach((seg, i) => {
         const row = document.createElement('div');
         row.style.cssText = "display: flex; align-items: center; gap: 8px; background: rgba(11,12,16,0.6); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);";
         
         const lineText = translations[i] || '';
-        let autoDetectedVoice = defaultVoice;
-        if (isAutoDiarize) {
-          autoDetectedVoice = detectVoiceHybrid(seg, lineText, defaultVoice);
-        }
-        const voiceVal = savedVoices[i] || autoDetectedVoice;
 
         row.innerHTML = `
           <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; width: 65px; flex-shrink: 0;">[${seg.id}] (${seg.duration}s)</span>
-          <select class="sub-voice-select" onchange="triggerAutoSave()" style="background:#14161f; color:#a78bfa; border:1px solid rgba(255,255,255,0.1); border-radius:6px; font-size:11px; padding:4px 6px; outline:none; cursor:pointer;">
-            <option value="my-MM-ThihaNeural" ${voiceVal.includes('Thiha') ? 'selected' : ''}>👨 Spk ${seg.speaker||'A'} (Thiha)</option>
-            <option value="my-MM-NilarNeural" ${voiceVal.includes('Nilar') ? 'selected' : ''}>👩 Spk ${seg.speaker||'B'} (Nilar)</option>
-          </select>
-          <input type="text" class="sub-input" oninput="triggerAutoSave()" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${lineText}">
+          <input type="text" class="sub-input" style="flex: 1; background: transparent; border: none; font-size: 12px; color: #e4e4e7; outline: none;" value="${lineText}">
           <button onclick="previewAudioSync(${seg.start / 1000}, '${encodeURIComponent(lineText)}', this)" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;">▶ စမ်းသပ်</button>
         `;
         container.appendChild(row);
       });
-    }
-
-    function autoClassifyVoices() {
-      const isAutoDiarize = document.getElementById('autoClassifyVoiceCheck')?.checked ?? true;
-      const defaultVoice = document.getElementById('voiceSelect').value;
-      const selects = document.querySelectorAll('.sub-voice-select');
-      const inputs = document.querySelectorAll('.sub-input');
-
-      selects.forEach((sel, idx) => {
-        const seg = currentSegments[idx];
-        const txt = inputs[idx] ? inputs[idx].value : "";
-        if (isAutoDiarize && seg) {
-          sel.value = detectVoiceHybrid(seg, txt, defaultVoice);
-        } else {
-          sel.value = defaultVoice;
-        }
-      });
-      triggerAutoSave();
-      showToast(isAutoDiarize ? "စကားဆုံးသံနှင့် မူရင်းအသံလှိုင်းကို စစ်ဆေး၍ ဇာတ်ကောင်ခွဲခြားပြီးပါပြီ!" : "Default Voice အတိုင်း ပြန်လည်သတ်မှတ်ပြီးပါပြီ!");
     }
 
     async function previewAudioSync(startTimeSec, encodedText, btnEl) {
@@ -1251,15 +1087,9 @@ INPUT SEGMENTS:
         vPrev.play();
       }
 
-      let selectedRowVoice = document.getElementById('voiceSelect').value;
-      if (btnEl && btnEl.parentElement) {
-        const rowSelect = btnEl.parentElement.querySelector('.sub-voice-select');
-        if (rowSelect) selectedRowVoice = rowSelect.value;
-      }
-
       const fd = new FormData();
       fd.append("text", text);
-      fd.append("voice", selectedRowVoice);
+      fd.append("voice", document.getElementById('voiceSelect').value);
       fd.append("pitch", document.getElementById('pitchInput').value);
       fd.append("speed", document.getElementById('speedInput').value);
 
@@ -1342,14 +1172,14 @@ INPUT SEGMENTS:
       return buffer;
     }
 
-    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmType, bgmVol, isDuckingEnabled, isAutoSpeedEnabled, highlightOffsetSec = 0) {
+    async function buildMasterAudioBuffer(ttsData, segments, bgmFile, bgmType, bgmVol, isDuckingEnabled) {
       let totalSec = 10;
       if (segments.length > 0) {
         const last = segments[segments.length - 1];
-        totalSec = Math.max(totalSec, (last.end / 1000) + highlightOffsetSec + 5);
+        totalSec = Math.max(totalSec, (last.end / 1000) + 5);
       }
       const vPrev = document.getElementById('inputVideoPreview');
-      if (vPrev && vPrev.duration) totalSec = Math.max(totalSec, vPrev.duration + highlightOffsetSec + 2);
+      if (vPrev && vPrev.duration) totalSec = Math.max(totalSec, vPrev.duration + 2);
 
       const sampleRate = 44100;
       const actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1361,42 +1191,21 @@ INPUT SEGMENTS:
         const item = ttsData.audios[i];
         if (!item.audio_b64) continue;
         const seg = segments[i];
-        const nextSeg = segments[i + 1];
 
-        const startSec = ((seg && typeof seg.start === "number") ? (seg.start / 1000) : (i * 2)) + highlightOffsetSec;
-        const originalDurationSec = item.duration_ms / 1000;
-        
-        let maxAllowedSec = seg && typeof seg.duration === "number" ? seg.duration : originalDurationSec;
-        if (nextSeg && typeof nextSeg.start === "number") {
-          maxAllowedSec = Math.min(maxAllowedSec, (nextSeg.start / 1000) - (seg.start / 1000) - 0.05);
-        }
-        maxAllowedSec = Math.max(0.5, maxAllowedSec);
-
+        const startSec = (seg && typeof seg.start === "number") ? (seg.start / 1000) : (i * 3.5);
         const bytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
         try {
           const buf = await actx.decodeAudioData(bytes.buffer.slice(0));
           const src = offlineCtx.createBufferSource();
           src.buffer = buf;
 
-          let rate = 1.0;
-          if (isAutoSpeedEnabled && originalDurationSec > maxAllowedSec) {
-            rate = Math.min(1.12, originalDurationSec / maxAllowedSec);
-          }
-          src.playbackRate.value = rate;
-
-          const actualDuration = buf.duration / rate;
-
           const gainNode = offlineCtx.createGain();
           gainNode.gain.setValueAtTime(1.0, startSec);
-          gainNode.gain.setValueAtTime(1.0, Math.max(startSec, startSec + actualDuration - 0.05));
-          gainNode.gain.linearRampToValueAtTime(0.0, startSec + actualDuration);
-
           src.connect(gainNode);
           gainNode.connect(offlineCtx.destination);
           src.start(startSec);
-          src.stop(startSec + actualDuration);
 
-          speechIntervals.push({ start: startSec, end: startSec + actualDuration });
+          speechIntervals.push({ start: startSec, end: startSec + buf.duration });
         } catch (e) {}
       }
 
@@ -1444,28 +1253,26 @@ INPUT SEGMENTS:
       return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
     }
 
+    // FINAL EXPORT
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
-      const voiceSelects = document.querySelectorAll('.sub-voice-select');
       const translations = Array.from(inputs).map(i => i.value);
-      if (!translations.length) return showToast("စာကြောင်းများ မရှိသေးပါ!");
+      if (!translations.length) return showToast("Script စာကြောင်းများ မရှိသေးပါ!");
       if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် မရှိပါ!");
       if (!isFFmpegReady) return showToast("FFmpeg Engine အဆင်သင့်မဖြစ်သေးပါ!");
 
       const isSubEnabled = document.getElementById('enableSubCheck').checked;
       const isDuckingEnabled = document.getElementById('enableDuckingCheck').checked;
       const isReelsEnabled = document.getElementById('enableReelsCheck').checked;
-      const isAutoSpeedEnabled = document.getElementById('autoSpeedCheck').checked;
-      const isHighlightEnabled = document.getElementById('enableHighlightCheck').checked;
       const isTurboFast = document.getElementById('turboFastCheck').checked;
 
-      showProgress("TTS အသံများ အရင်ထုတ်ယူနေပါသည်", "အသံဖိုင်များကို Server မှ အပြည့်အစုံ ဆွဲယူနေပါသည်...");
-      updateGauge(15);
+      showProgress("TTS အသံများ ထုတ်ယူနေပါသည်", "Narrator အသံဖိုင်များကို ထုတ်ယူနေပါသည်...");
+      updateGauge(20);
 
       try {
-        const payloadItems = translations.map((text, idx) => ({
+        const payloadItems = translations.map(text => ({
           text: text,
-          voice: voiceSelects[idx] ? voiceSelects[idx].value : document.getElementById('voiceSelect').value
+          voice: document.getElementById('voiceSelect').value
         }));
 
         const ttsRes = await fetch("/api/tts/batch-generate", {
@@ -1480,16 +1287,14 @@ INPUT SEGMENTS:
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error || "TTS အသံထုတ်ယူမှု မအောင်မြင်ပါ");
 
-        showToast("✓ အသံဖိုင်များ ရရှိပါပြီ။ ဗီဒီယိုနှင့် ပေါင်းစပ်နေပါသည်...");
-        updateGauge(35, "အသံနှင့် ဗီဒီယိုကို FFmpeg ဖြင့် ပေါင်းစပ်နေပါသည်...");
+        updateGauge(40, "Master Audio Mix ပြုလုပ်နေပါသည်...");
 
-        const highlightOffsetSec = isHighlightEnabled ? 4.0 : 0.0;
         const bgmInput = document.getElementById('bgmFile');
         const bgmFile = bgmInput.files.length ? bgmInput.files[0] : null;
         const bgmType = document.getElementById('bgmLibrarySelect').value;
-        const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 25;
+        const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 20;
         
-        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmType, bgmVol, isDuckingEnabled, isAutoSpeedEnabled, highlightOffsetSec);
+        const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmType, bgmVol, isDuckingEnabled);
 
         ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'dub_master.wav', masterWavBytes);
@@ -1501,12 +1306,12 @@ INPUT SEGMENTS:
         }
 
         let srtLines = [];
-        let curMs = isHighlightEnabled ? 4000 : 0;
+        let curMs = 0;
         for (let i = 0; i < ttsData.audios.length; i++) {
           const seg = currentSegments[i];
           const durMs = ttsData.audios[i].duration_ms;
-          const sMs = seg ? (seg.start + (highlightOffsetSec * 1000)) : curMs;
-          const eMs = seg ? (seg.start + (highlightOffsetSec * 1000) + durMs) : (curMs + durMs);
+          const sMs = seg ? seg.start : curMs;
+          const eMs = seg ? (seg.start + durMs) : (curMs + durMs);
           curMs = eMs;
           srtLines.push(`${i+1}\n${msToSrt(sMs)} --> ${msToSrt(eMs)}\n${translations[i]}\n`);
         }
@@ -1524,25 +1329,6 @@ INPUT SEGMENTS:
 
         let filterParts = [];
         let curV = "0:v";
-
-        if (isHighlightEnabled) {
-          filterParts.push(`[0:v]trim=start=20:end=24,setpts=PTS-STARTPTS[hookv];[0:v]setpts=PTS-STARTPTS[bodyv];[hookv][bodyv]concat=n=2:v=1:a=0[vhooked]`);
-          curV = "vhooked";
-        }
-
-        if (isAutoSpeedEnabled && currentSegments.length > 0) {
-          let hasGaps = false;
-          for (let i = 0; i < currentSegments.length - 1; i++) {
-            if ((currentSegments[i+1].start - currentSegments[i].end) > 1800) {
-              hasGaps = true;
-              break;
-            }
-          }
-          if (hasGaps) {
-            filterParts.push(`[${curV}]setpts=0.92*PTS[vspeed]`);
-            curV = "vspeed";
-          }
-        }
 
         if (blurSub) {
           filterParts.push(`[${curV}]split[v1][v2];[v2]crop=iw:ih*0.12:0:ih*0.88,boxblur=20[bl];[v1][bl]overlay=0:H-h[vblur]`);
@@ -1575,7 +1361,7 @@ INPUT SEGMENTS:
           finalArgs.push('-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', 'output.mp4');
         }
 
-        updateGauge(80, "အပြီးသတ် ဗီဒီယို ဖိုင်ထုတ်လုပ်နေပါသည်...");
+        updateGauge(85, "အပြီးသတ် ဗီဒီယို ဖိုင်ထုတ်လုပ်နေပါသည်...");
         await ffmpeg.run(...finalArgs);
 
         const outData = ffmpeg.FS('readFile', 'output.mp4');
