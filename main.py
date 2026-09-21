@@ -269,37 +269,40 @@ async def translate_gemini_direct(request: Request, payload: GeminiDirectRequest
     if not is_premium: return JSONResponse(status_code=403, content={"error": "💎 Direct Gemini သည် Premium User များသာ သီးသန့်ဖြစ်ပါသည်။"})
 
     if payload.story_style == "first_person":
-        style_instructions = """STORYTELLING PERSPECTIVE: First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြောပြသည့် စတိုင် - POV Style).
-- Narration perspective: Speak as the protagonist ("ကျွန်တော်/ငါ...").
-- Example recap phrases: "ရွာထဲက မြေရိုင်းတွေကို အကုန်ငှားလိုက်တော့...", "ကျွန်တော့်ကို လူတွေက အရူးလို့ ထင်ကြတယ်...", "ကျွန်တော် အိမ်ပြန်ရောက်တဲ့အခါ...", "ဒီလိုနဲ့ ကျွန်တော် စတင်ပြီး...".
-- Highly engaging, suspenseful, and personal."""
+        prompt_text = """You are a professional movie recap dubber. Translate the following video segments into spoken Burmese.
+CRITICAL RULES:
+1. EXTREMELY SHORT & PUNCHY: Keep each line between 4 to 8 Burmese words only.
+2. DURATION LIMIT: The text MUST fit into the given duration (max 3-4 syllables per second). Never write long sentences.
+3. RECAP TONE: Use exciting, casual Burmese movie recap style.
+4. Output STRICT JSON format only: {"translations": ["...", "..."]}
+
+INPUTS:
+"""
     else:
-        style_instructions = """STORYTELLING PERSPECTIVE: Elite Third-Person Cinema Narrator (အဆင့်မြင့် ရုပ်ရှင်ဇာတ်ကြောင်းပြောစစ်စစ် - Observer Style).
-CRITICAL RULES FOR THIRD-PERSON CINEMA:
+        prompt_text = """You are an elite Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
+CRITICAL TASK:
+Transform these video transcript lines into an engaging, cohesive, emotional Burmese movie recap narration.
+
+STORYTELLING PERSPECTIVE: Elite Third-Person Cinema Narrator (အဆင့်မြင့် ရုပ်ရှင်ဇာတ်ကြောင်းပြောစစ်စစ် - Observer Style).
 1. THIRD-PERSON OBSERVER (ပြင်ပ ဇာတ်ကြောင်းပြော):
    - Always narrate from an outside perspective ("ဒီရုပ်ရှင်မှာတော့...", "ကောင်လေးဟာ...", "ဆမ်ဟာ...", "ဒီလိုနဲ့ပဲ...").
    - NEVER use direct conversational dialogues ("ငါ သွားမယ်", "မင်း ဘာလဲ"). Describe their actions, situations, and emotions instead.
 2. HOOK & STORYTELLING FLOW:
-   - Line 1 MUST be a powerful narrative hook to grab audience retention immediately (ပထမ ၃ စက္ကန့် အာရုံဖမ်းစားမည့် Hook စာကြောင်းဖြင့် စတင်ပါ).
+   - Line 1 MUST be a powerful narrative hook to grab audience retention immediately.
    - Use natural Burmese storytelling transitions ("ဒါပေမဲ့ မထင်မှတ်ထားဘဲ...", "တကယ်တော့ အဖြစ်မှန်က...", "ဒီအချိန်မှာပဲ...", "နောက်ဆုံးမှာတော့...").
-3. NATURAL SPOKEN BURMESE (စကားပြောလေသံ စစ်စစ်):
-   - Strictly use casual spoken Burmese connectors ("...တယ်", "...ခဲ့ပါတယ်", "...ပေမဲ့", "...တာကြောင့်"). 
-   - DO NOT use formal bookish words ("...သည်", "...၍", "...သဖြင့်").
+3. NATURAL SPOKEN BURMESE:
+   - Strictly use casual spoken Burmese connectors ("...တယ်", "...ခဲ့ပါတယ်", "...ပေမဲ့"). 
+   - DO NOT use formal bookish words ("...သည်", "...၍").
 4. DURATION & WORD LIMIT:
-   - Keep each line between 5 to 8 spoken Burmese words to strictly match the duration limit."""
-
-    prompt_text = f"""You are an elite Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
-CRITICAL TASK:
-Transform these video transcript lines into an engaging, cohesive, emotional Burmese movie recap narration.
-
-{style_instructions}
+   - Keep each line between 5 to 8 spoken Burmese words to strictly match the duration limit.
 
 STRICT JSON OUTPUT FORMAT:
-- Output STRICT JSON only: {{"translations": ["ပထမစာကြောင်း", "ဒုတိယစာကြောင်း", ...]}}
+- Output STRICT JSON only: {"translations": ["...", "..."]}
 - The array length MUST strictly match the exact number of input segments.
 
 INPUT SEGMENTS:
 """
+
     for seg in payload.segments:
         prompt_text += f"[{seg.get('id')}] [Duration: {seg.get('duration')}s] \"{seg.get('text')}\"\n"
     
