@@ -120,10 +120,9 @@
     textarea.glass-input { resize: vertical; line-height: 1.7; }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
     @media (max-width: 650px) {
-      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .grid-2, .grid-4 { grid-template-columns: 1fr; }
       .nav { flex-direction: column; height: auto; padding: 12px; gap: 10px; }
     }
 
@@ -163,7 +162,7 @@
     }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal-apple-card {
-      background: rgba(26, 26, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(26, 26, 28, 0.9); border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 24px; padding: 28px; max-width: 440px; width: 100%; text-align: center;
       box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
     }
@@ -420,6 +419,10 @@
           <span>🎞️ 21:9 Cinema Letterbox Bars</span>
         </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f43f5e; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" id="progressBarCheck" checked style="accent-color: #f43f5e;">
+          <span>🔴 Retention Red Progress Bar (အောက်ခြေလိုင်း)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f43f5e; font-weight: 600; cursor: pointer;">
           <input type="checkbox" id="enableReelsCheck" style="accent-color: #f43f5e;">
           <span>📱 TikTok / Reels 9:16 Auto-Blur Fill</span>
         </label>
@@ -450,7 +453,7 @@
       </div>
     </div>
 
-    <!-- 05 / RENDER BUTTON -->
+    <!-- 05 / RENDER BUTTON & ACTIONS -->
     <div style="margin-top: 8px;">
       <button id="btnExport" onclick="startClientExport()" class="btn-apple-primary">
         <i class="ph-bold ph-play"></i> Render Movie Recap Video
@@ -463,15 +466,39 @@
         <video id="videoPlayer" controls style="max-height: 440px; width: 100%; border-radius: 16px; border: 1px solid var(--glass-border); margin-bottom: 14px;"></video>
         
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px;">
-          <a id="downloadBtn" download="recap_video.mp4" class="btn-apple-primary" style="text-decoration: none; width: auto; padding: 12px 28px;">
-            <i class="ph-bold ph-download-simple"></i> Download Video
+          <a id="downloadBtn" download="recap_video.mp4" class="btn-apple-primary" style="text-decoration: none; width: auto; padding: 12px 24px;">
+            <i class="ph-bold ph-download-simple"></i> Download Full Video
           </a>
+
+          <a id="downloadAudioBtn" download="master_recap_audio.wav" class="btn-apple-ghost" style="padding: 12px 20px; color: #38bdf8; border-color: rgba(56,189,248,0.4); text-decoration: none;">
+            <i class="ph-bold ph-music-notes"></i> Download Audio Only (WAV)
+          </a>
+
+          <button onclick="sendToTelegramDirect()" class="btn-apple-ghost" style="padding: 12px 20px; background: rgba(34, 158, 217, 0.2); color: #229ed9; border-color: rgba(34, 158, 217, 0.4);">
+            <i class="ph-bold ph-telegram-logo"></i> Send to Telegram
+          </button>
+
           <button id="btnSplitPart" onclick="splitCliffhangerHalf()" class="btn-apple-ghost" style="padding: 12px 20px; background: rgba(147, 51, 234, 0.2); color: #c084fc; border-color: rgba(147, 51, 234, 0.4);">
-            <i class="ph-bold ph-scissors"></i> ✂️ Split into Part 1 & Part 2
+            <i class="ph-bold ph-scissors"></i> ✂️ Split Part 1 & Part 2
           </button>
         </div>
 
         <div id="splitLinksContainer" style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;"></div>
+
+        <!-- AI AUTO-THUMBNAIL SECTION -->
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: left; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: 600; color: #fbbf24;">
+              <i class="ph-bold ph-image-square"></i> AI Generated HD Thumbnail / Cover Image
+            </span>
+            <button onclick="downloadThumbnailCover()" class="btn-apple-ghost" style="padding: 4px 12px; font-size: 11px;">
+              <i class="ph-bold ph-download-simple"></i> Download Cover
+            </button>
+          </div>
+          <div style="display: flex; justify-content: center;">
+            <canvas id="thumbCanvas" style="max-height: 200px; width: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);"></canvas>
+          </div>
+        </div>
 
         <!-- AI AUTO-CAPTION & HASHTAGS BOX -->
         <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: left;">
@@ -491,13 +518,22 @@
 
   </main>
 
-  <!-- PROGRESS MODAL -->
+  <!-- PROGRESS MODAL WITH ELAPSED & ESTIMATED REMAINING TIMER -->
   <div id="loadingModal" class="modal-overlay">
     <div class="modal-apple-card">
       <h3 id="modalTitle" style="font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px;">လုပ်ဆောင်နေပါသည်</h3>
-      <p id="modalStatus" style="font-size: 12px; color: var(--text-sub); margin-bottom: 16px;">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
-      <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+      <p id="modalStatus" style="font-size: 12px; color: var(--text-sub); margin-bottom: 12px;">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
+      
+      <!-- Progress Bar -->
+      <div style="width: 100%; height: 5px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; margin-bottom: 12px;">
         <div id="progressBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.2s;"></div>
+      </div>
+
+      <!-- Live Elapsed & Remaining Time Display -->
+      <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-sub);">
+        <span>ကြာချိန်: <b id="timerElapsed" style="color: #fff;">00:00</b></span>
+        <span id="percentNumber" style="color: var(--accent); font-weight: bold;">0%</span>
+        <span>ခန့်မှန်းကျန်ချိန်: <b id="timerRemaining" style="color: #34d399;">တွက်ချက်နေဆဲ...</b></span>
       </div>
     </div>
   </div>
@@ -509,6 +545,12 @@
     let currentSegments = [];
     let selectedVideoFile = null;
     let selectedPackageType = "10";
+    let currentVideoBlob = null;
+    let currentMasterAudioBlob = null;
+
+    // Timer & Estimation Variables
+    let progressStartTime = null;
+    let timerInterval = null;
 
     // Voice Clone Variables
     let mediaRecorder = null;
@@ -526,19 +568,49 @@
       setTimeout(() => t.remove(), 3500);
     }
 
+    function formatSeconds(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
     function showProgress(title, status) {
       document.getElementById('modalTitle').innerText = title;
       document.getElementById('modalStatus').innerText = status;
-      document.getElementById('progressBar').style.width = "10%";
+      document.getElementById('progressBar').style.width = "5%";
+      document.getElementById('percentNumber').innerText = "5%";
+      document.getElementById('timerElapsed').innerText = "00:00";
+      document.getElementById('timerRemaining').innerText = "တွက်ချက်နေဆဲ...";
+
+      progressStartTime = Date.now();
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        const elapsedSec = (Date.now() - progressStartTime) / 1000;
+        document.getElementById('timerElapsed').innerText = formatSeconds(elapsedSec);
+      }, 500);
+
       document.getElementById('loadingModal').classList.add('active');
     }
 
     function updateGauge(percent, status) {
-      document.getElementById('progressBar').style.width = percent + "%";
+      const p = Math.min(100, Math.max(0, Math.round(percent)));
+      document.getElementById('progressBar').style.width = p + "%";
+      document.getElementById('percentNumber').innerText = p + "%";
       if (status) document.getElementById('modalStatus').innerText = status;
+
+      if (progressStartTime && p > 10 && p < 99) {
+        const elapsedSec = (Date.now() - progressStartTime) / 1000;
+        const totalEstimatedSec = (elapsedSec / p) * 100;
+        const remainingSec = Math.max(0, totalEstimatedSec - elapsedSec);
+        document.getElementById('timerRemaining').innerText = formatSeconds(remainingSec);
+      } else if (p >= 100) {
+        document.getElementById('timerRemaining').innerText = "00:00";
+      }
     }
 
     function hideProgress() {
+      if (timerInterval) clearInterval(timerInterval);
       document.getElementById('loadingModal').classList.remove('active');
     }
 
@@ -592,9 +664,7 @@
 
         recordInterval = setInterval(() => {
           recordSeconds++;
-          const m = Math.floor(recordSeconds / 60).toString().padStart(2, '0');
-          const s = (recordSeconds % 60).toString().padStart(2, '0');
-          document.getElementById('recordTimer').innerText = `${m}:${s}`;
+          document.getElementById('recordTimer').innerText = formatSeconds(recordSeconds);
         }, 1000);
       } catch (err) {
         showToast("မိုက်ခရိုဖုန်း အသုံးပြုခွင့် မရရှိပါ");
@@ -750,6 +820,11 @@
     async function initFFmpeg() {
       if (isFFmpegReady) return;
       ffmpeg = createFFmpeg({ log: false, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
+      ffmpeg.setProgress(({ ratio }) => {
+        if (ratio > 0 && ratio <= 1) {
+          updateGauge(65 + Math.round(ratio * 33), "Rendering Video Frames...");
+        }
+      });
       await ffmpeg.load();
       isFFmpegReady = true;
     }
@@ -840,6 +915,23 @@
       return buffer;
     }
 
+    // Impact SFX Synthesizer
+    function createImpactSFXBuffer(actx) {
+      const length = actx.sampleRate * 1.2;
+      const buffer = actx.createBuffer(2, length, actx.sampleRate);
+      const dL = buffer.getChannelData(0);
+      const dR = buffer.getChannelData(1);
+      for (let i = 0; i < length; i++) {
+        const t = i / actx.sampleRate;
+        const env = Math.exp(-t * 3.5);
+        const freq = 120 * Math.exp(-t * 4);
+        const s = Math.sin(2 * Math.PI * freq * t) * env * 0.5;
+        dL[i] = s;
+        dR[i] = s;
+      }
+      return buffer;
+    }
+
     // ★ ALL-IN-ONE CLIENT EXPORT ENGINE ★
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
@@ -853,11 +945,12 @@
       const isAmbientAudio = document.getElementById('ambientAudioCheck').checked;
       const isCopyrightShield = document.getElementById('copyrightBypassCheck').checked;
       const isLetterbox = document.getElementById('letterboxCheck').checked;
+      const isProgressBar = document.getElementById('progressBarCheck').checked;
       const isReels = document.getElementById('enableReelsCheck').checked;
       const isTurboFast = document.getElementById('turboFastCheck').checked;
 
       showProgress("Generating Audio...", "TTS ဖြင့် ဇာတ်ကြောင်းပြော အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
-      updateGauge(20);
+      updateGauge(15);
 
       try {
         let payloadItems = lines.map(text => ({
@@ -881,7 +974,7 @@
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error || "TTS Error");
 
-        updateGauge(45, "Dynamic Audio Ducking & Master Mix ပြုလုပ်နေပါသည်...");
+        updateGauge(35, "BGM နှင့် Impact SFX အား Master Audio Mix ပြုလုပ်နေပါသည်...");
 
         const hookOffsetSec = isHookTeaser ? 3.0 : 0.0;
         const actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -892,7 +985,7 @@
 
         let speechIntervals = [];
 
-        // 1. Narrator Voice Placement (Pacing Sync with Hook Offset)
+        // 1. Narrator Voice Placement (with Dramatic Breathers)
         for (let i = 0; i < currentSegments.length; i++) {
           const item = ttsData.audios[i];
           if (!item || !item.audio_b64) continue;
@@ -914,6 +1007,17 @@
             src.start(startSec);
 
             speechIntervals.push({ start: startSec, end: startSec + (buf.duration / src.playbackRate.value) });
+
+            // Dramatic Impact SFX at Scene Change
+            if (i === 1 || i === Math.floor(currentSegments.length / 2)) {
+              const sfxSrc = offlineCtx.createBufferSource();
+              sfxSrc.buffer = createImpactSFXBuffer(offlineCtx);
+              const sfxGain = offlineCtx.createGain();
+              sfxGain.gain.value = 0.35;
+              sfxSrc.connect(sfxGain);
+              sfxGain.connect(offlineCtx.destination);
+              sfxSrc.start(Math.max(0, startSec - 0.2));
+            }
           } catch (e) {}
         }
 
@@ -968,17 +1072,19 @@
         const rendered = await offlineCtx.startRendering();
         const masterWav = audioBufferToWav(rendered);
 
+        currentMasterAudioBlob = new Blob([masterWav.buffer], { type: 'audio/wav' });
+        document.getElementById('downloadAudioBtn').href = URL.createObjectURL(currentMasterAudioBlob);
+
         ffmpeg.FS('writeFile', 'input_raw.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'master_dub.wav', masterWav);
 
-        // Watermark File Handling
         const wmInput = document.getElementById('watermarkInput');
         const hasWatermark = wmInput.files.length > 0;
         if (hasWatermark) {
           ffmpeg.FS('writeFile', 'watermark.png', await fetchFile(wmInput.files[0]));
         }
 
-        updateGauge(70, "ဗီဒီယိုနှင့် အသံကို ပေါင်းစပ် Render လုပ်နေပါသည်...");
+        updateGauge(60, "ဗီဒီယို Frames များကို Render လုပ်နေပါသည်...");
 
         let videoFilterParts = [];
         let audioFilterParts = [];
@@ -1008,6 +1114,12 @@
         if (isLetterbox) {
           videoFilterParts.push(`${curV}drawbox=y=0:h=ih*0.11:color=black:t=fill,drawbox=y=ih*0.89:h=ih*0.11:color=black:t=fill[v_letter]`);
           curV = "[v_letter]";
+        }
+
+        // Retention Red Progress Bar
+        if (isProgressBar) {
+          videoFilterParts.push(`${curV}drawbox=x=0:y=ih-5:w='iw*(t/${totalSec})':h=5:color=red@0.9:t=fill[v_pbar]`);
+          curV = "[v_pbar]";
         }
 
         // 9:16 Reels Auto-Blur Fill
@@ -1051,8 +1163,8 @@
         await ffmpeg.run(...ffmpegArgs);
 
         const outData = ffmpeg.FS('readFile', 'final_output.mp4');
-        const videoBlob = new Blob([outData.buffer], { type: 'video/mp4' });
-        const videoUrl = URL.createObjectURL(videoBlob);
+        currentVideoBlob = new Blob([outData.buffer], { type: 'video/mp4' });
+        const videoUrl = URL.createObjectURL(currentVideoBlob);
 
         const player = document.getElementById('videoPlayer');
         player.innerHTML = "";
@@ -1061,8 +1173,9 @@
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
 
-        // AI Caption & Hashtags Generator
+        // AI Caption & Thumbnail Generation
         generateAiPostCaption(lines);
+        generateAutoThumbnailCover(player, lines);
 
         try {
           await fetch("/api/credits/consume", { method: "POST" });
@@ -1070,7 +1183,7 @@
         } catch (e) {}
 
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
-        setTimeout(hideProgress, 500);
+        setTimeout(hideProgress, 600);
         showToast("Cinema Movie Recap ဗီဒီယို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!");
       } catch (err) {
         hideProgress();
@@ -1078,7 +1191,50 @@
       }
     }
 
-    // AI Caption & Hashtags Generator Logic
+    // AI Thumbnail Cover Generator
+    function generateAutoThumbnailCover(player, lines) {
+      player.currentTime = Math.min(20, (player.duration || 10) * 0.3);
+      player.onseeked = () => {
+        const canvas = document.getElementById('thumbCanvas');
+        if (!player.videoWidth) return;
+        canvas.width = player.videoWidth;
+        canvas.height = player.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
+
+        // Title text on cover
+        let title = "အံ့ဩဖွယ် ဇာတ်သိမ်းခန်း";
+        if (lines.length > 0) {
+          title = lines[0].replace(/\[.*?\]/g, '').trim().substring(0, 24);
+        }
+
+        const fontSize = Math.max(36, Math.floor(canvas.width / 15));
+        ctx.font = `bold ${fontSize}px 'Pyidaungsu', sans-serif`;
+        ctx.textAlign = "center";
+
+        const gradY = canvas.height * 0.1;
+        const gradH = fontSize * 2.2;
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0, gradY, canvas.width, gradH);
+
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "#000";
+        ctx.strokeText(title, canvas.width / 2, gradY + fontSize * 1.4);
+
+        ctx.fillStyle = "#facc15";
+        ctx.fillText(title, canvas.width / 2, gradY + fontSize * 1.4);
+      };
+    }
+
+    function downloadThumbnailCover() {
+      const canvas = document.getElementById('thumbCanvas');
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL("image/png");
+      a.download = "recap_cover.png";
+      a.click();
+      showToast("HD Thumbnail အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!");
+    }
+
     function generateAiPostCaption(lines) {
       let title = "မထင်မှတ်ထားသော အဆုံးသတ်ဖြင့် ရုပ်ရှင်ကားကောင်း";
       if (lines.length > 0) {
@@ -1095,7 +1251,26 @@
       showToast("Caption & Hashtags ကူးယူပြီးပါပြီ!");
     }
 
-    // Auto Cliffhanger Splitter (Part 1 & Part 2)
+    async function sendToTelegramDirect() {
+      if (!currentVideoBlob) return showToast("ဗီဒီယို မရှိသေးပါ!");
+      showProgress("Telegram သို့ ပို့နေပါသည်", "ချန်နယ်ဆီသို့ တိုက်ရိုက် တင်နေပါသည်...");
+      
+      const fd = new FormData();
+      fd.append("video", currentVideoBlob, "recap_video.mp4");
+      fd.append("caption", "🎬 AI Cinema Movie Recap");
+
+      try {
+        const res = await fetch("/api/telegram/send-video", { method: "POST", body: fd });
+        const data = await res.json();
+        hideProgress();
+        if (!res.ok) throw new Error(data.error);
+        showToast(data.message);
+      } catch (e) {
+        hideProgress();
+        showToast("Telegram ပို့၍ မရပါ: " + e.message);
+      }
+    }
+
     async function splitCliffhangerHalf() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.duration) return showToast("ဗီဒီယို အရင် Render လုပ်ပါ!");
@@ -1113,10 +1288,10 @@
 
         document.getElementById('splitLinksContainer').innerHTML = `
           <a href="${URL.createObjectURL(p1)}" download="recap_part1.mp4" class="btn-apple-ghost" style="color:#c084fc; border-color:rgba(147,51,234,0.4);">
-            📥 Download Part 1 (0:00 - ${Math.floor(halfTime/60)}:${(halfTime%60).toString().padStart(2,'0')})
+            📥 Download Part 1 (0:00 - ${formatSeconds(halfTime)})
           </a>
           <a href="${URL.createObjectURL(p2)}" download="recap_part2.mp4" class="btn-apple-ghost" style="color:#c084fc; border-color:rgba(147,51,234,0.4);">
-            📥 Download Part 2 (${Math.floor(halfTime/60)}:${(halfTime%60).toString().padStart(2,'0')} - End)
+            📥 Download Part 2 (${formatSeconds(halfTime)} - End)
           </a>
         `;
         hideProgress();
