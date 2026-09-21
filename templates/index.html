@@ -145,13 +145,13 @@
 
     .btn-apple-ghost {
       background: rgba(255, 255, 255, 0.07); color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 14px;
       font-size: 12px; font-weight: 500; border-radius: 980px; cursor: pointer;
       display: inline-flex; align-items: center; gap: 6px;
     }
 
     .sub-item-card {
-      display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px;
+      display: flex; align-items: center; gap: 12px; padding: 12px 14px;
       background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px;
     }
 
@@ -417,14 +417,14 @@
       </div>
     </div>
 
-    <!-- 04 / SCRIPT TIMELINE -->
+    <!-- 04 / SCRIPT TIMELINE & AUDIO PREVIEW -->
     <div class="section apple-glass">
       <div class="section-header">
-        <div class="section-title"><i class="ph-bold ph-list-dashes"></i> 04 / Script Timeline Preview</div>
+        <div class="section-title"><i class="ph-bold ph-list-dashes"></i> 04 / Script Timeline & Live Audio Preview</div>
         <span id="scriptCountDisplay" style="font-size: 11px; color: var(--text-sub);">0 segments</span>
       </div>
 
-      <div id="linesContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;">
+      <div id="linesContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto;">
         <p style="text-align: center; color: var(--text-sub); font-size: 12px; padding: 20px;">စာသားများ မရှိသေးပါ။ အပေါ်တွင် Script ထည့်ပေးပါခင်ဗျာ။</p>
       </div>
     </div>
@@ -524,6 +524,7 @@
 
     let progressStartTime = null;
     let timerInterval = null;
+    let currentPreviewAudio = null;
 
     // Voice Clone Variables
     let mediaRecorder = null;
@@ -771,7 +772,7 @@
         return;
       }
 
-      currentSegments.forEach((seg) => {
+      currentSegments.forEach((seg, idx) => {
         const row = document.createElement('div');
         row.className = 'sub-item-card';
         const sMin = Math.floor(seg.start / 60000).toString().padStart(2, '0');
@@ -780,14 +781,71 @@
         const eSec = Math.floor((seg.end % 60000) / 1000).toString().padStart(2, '0');
 
         row.innerHTML = `
-          <span style="font-size:11px; color:var(--accent); font-family:'JetBrains Mono'; font-weight:600; width:110px; flex-shrink:0;">
+          <span style="font-size:11px; color:var(--accent); font-family:'JetBrains Mono'; font-weight:600; width:100px; flex-shrink:0;">
             [${sMin}:${sSec} - ${eMin}:${eSec}]
           </span>
-          <textarea class="sub-input" rows="2" style="flex:1; background:transparent; border:none; color:#fff; font-size:13px; outline:none; font-family:inherit;">${seg.text}</textarea>
-          <span style="font-size:10px; color:var(--text-sub); font-family:'JetBrains Mono';">${seg.duration}s</span>
+          <textarea id="sub_input_${idx}" class="sub-input" rows="2" style="flex:1; background:transparent; border:none; color:#fff; font-size:13px; outline:none; font-family:inherit;">${seg.text}</textarea>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+            <button onclick="previewAudioLine(${idx}, this)" class="btn-apple-ghost" style="padding: 4px 10px; font-size: 11px; color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
+              <i class="ph-bold ph-play"></i> စမ်းနားထောင်
+            </button>
+            <span style="font-size:10px; color:var(--text-sub); font-family:'JetBrains Mono';">${seg.duration}s</span>
+          </div>
         `;
         c.appendChild(row);
       });
+    }
+
+    // ★ SINGLE LINE AUDIO PREVIEW LOGIC ★
+    async function previewAudioLine(index, btnEl) {
+      const text = document.getElementById(`sub_input_${index}`).value.trim();
+      if (!text) return showToast("စာသား မရှိပါခင်ဗျာ!");
+
+      const seg = currentSegments[index];
+      const vPrev = document.getElementById('inputVideoPreview');
+
+      if (currentPreviewAudio) {
+        currentPreviewAudio.pause();
+        currentPreviewAudio = null;
+      }
+
+      if (vPrev && !vPrev.classList.contains('hidden') && seg) {
+        vPrev.currentTime = seg.start / 1000;
+        vPrev.muted = true;
+        vPrev.play().catch(()=>{});
+      }
+
+      const origText = btnEl.innerHTML;
+      btnEl.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> စောင့်ပါ...`;
+      btnEl.disabled = true;
+
+      const fd = new FormData();
+      fd.append("text", text);
+      fd.append("voice", document.getElementById('voiceSelect').value);
+      fd.append("pitch", document.getElementById('pitchSelect').value);
+      fd.append("speed", "0");
+
+      try {
+        const res = await fetch("/api/preview-single-audio", { method: "POST", body: fd });
+        if (!res.ok) throw new Error("Audio preview failed");
+
+        const blob = await res.blob();
+        currentPreviewAudio = new Audio(URL.createObjectURL(blob));
+
+        currentPreviewAudio.onended = () => {
+          btnEl.innerHTML = origText;
+          btnEl.disabled = false;
+          if (vPrev) vPrev.pause();
+        };
+
+        btnEl.innerHTML = `<i class="ph-bold ph-speaker-high"></i> ဖွင့်နေသည်...`;
+        await currentPreviewAudio.play();
+      } catch (err) {
+        btnEl.innerHTML = origText;
+        btnEl.disabled = false;
+        if (vPrev) vPrev.pause();
+        showToast("အသံစမ်းသပ်၍ မရပါ: " + err.message);
+      }
     }
 
     async function initFFmpeg() {
