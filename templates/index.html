@@ -388,22 +388,6 @@
         </div>
       </div>
 
-      <!-- Watermark Logo & Hook Inserter Inputs -->
-      <div class="grid-2" style="margin-top: 16px;">
-        <div>
-          <label style="font-size: 11px; color: var(--text-sub); display: block; margin-bottom: 6px;">
-            <i class="ph-bold ph-image"></i> Channel / Page Watermark Logo (PNG)
-          </label>
-          <input type="file" id="watermarkInput" accept="image/png,image/jpeg" class="glass-input" style="padding: 8px 12px;">
-        </div>
-        <div>
-          <label style="font-size: 11px; color: var(--text-sub); display: block; margin-bottom: 6px;">
-            <i class="ph-bold ph-lightning"></i> Hook Teaser Start Time (စက္ကန့်)
-          </label>
-          <input type="number" id="hookStartTimeInput" value="45" min="0" class="glass-input" placeholder="ဥပမာ- 45 (ဗီဒီယိုအစတွင် 3s Teaser ကပ်မည်)">
-        </div>
-      </div>
-
       <!-- Advanced Features (Checkboxes) -->
       <div style="display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap;">
         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #34d399; font-weight: 600; cursor: pointer;">
@@ -411,24 +395,16 @@
           <span>🎬 မူရင်းရုပ်ရှင်အသံ (Ambient Audio) ၁၂%</span>
         </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #38bdf8; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="copyrightBypassCheck" checked style="accent-color: #38bdf8;">
-          <span>🛡️ Copyright Shield (3% Zoom, Flip & Warm Grade)</span>
+          <input type="checkbox" id="copyrightBypassCheck" style="accent-color: #38bdf8;">
+          <span>🛡️ Copyright Shield (Warm Contrast Grade)</span>
         </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #fbbf24; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="letterboxCheck" checked style="accent-color: #fbbf24;">
+          <input type="checkbox" id="letterboxCheck" style="accent-color: #fbbf24;">
           <span>🎞️ 21:9 Cinema Letterbox Bars</span>
         </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f43f5e; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="progressBarCheck" checked style="accent-color: #f43f5e;">
-          <span>🔴 Retention Red Progress Bar (အောက်ခြေလိုင်း)</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f43f5e; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="enableReelsCheck" style="accent-color: #f43f5e;">
-          <span>📱 TikTok / Reels 9:16 Auto-Blur Fill</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #a78bfa; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="hookTeaserCheck" checked style="accent-color: #a78bfa;">
-          <span>⚡ 3.0s Climax Hook Teaser Inserter</span>
+          <input type="checkbox" id="progressBarCheck" style="accent-color: #f43f5e;">
+          <span>🔴 Retention Red Progress Bar</span>
         </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #34d399; font-weight: 600; cursor: pointer;">
           <input type="checkbox" id="ctaAudioCheck" checked style="accent-color: #34d399;">
@@ -524,12 +500,10 @@
       <h3 id="modalTitle" style="font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px;">လုပ်ဆောင်နေပါသည်</h3>
       <p id="modalStatus" style="font-size: 12px; color: var(--text-sub); margin-bottom: 12px;">ခေတ္တစောင့်ဆိုင်းပေးပါ...</p>
       
-      <!-- Progress Bar -->
       <div style="width: 100%; height: 5px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; margin-bottom: 12px;">
         <div id="progressBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.2s;"></div>
       </div>
 
-      <!-- Live Elapsed & Remaining Time Display -->
       <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-sub);">
         <span>ကြာချိန်: <b id="timerElapsed" style="color: #fff;">00:00</b></span>
         <span id="percentNumber" style="color: var(--accent); font-weight: bold;">0%</span>
@@ -548,7 +522,6 @@
     let currentVideoBlob = null;
     let currentMasterAudioBlob = null;
 
-    // Timer & Estimation Variables
     let progressStartTime = null;
     let timerInterval = null;
 
@@ -915,24 +888,7 @@
       return buffer;
     }
 
-    // Impact SFX Synthesizer
-    function createImpactSFXBuffer(actx) {
-      const length = actx.sampleRate * 1.2;
-      const buffer = actx.createBuffer(2, length, actx.sampleRate);
-      const dL = buffer.getChannelData(0);
-      const dR = buffer.getChannelData(1);
-      for (let i = 0; i < length; i++) {
-        const t = i / actx.sampleRate;
-        const env = Math.exp(-t * 3.5);
-        const freq = 120 * Math.exp(-t * 4);
-        const s = Math.sin(2 * Math.PI * freq * t) * env * 0.5;
-        dL[i] = s;
-        dR[i] = s;
-      }
-      return buffer;
-    }
-
-    // ★ ALL-IN-ONE CLIENT EXPORT ENGINE ★
+    // ★ STABLE & CRASH-FREE CLIENT EXPORT ENGINE ★
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const lines = Array.from(inputs).map(i => i.value.trim()).filter(i => i.length > 0);
@@ -940,14 +896,12 @@
       if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် ရွေးချယ်ပေးပါ!");
       if (!isFFmpegReady) await initFFmpeg();
 
-      const isHookTeaser = document.getElementById('hookTeaserCheck').checked;
-      const isCtaAudio = document.getElementById('ctaAudioCheck').checked;
-      const isAmbientAudio = document.getElementById('ambientAudioCheck').checked;
-      const isCopyrightShield = document.getElementById('copyrightBypassCheck').checked;
-      const isLetterbox = document.getElementById('letterboxCheck').checked;
-      const isProgressBar = document.getElementById('progressBarCheck').checked;
-      const isReels = document.getElementById('enableReelsCheck').checked;
-      const isTurboFast = document.getElementById('turboFastCheck').checked;
+      const isCtaAudio = document.getElementById('ctaAudioCheck')?.checked ?? true;
+      const isAmbientAudio = document.getElementById('ambientAudioCheck')?.checked ?? true;
+      const isCopyrightShield = document.getElementById('copyrightBypassCheck')?.checked ?? false;
+      const isLetterbox = document.getElementById('letterboxCheck')?.checked ?? false;
+      const isProgressBar = document.getElementById('progressBarCheck')?.checked ?? false;
+      const isTurboFast = document.getElementById('turboFastCheck')?.checked ?? true;
 
       showProgress("Generating Audio...", "TTS ဖြင့် ဇာတ်ကြောင်းပြော အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
       updateGauge(15);
@@ -974,23 +928,22 @@
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error || "TTS Error");
 
-        updateGauge(35, "BGM နှင့် Impact SFX အား Master Audio Mix ပြုလုပ်နေပါသည်...");
+        updateGauge(35, "Audio Master Mix ပြုလုပ်နေပါသည်...");
 
-        const hookOffsetSec = isHookTeaser ? 3.0 : 0.0;
         const actx = new (window.AudioContext || window.webkitAudioContext)();
         const vPrev = document.getElementById('inputVideoPreview');
         const lastSeg = currentSegments[currentSegments.length - 1];
-        const totalSec = Math.max((vPrev && vPrev.duration) ? vPrev.duration + hookOffsetSec : 15, (lastSeg.end / 1000) + hookOffsetSec + 4);
+        const totalSec = Math.max((vPrev && vPrev.duration) ? vPrev.duration : 15, (lastSeg.end / 1000) + 4);
         const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(totalSec * 44100), 44100);
 
         let speechIntervals = [];
 
-        // 1. Narrator Voice Placement (with Dramatic Breathers)
+        // 1. Narrator Voice Placement
         for (let i = 0; i < currentSegments.length; i++) {
           const item = ttsData.audios[i];
           if (!item || !item.audio_b64) continue;
           const seg = currentSegments[i];
-          const startSec = (seg.start / 1000) + hookOffsetSec;
+          const startSec = (seg.start / 1000);
           const targetDurationSec = seg.duration;
 
           const bytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
@@ -1007,21 +960,10 @@
             src.start(startSec);
 
             speechIntervals.push({ start: startSec, end: startSec + (buf.duration / src.playbackRate.value) });
-
-            // Dramatic Impact SFX at Scene Change
-            if (i === 1 || i === Math.floor(currentSegments.length / 2)) {
-              const sfxSrc = offlineCtx.createBufferSource();
-              sfxSrc.buffer = createImpactSFXBuffer(offlineCtx);
-              const sfxGain = offlineCtx.createGain();
-              sfxGain.gain.value = 0.35;
-              sfxSrc.connect(sfxGain);
-              sfxGain.connect(offlineCtx.destination);
-              sfxSrc.start(Math.max(0, startSec - 0.2));
-            }
           } catch (e) {}
         }
 
-        // Ending CTA Audio Placement
+        // Ending CTA Voice Placement
         if (isCtaAudio && ttsData.audios.length > currentSegments.length) {
           const ctaItem = ttsData.audios[ttsData.audios.length - 1];
           if (ctaItem && ctaItem.audio_b64) {
@@ -1038,7 +980,7 @@
           }
         }
 
-        // 2. Cinematic BGM Placement with Dynamic Ducking
+        // 2. Background Music (BGM) with Ducking
         const bgmType = document.getElementById('bgmLibrarySelect').value;
         const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) || 18) / 100;
 
@@ -1059,7 +1001,6 @@
             bgmGain.gain.linearRampToValueAtTime(bgmVol, sp.end + 0.35);
           });
 
-          // Ending Fadeout
           bgmGain.gain.setValueAtTime(bgmVol, totalSec - 2.0);
           bgmGain.gain.linearRampToValueAtTime(0.001, totalSec);
 
@@ -1078,88 +1019,57 @@
         ffmpeg.FS('writeFile', 'input_raw.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'master_dub.wav', masterWav);
 
-        const wmInput = document.getElementById('watermarkInput');
-        const hasWatermark = wmInput.files.length > 0;
-        if (hasWatermark) {
-          ffmpeg.FS('writeFile', 'watermark.png', await fetchFile(wmInput.files[0]));
+        updateGauge(55, "ဗီဒီယိုနှင့် အသံကို တိုက်ရိုက် ရောမွှေနေပါသည်...");
+
+        let vfList = [];
+
+        if (isTurboFast) {
+          vfList.push("scale=-2:720");
         }
 
-        updateGauge(60, "ဗီဒီယို Frames များကို Render လုပ်နေပါသည်...");
-
-        let videoFilterParts = [];
-        let audioFilterParts = [];
-        let curV = "0:v";
-        let curA = "1:a:0";
-
-        // Ambient Audio Mix (12%)
-        if (isAmbientAudio) {
-          audioFilterParts.push(`[0:a]volume=0.12[orig_amb];[1:a]volume=1.0[dub_voice];[orig_amb][dub_voice]amix=inputs=2:duration=longest[a_final]`);
-          curA = "[a_final]";
-        }
-
-        // 3.0s Climax Hook Teaser Inserter
-        if (isHookTeaser) {
-          const hookStart = parseFloat(document.getElementById('hookStartTimeInput').value) || 45.0;
-          videoFilterParts.push(`[0:v]trim=start=${hookStart}:end=${hookStart + 3.0},setpts=PTS-STARTPTS[hook_clip];[0:v]setpts=PTS-STARTPTS[main_clip];[hook_clip][main_clip]concat=n=2:v=1:a=0[v_hooked]`);
-          curV = "[v_hooked]";
-        }
-
-        // Video Filters: Multi-layer Copyright Shield (3% Zoom + Flip + Warm Grade)
         if (isCopyrightShield) {
-          videoFilterParts.push(`${curV}scale=1.03*iw:1.03*ih,crop=iw/1.03:ih/1.03,hflip,eq=contrast=1.05:saturation=1.08:gamma_r=1.03[v_shield]`);
-          curV = "[v_shield]";
+          vfList.push("eq=contrast=1.05:saturation=1.06:gamma_r=1.02");
         }
 
-        // 21:9 Cinema Letterbox Bars
         if (isLetterbox) {
-          videoFilterParts.push(`${curV}drawbox=y=0:h=ih*0.11:color=black:t=fill,drawbox=y=ih*0.89:h=ih*0.11:color=black:t=fill[v_letter]`);
-          curV = "[v_letter]";
+          vfList.push("drawbox=y=0:h=ih*0.11:color=black:t=fill,drawbox=y=ih*0.89:h=ih*0.11:color=black:t=fill");
         }
 
-        // Retention Red Progress Bar
         if (isProgressBar) {
-          videoFilterParts.push(`${curV}drawbox=x=0:y=ih-5:w='iw*(t/${totalSec})':h=5:color=red@0.9:t=fill[v_pbar]`);
-          curV = "[v_pbar]";
+          vfList.push(`drawbox=x=0:y=ih-5:w='iw*(t/${totalSec})':h=5:color=red@0.9:t=fill`);
         }
 
-        // 9:16 Reels Auto-Blur Fill
-        if (isReels) {
-          const w = isTurboFast ? 720 : 1080;
-          const h = isTurboFast ? 1280 : 1920;
-          videoFilterParts.push(`${curV}split[mainv][bgv];[bgv]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},boxblur=25[bgblur];[mainv]scale=${w}:-1[fgv];[bgblur][fgv]overlay=(W-w)/2:(H-h)/2[v_reels]`);
-          curV = "[v_reels]";
-        } else if (isTurboFast) {
-          videoFilterParts.push(`${curV}scale=-2:720[v_turbo]`);
-          curV = "[v_turbo]";
-        }
+        let ffmpegArgs = ['-i', 'input_raw.mp4', '-i', 'master_dub.wav'];
 
-        // Watermark Logo Overlay (Top-Right, 70% Opacity)
-        let ffmpegInputs = ['-i', 'input_raw.mp4', '-i', 'master_dub.wav'];
-        if (hasWatermark) {
-          ffmpegInputs.push('-i', 'watermark.png');
-          videoFilterParts.push(`[2:v]scale=120:-1,format=rgba,colorchannelmixer=aa=0.70[wmscl];${curV}[wmscl]overlay=W-w-20:20[v_watermarked]`);
-          curV = "[v_watermarked]";
-        }
-
-        let ffmpegArgs = [...ffmpegInputs];
-        let allFilters = [...videoFilterParts, ...audioFilterParts];
-
-        if (allFilters.length > 0) {
-          ffmpegArgs.push('-filter_complex', allFilters.join(';'));
+        if (isAmbientAudio) {
+          let filterComplex = `[0:a]volume=0.12[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=first[aout]`;
+          
+          if (vfList.length > 0) {
+            filterComplex += `;[0:v]${vfList.join(',')}[vout]`;
+            ffmpegArgs.push('-filter_complex', filterComplex, '-map', '[vout]', '-map', '[aout]');
+          } else {
+            ffmpegArgs.push('-filter_complex', filterComplex, '-map', '0:v', '-map', '[aout]');
+          }
+        } else {
+          if (vfList.length > 0) {
+            ffmpegArgs.push('-vf', vfList.join(','), '-map', '0:v', '-map', '1:a');
+          } else {
+            ffmpegArgs.push('-map', '0:v', '-map', '1:a');
+          }
         }
 
         ffmpegArgs.push(
-          '-map', curV,
-          '-map', curA,
           '-c:v', 'libx264',
           '-preset', 'ultrafast',
           '-tune', 'zerolatency',
+          '-threads', '2',
           '-c:a', 'aac',
-          '-b:a', '192k',
+          '-b:a', '128k',
           '-shortest',
           'final_output.mp4'
         );
 
+        updateGauge(65, "Render လုပ်ဆောင်နေပါသည်...");
         await ffmpeg.run(...ffmpegArgs);
 
         const outData = ffmpeg.FS('readFile', 'final_output.mp4');
@@ -1173,7 +1083,6 @@
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
 
-        // AI Caption & Thumbnail Generation
         generateAiPostCaption(lines);
         generateAutoThumbnailCover(player, lines);
 
@@ -1187,11 +1096,10 @@
         showToast("Cinema Movie Recap ဗီဒီယို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!");
       } catch (err) {
         hideProgress();
-        showToast("Export မအောင်မြင်ပါ: " + err.message);
+        showToast("Render Error: " + err.message);
       }
     }
 
-    // AI Thumbnail Cover Generator
     function generateAutoThumbnailCover(player, lines) {
       player.currentTime = Math.min(20, (player.duration || 10) * 0.3);
       player.onseeked = () => {
@@ -1202,7 +1110,6 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
-        // Title text on cover
         let title = "အံ့ဩဖွယ် ဇာတ်သိမ်းခန်း";
         if (lines.length > 0) {
           title = lines[0].replace(/\[.*?\]/g, '').trim().substring(0, 24);
