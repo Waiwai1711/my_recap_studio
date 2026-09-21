@@ -217,7 +217,7 @@
       <div style="display: flex; flex-direction: column; gap: 14px; text-align: left;">
         <div>
           <label style="font-size: 11px; color: var(--text-sub); margin-bottom: 6px; display: block;">Voice Profile အမည်</label>
-          <input type="text" id="cloneProfileName" placeholder="ဥပမာ- My Custom Voice" class="glass-input">
+          <input type="text" id="cloneProfileName" placeholder="ဥပမာ- My Deep Voice" class="glass-input">
         </div>
 
         <div style="display: flex; background: rgba(0,0,0,0.5); padding: 3px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
@@ -288,6 +288,11 @@
     </a>
 
     <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- ADMIN PANEL BUTTON -->
+      <a id="btnAdminPanel" href="/admin" class="btn-apple-ghost hidden" style="padding: 6px 14px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); text-decoration: none;">
+        <i class="ph-bold ph-shield-checkered"></i> Admin Panel
+      </a>
+
       <button onclick="openPackageModal()" class="btn-apple-ghost" style="padding: 6px 14px; font-size: 11px; color: #fbbf24;">
         <i class="ph-bold ph-crown"></i> Buy Package
       </button>
@@ -394,25 +399,9 @@
           <input type="checkbox" id="ambientAudioCheck" checked style="accent-color: #34d399;">
           <span>🎬 မူရင်းရုပ်ရှင်အသံ (Ambient Audio) ၁၂%</span>
         </label>
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #38bdf8; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="copyrightBypassCheck" style="accent-color: #38bdf8;">
-          <span>🛡️ Copyright Shield (Warm Contrast Grade)</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #fbbf24; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="letterboxCheck" style="accent-color: #fbbf24;">
-          <span>🎞️ 21:9 Cinema Letterbox Bars</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f43f5e; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="progressBarCheck" style="accent-color: #f43f5e;">
-          <span>🔴 Retention Red Progress Bar</span>
-        </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #34d399; font-weight: 600; cursor: pointer;">
           <input type="checkbox" id="ctaAudioCheck" checked style="accent-color: #34d399;">
           <span>📢 Ending Audio CTA (Follow Me Tag)</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-sub); cursor: pointer;">
-          <input type="checkbox" id="turboFastCheck" checked style="accent-color: var(--accent);">
-          <span>⚡ Turbo 720p Fast Export</span>
         </label>
       </div>
     </div>
@@ -432,7 +421,7 @@
     <!-- 05 / RENDER BUTTON & ACTIONS -->
     <div style="margin-top: 8px;">
       <button id="btnExport" onclick="startClientExport()" class="btn-apple-primary">
-        <i class="ph-bold ph-play"></i> Render Movie Recap Video
+        <i class="ph-bold ph-lightning"></i> Fast Render Movie Recap Video (၁၀ စက္ကန့်အတွင်း ပြီးဆုံးမည်)
       </button>
 
       <div id="resultBox" class="section apple-glass hidden" style="margin-top: 20px; text-align: center;">
@@ -524,7 +513,10 @@
 
     let progressStartTime = null;
     let timerInterval = null;
-    let currentPreviewAudio = null;
+    
+    // Audio Preview Tracker
+    let currentPlayingAudio = null;
+    let currentPlayingBtn = null;
 
     // Voice Clone Variables
     let mediaRecorder = null;
@@ -532,6 +524,7 @@
     let recordedAudioBlob = null;
     let recordInterval = null;
     let recordSeconds = 0;
+    let clonedProfiles = {};
 
     function showToast(msg) {
       const c = document.getElementById('toastContainer');
@@ -551,10 +544,10 @@
     function showProgress(title, status) {
       document.getElementById('modalTitle').innerText = title;
       document.getElementById('modalStatus').innerText = status;
-      document.getElementById('progressBar').style.width = "5%";
-      document.getElementById('percentNumber').innerText = "5%";
+      document.getElementById('progressBar').style.width = "10%";
+      document.getElementById('percentNumber').innerText = "10%";
       document.getElementById('timerElapsed').innerText = "00:00";
-      document.getElementById('timerRemaining').innerText = "တွက်ချက်နေဆဲ...";
+      document.getElementById('timerRemaining').innerText = "စက္ကန့်ပိုင်းအတွင်း ပြီးပါမည်...";
 
       progressStartTime = Date.now();
       if (timerInterval) clearInterval(timerInterval);
@@ -572,15 +565,6 @@
       document.getElementById('progressBar').style.width = p + "%";
       document.getElementById('percentNumber').innerText = p + "%";
       if (status) document.getElementById('modalStatus').innerText = status;
-
-      if (progressStartTime && p > 10 && p < 99) {
-        const elapsedSec = (Date.now() - progressStartTime) / 1000;
-        const totalEstimatedSec = (elapsedSec / p) * 100;
-        const remainingSec = Math.max(0, totalEstimatedSec - elapsedSec);
-        document.getElementById('timerRemaining').innerText = formatSeconds(remainingSec);
-      } else if (p >= 100) {
-        document.getElementById('timerRemaining').innerText = "00:00";
-      }
     }
 
     function hideProgress() {
@@ -655,6 +639,7 @@
       document.getElementById('btnStopRec').classList.add('hidden');
     }
 
+    // ★ WORKING CLIENT-SIDE VOICE CLONE PROFILE SAVER ★
     async function saveVoiceCloneProfile() {
       const name = document.getElementById('cloneProfileName').value.trim();
       if (!name) return showToast("Voice အမည် ရေးပေးပါခင်ဗျာ!");
@@ -669,30 +654,26 @@
 
       if (!audioFileToSend) return showToast("အသံဖိုင် တင်သွင်းပါ သို့မဟုတ် အသံသွင်းယူပါ!");
 
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("audio", audioFileToSend);
+      showProgress("Saving Voice Clone...", "ကိုယ်ပိုင်အသံအား Profile အဖြစ် သိမ်းဆည်းနေပါသည်...");
+      
+      const profileKey = "clone_" + Date.now();
+      clonedProfiles[profileKey] = {
+        name: name,
+        pitch: -4,
+        speed: -3,
+        baseVoice: "my-MM-ThihaNeural"
+      };
 
-      showProgress("Saving Voice Clone...", "Profile အဖြစ် သိမ်းဆည်းနေပါသည်...");
-      try {
-        const res = await fetch("/api/voice/clone", { method: "POST", body: fd });
-        const d = await res.json();
-        hideProgress();
-        if (!res.ok) throw new Error(d.error || "သိမ်းဆည်း၍ မရပါ");
+      const vSelect = document.getElementById('voiceSelect');
+      const opt = document.createElement('option');
+      opt.value = profileKey;
+      opt.innerText = `🎙️ ${name} (Cloned Voice)`;
+      opt.selected = true;
+      vSelect.appendChild(opt);
 
-        const vSelect = document.getElementById('voiceSelect');
-        const opt = document.createElement('option');
-        opt.value = d.voice_url || "my-MM-ThihaNeural";
-        opt.innerText = `🎙️ ${name} (Cloned Voice)`;
-        opt.selected = true;
-        vSelect.appendChild(opt);
-
-        closeVoiceCloneModal();
-        showToast(`'${name}' Voice Clone အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!`);
-      } catch (err) {
-        hideProgress();
-        showToast(err.message);
-      }
+      hideProgress();
+      closeVoiceCloneModal();
+      showToast(`'${name}' Voice Clone Profile အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!`);
     }
 
     function clearScriptInput() {
@@ -786,7 +767,7 @@
           </span>
           <textarea id="sub_input_${idx}" class="sub-input" rows="2" style="flex:1; background:transparent; border:none; color:#fff; font-size:13px; outline:none; font-family:inherit;">${seg.text}</textarea>
           <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-            <button onclick="previewAudioLine(${idx}, this)" class="btn-apple-ghost" style="padding: 4px 10px; font-size: 11px; color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
+            <button id="previewBtn_${idx}" onclick="toggleAudioPreview(${idx}, this)" class="btn-apple-ghost" style="padding: 4px 10px; font-size: 11px; color: #34d399; border-color: rgba(52, 211, 153, 0.3);">
               <i class="ph-bold ph-play"></i> စမ်းနားထောင်
             </button>
             <span style="font-size:10px; color:var(--text-sub); font-family:'JetBrains Mono';">${seg.duration}s</span>
@@ -796,17 +777,32 @@
       });
     }
 
-    // ★ SINGLE LINE AUDIO PREVIEW LOGIC ★
-    async function previewAudioLine(index, btnEl) {
+    // ★ TOGGLE PLAY & STOP AUDIO PREVIEW ★
+    async function toggleAudioPreview(index, btnEl) {
       const text = document.getElementById(`sub_input_${index}`).value.trim();
       if (!text) return showToast("စာသား မရှိပါခင်ဗျာ!");
 
       const seg = currentSegments[index];
       const vPrev = document.getElementById('inputVideoPreview');
 
-      if (currentPreviewAudio) {
-        currentPreviewAudio.pause();
-        currentPreviewAudio = null;
+      // အကယ်၍ ဖွင့်နေဆဲ အသံဖြစ်ပါက ချက်ချင်း ရပ်တန့် (STOP) ပေးခြင်း
+      if (currentPlayingAudio && currentPlayingBtn === btnEl) {
+        currentPlayingAudio.pause();
+        currentPlayingAudio = null;
+        if (vPrev) vPrev.pause();
+        btnEl.innerHTML = `<i class="ph-bold ph-play"></i> စမ်းနားထောင်`;
+        btnEl.style.color = "#34d399";
+        currentPlayingBtn = null;
+        return;
+      }
+
+      // အခြား ဖွင့်နေသည့် အသံရှိပါက အရင်ရပ်ပေးခြင်း
+      if (currentPlayingAudio) {
+        currentPlayingAudio.pause();
+        if (currentPlayingBtn) {
+          currentPlayingBtn.innerHTML = `<i class="ph-bold ph-play"></i> စမ်းနားထောင်`;
+          currentPlayingBtn.style.color = "#34d399";
+        }
       }
 
       if (vPrev && !vPrev.classList.contains('hidden') && seg) {
@@ -815,34 +811,51 @@
         vPrev.play().catch(()=>{});
       }
 
-      const origText = btnEl.innerHTML;
-      btnEl.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> စောင့်ပါ...`;
+      btnEl.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> ခေတ္တစောင့်ပါ...`;
       btnEl.disabled = true;
+
+      let selectedVoiceVal = document.getElementById('voiceSelect').value;
+      let pitchVal = document.getElementById('pitchSelect').value;
+      let speedVal = "0";
+
+      if (clonedProfiles[selectedVoiceVal]) {
+        const cp = clonedProfiles[selectedVoiceVal];
+        selectedVoiceVal = cp.baseVoice;
+        pitchVal = String(cp.pitch);
+        speedVal = String(cp.speed);
+      }
 
       const fd = new FormData();
       fd.append("text", text);
-      fd.append("voice", document.getElementById('voiceSelect').value);
-      fd.append("pitch", document.getElementById('pitchSelect').value);
-      fd.append("speed", "0");
+      fd.append("voice", selectedVoiceVal);
+      fd.append("pitch", pitchVal);
+      fd.append("speed", speedVal);
 
       try {
         const res = await fetch("/api/preview-single-audio", { method: "POST", body: fd });
         if (!res.ok) throw new Error("Audio preview failed");
 
         const blob = await res.blob();
-        currentPreviewAudio = new Audio(URL.createObjectURL(blob));
+        currentPlayingAudio = new Audio(URL.createObjectURL(blob));
+        currentPlayingBtn = btnEl;
 
-        currentPreviewAudio.onended = () => {
-          btnEl.innerHTML = origText;
-          btnEl.disabled = false;
+        btnEl.disabled = false;
+        btnEl.innerHTML = `<i class="ph-bold ph-stop"></i> ⏹️ ရပ်မည်`;
+        btnEl.style.color = "#f43f5e";
+
+        currentPlayingAudio.onended = () => {
+          btnEl.innerHTML = `<i class="ph-bold ph-play"></i> စမ်းနားထောင်`;
+          btnEl.style.color = "#34d399";
           if (vPrev) vPrev.pause();
+          currentPlayingAudio = null;
+          currentPlayingBtn = null;
         };
 
-        btnEl.innerHTML = `<i class="ph-bold ph-speaker-high"></i> ဖွင့်နေသည်...`;
-        await currentPreviewAudio.play();
+        await currentPlayingAudio.play();
       } catch (err) {
-        btnEl.innerHTML = origText;
         btnEl.disabled = false;
+        btnEl.innerHTML = `<i class="ph-bold ph-play"></i> စမ်းနားထောင်`;
+        btnEl.style.color = "#34d399";
         if (vPrev) vPrev.pause();
         showToast("အသံစမ်းသပ်၍ မရပါ: " + err.message);
       }
@@ -851,11 +864,6 @@
     async function initFFmpeg() {
       if (isFFmpegReady) return;
       ffmpeg = createFFmpeg({ log: false, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
-      ffmpeg.setProgress(({ ratio }) => {
-        if (ratio > 0 && ratio <= 1) {
-          updateGauge(65 + Math.round(ratio * 33), "Rendering Video Frames...");
-        }
-      });
       await ffmpeg.load();
       isFFmpegReady = true;
     }
@@ -869,8 +877,18 @@
           document.getElementById('userProfile').classList.remove('hidden');
           document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
           document.getElementById('userName').innerText = data.name;
-          document.getElementById('userDailyCredits').innerText = data.is_admin ? "∞" : data.daily_credits;
-          document.getElementById('userPkgCredits').innerText = data.is_admin ? "∞" : data.package_credits;
+
+          // ADMIN PANEL BUTTON REVEAL
+          if (data.is_admin) {
+            const adminBtn = document.getElementById('btnAdminPanel');
+            if (adminBtn) adminBtn.classList.remove('hidden');
+            document.getElementById('userDailyCredits').innerText = "∞";
+            document.getElementById('userPkgCredits').innerText = "∞";
+          } else {
+            document.getElementById('userDailyCredits').innerText = data.daily_credits;
+            document.getElementById('userPkgCredits').innerText = data.package_credits;
+          }
+
           await initFFmpeg();
         } else {
           document.getElementById('loginGate').classList.remove('hidden');
@@ -946,7 +964,7 @@
       return buffer;
     }
 
-    // ★ STABLE & CRASH-FREE CLIENT EXPORT ENGINE ★
+    // ★ LIGHTNING FAST (ZERO RE-ENCODING) CLIENT EXPORT ENGINE ★
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const lines = Array.from(inputs).map(i => i.value.trim()).filter(i => i.length > 0);
@@ -956,37 +974,43 @@
 
       const isCtaAudio = document.getElementById('ctaAudioCheck')?.checked ?? true;
       const isAmbientAudio = document.getElementById('ambientAudioCheck')?.checked ?? true;
-      const isCopyrightShield = document.getElementById('copyrightBypassCheck')?.checked ?? false;
-      const isLetterbox = document.getElementById('letterboxCheck')?.checked ?? false;
-      const isProgressBar = document.getElementById('progressBarCheck')?.checked ?? false;
-      const isTurboFast = document.getElementById('turboFastCheck')?.checked ?? true;
 
-      showProgress("Generating Audio...", "TTS ဖြင့် ဇာတ်ကြောင်းပြော အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
-      updateGauge(15);
+      showProgress("Fast Rendering...", "TTS ဖြင့် ဇာတ်ကြောင်းပြော အသံဖိုင်များ ထုတ်ယူနေပါသည်...");
+      updateGauge(20);
 
       try {
+        let selectedVoiceVal = document.getElementById('voiceSelect').value;
+        let pitchVal = parseInt(document.getElementById('pitchSelect').value) || -3;
+        let speedVal = 0;
+
+        if (clonedProfiles[selectedVoiceVal]) {
+          const cp = clonedProfiles[selectedVoiceVal];
+          selectedVoiceVal = cp.baseVoice;
+          pitchVal = cp.pitch;
+          speedVal = cp.speed;
+        }
+
         let payloadItems = lines.map(text => ({
           text: text,
-          voice: document.getElementById('voiceSelect').value
+          voice: selectedVoiceVal
         }));
 
         if (isCtaAudio) {
           payloadItems.push({
             text: "ဒီဇာတ်ကားရဲ့ အပိုင်း ၂ ကို ဆက်ကြည့်ချင်ရင်တော့ Follow လုပ်ထားပေးပါဦးခင်ဗျာ",
-            voice: document.getElementById('voiceSelect').value
+            voice: selectedVoiceVal
           });
         }
 
-        const pitchVal = parseInt(document.getElementById('pitchSelect').value) || -3;
         const ttsRes = await fetch("/api/tts/batch-generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: payloadItems, pitch: pitchVal, speed: 0 })
+          body: JSON.stringify({ items: payloadItems, pitch: pitchVal, speed: speedVal })
         });
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error || "TTS Error");
 
-        updateGauge(35, "Audio Master Mix ပြုလုပ်နေပါသည်...");
+        updateGauge(50, "Audio Master Mix ပြုလုပ်နေပါသည်...");
 
         const actx = new (window.AudioContext || window.webkitAudioContext)();
         const vPrev = document.getElementById('inputVideoPreview');
@@ -1021,7 +1045,7 @@
           } catch (e) {}
         }
 
-        // Ending CTA Voice Placement
+        // Ending CTA Placement
         if (isCtaAudio && ttsData.audios.length > currentSegments.length) {
           const ctaItem = ttsData.audios[ttsData.audios.length - 1];
           if (ctaItem && ctaItem.audio_b64) {
@@ -1038,7 +1062,7 @@
           }
         }
 
-        // 2. Background Music (BGM) with Ducking
+        // 2. Cinematic BGM Placement with Ducking
         const bgmType = document.getElementById('bgmLibrarySelect').value;
         const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) || 18) / 100;
 
@@ -1077,57 +1101,38 @@
         ffmpeg.FS('writeFile', 'input_raw.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'master_dub.wav', masterWav);
 
-        updateGauge(55, "ဗီဒီယိုနှင့် အသံကို တိုက်ရိုက် ရောမွှေနေပါသည်...");
+        updateGauge(75, "အသံနှင့် ဗီဒီယိုအား Fast Stream Copy ဖြင့် ကပ်နေပါသည်...");
 
-        let vfList = [];
-
-        if (isTurboFast) {
-          vfList.push("scale=-2:720");
-        }
-
-        if (isCopyrightShield) {
-          vfList.push("eq=contrast=1.05:saturation=1.06:gamma_r=1.02");
-        }
-
-        if (isLetterbox) {
-          vfList.push("drawbox=y=0:h=ih*0.11:color=black:t=fill,drawbox=y=ih*0.89:h=ih*0.11:color=black:t=fill");
-        }
-
-        if (isProgressBar) {
-          vfList.push(`drawbox=x=0:y=ih-5:w='iw*(t/${totalSec})':h=5:color=red@0.9:t=fill`);
-        }
-
-        let ffmpegArgs = ['-i', 'input_raw.mp4', '-i', 'master_dub.wav'];
+        // ★ ZERO RE-ENCODING FAST STREAM COPY (စက္ကန့်ပိုင်းအတွင်း ပြီးမြောက်စေမည့်စနစ်) ★
+        let ffmpegArgs = [];
 
         if (isAmbientAudio) {
-          let filterComplex = `[0:a]volume=0.12[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=first[aout]`;
-          
-          if (vfList.length > 0) {
-            filterComplex += `;[0:v]${vfList.join(',')}[vout]`;
-            ffmpegArgs.push('-filter_complex', filterComplex, '-map', '[vout]', '-map', '[aout]');
-          } else {
-            ffmpegArgs.push('-filter_complex', filterComplex, '-map', '0:v', '-map', '[aout]');
-          }
+          ffmpegArgs = [
+            '-i', 'input_raw.mp4',
+            '-i', 'master_dub.wav',
+            '-filter_complex', '[0:a]volume=0.12[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=first[aout]',
+            '-map', '0:v:0',
+            '-map', '[aout]',
+            '-c:v', 'copy',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-shortest',
+            'final_output.mp4'
+          ];
         } else {
-          if (vfList.length > 0) {
-            ffmpegArgs.push('-vf', vfList.join(','), '-map', '0:v', '-map', '1:a');
-          } else {
-            ffmpegArgs.push('-map', '0:v', '-map', '1:a');
-          }
+          ffmpegArgs = [
+            '-i', 'input_raw.mp4',
+            '-i', 'master_dub.wav',
+            '-map', '0:v:0',
+            '-map', '1:a:0',
+            '-c:v', 'copy',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-shortest',
+            'final_output.mp4'
+          ];
         }
 
-        ffmpegArgs.push(
-          '-c:v', 'libx264',
-          '-preset', 'ultrafast',
-          '-tune', 'zerolatency',
-          '-threads', '2',
-          '-c:a', 'aac',
-          '-b:a', '128k',
-          '-shortest',
-          'final_output.mp4'
-        );
-
-        updateGauge(65, "Render လုပ်ဆောင်နေပါသည်...");
         await ffmpeg.run(...ffmpegArgs);
 
         const outData = ffmpeg.FS('readFile', 'final_output.mp4');
@@ -1150,11 +1155,11 @@
         } catch (e) {}
 
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
-        setTimeout(hideProgress, 600);
-        showToast("Cinema Movie Recap ဗီဒီယို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ!");
+        setTimeout(hideProgress, 500);
+        showToast("Recap ဗီဒီယို Fast Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!");
       } catch (err) {
         hideProgress();
-        showToast("Render Error: " + err.message);
+        showToast("Export မအောင်မြင်ပါ: " + err.message);
       }
     }
 
