@@ -54,6 +54,18 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
 
+    /* Login Gate & Modals */
+    #loginGate {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0, 0, 0, 0.92); backdrop-filter: blur(30px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .login-box {
+      background: rgba(26, 26, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px; padding: 36px 28px; max-width: 400px; width: 100%;
+      text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+    }
+
     .apple-glass {
       background: var(--glass);
       backdrop-filter: blur(40px) saturate(190%);
@@ -70,7 +82,7 @@
       margin: 0 auto 20px auto;
       max-width: 900px;
       width: calc(100% - 32px);
-      height: 60px;
+      height: 64px;
       padding: 0 18px;
       display: flex;
       align-items: center;
@@ -176,10 +188,7 @@
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.18);
     }
-    textarea.glass-input {
-      resize: vertical;
-      line-height: 1.7;
-    }
+    textarea.glass-input { resize: vertical; line-height: 1.7; }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -211,98 +220,58 @@
     .dropzone p { font-size: 12px; color: var(--text-sub); }
 
     .btn-apple-primary {
-      background: #ffffff;
-      color: #000000;
-      border: none;
-      padding: 16px 28px;
-      font-size: 14px;
-      font-weight: 600;
-      border-radius: 980px;
-      cursor: pointer;
-      width: 100%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      background: #ffffff; color: #000000; border: none;
+      padding: 16px 28px; font-size: 14px; font-weight: 600;
+      border-radius: 980px; cursor: pointer; width: 100%;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       transition: transform 0.15s, opacity 0.15s, box-shadow 0.2s;
       box-shadow: 0 10px 25px rgba(255, 255, 255, 0.15);
     }
-    .btn-apple-primary:hover {
-      opacity: 0.92;
-      box-shadow: 0 12px 30px rgba(255, 255, 255, 0.25);
-    }
+    .btn-apple-primary:hover { opacity: 0.92; box-shadow: 0 12px 30px rgba(255, 255, 255, 0.25); }
     .btn-apple-primary:active { transform: scale(0.985); }
 
     .btn-apple-ghost {
-      background: rgba(255, 255, 255, 0.07);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 10px 16px;
-      font-size: 12px;
-      font-weight: 500;
-      border-radius: 980px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s;
+      background: rgba(255, 255, 255, 0.07); color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px 16px;
+      font-size: 12px; font-weight: 500; border-radius: 980px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;
     }
     .btn-apple-ghost:hover { background: rgba(255, 255, 255, 0.12); }
 
     .sub-item-card {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px;
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px;
     }
 
     .modal-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(20px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s;
+      position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center;
+      padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
     }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal-apple-card {
-      background: rgba(26, 26, 28, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 24px;
-      padding: 28px;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
+      background: rgba(26, 26, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px; padding: 28px; max-width: 400px; width: 100%; text-align: center;
       box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
     }
 
+    .pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+    .pkg-item {
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 6px;
+      cursor: pointer; transition: all 0.2s; background: rgba(11,12,16,0.5);
+    }
+    .pkg-item.selected { border-color: var(--accent); background: rgba(41, 151, 255, 0.15); }
+    .pkg-item h4 { font-size: 14px; font-weight: bold; color: #fff; }
+    .pkg-item p { font-size: 11px; color: var(--accent); margin-top: 4px; }
+
     #toastContainer {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 120;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      position: fixed; bottom: 24px; right: 24px; z-index: 120;
+      display: flex; flex-direction: column; gap: 10px;
     }
     .toast {
-      background: rgba(28, 28, 30, 0.9);
-      backdrop-filter: blur(25px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 12px 18px;
-      border-radius: 14px;
-      font-size: 12px;
-      color: #fff;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: rgba(28, 28, 30, 0.9); backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.12); padding: 12px 18px;
+      border-radius: 14px; font-size: 12px; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
     .hidden { display: none !important; }
@@ -312,6 +281,59 @@
 
   <div class="ambient-glow"></div>
   <div id="toastContainer"></div>
+
+  <!-- LOGIN GATE -->
+  <div id="loginGate" class="hidden">
+    <div class="login-box">
+      <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+        <i class="ph-bold ph-lightning" style="font-size: 24px; color: #fff;"></i>
+      </div>
+      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff;">RECAP STUDIO PRO</h2>
+      <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 24px; line-height: 1.6;">
+        AI Video Dubbing နှင့် Auto-Speed Engine အသုံးပြုရန် Google Account ဖြင့် Login ဝင်ပေးပါခင်ဗျာ။
+      </p>
+      <a href="/login/google" class="btn-apple-primary" style="background: #fff; color: #000; text-decoration: none; justify-content: center;">
+        <i class="ph-bold ph-google-logo" style="font-size: 18px; color: #ea4335;"></i> Sign in with Google
+      </a>
+      <p style="font-size: 11px; color: #34d399; margin-top: 16px; font-family: 'JetBrains Mono', monospace;">
+        🎁 နေ့စဉ် အခမဲ့ ၂ ပုဒ် အသုံးပြုခွင့် ရရှိပါမည်
+      </p>
+    </div>
+  </div>
+
+  <!-- BUY PACKAGE MODAL -->
+  <div id="packageModal" class="modal-overlay">
+    <div class="modal-apple-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 15px; font-weight: bold; color: #fbbf24;">💎 Package ဝယ်ယူရန်</h3>
+        <button onclick="closePackageModal()" style="background: transparent; border: none; color: var(--text-sub); font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="pkg-grid"></div>
+      <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; margin-bottom: 12px;">
+        <p style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">ငွေလွှဲရမည့် အကောင့်များ -</p>
+        <p>• KPay / WavePay / AYA Pay</p>
+        <p>• Name: <b style="color: #fff;">Wai Phyo Aung</b></p>
+        <p>• Phone: <b style="color: #34d399; font-family: 'JetBrains Mono', monospace;">09799437346</b></p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
+        <div class="form-group">
+          <label>ငွေလွှဲခဲ့သည့် App ရွေးပါ</label>
+          <select id="payMethodSelect" class="glass-input">
+            <option value="KPay">KPay</option>
+            <option value="WavePay">WavePay</option>
+            <option value="AYAPay">AYA Pay</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ငွေလွှဲပြေစာ (Slip ပုံတင်ပေးပါ)</label>
+          <input type="file" id="slipFileInput" accept="image/*" class="glass-input" style="padding: 6px 10px;">
+        </div>
+        <button onclick="submitSlip()" class="btn-apple-primary" style="background: #d97706; color: #fff; margin-top: 8px; justify-content: center;">
+          <i class="ph-bold ph-paper-plane-tilt"></i> ပြေစာတင်သွင်းမည်
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Apple Minimal Navigation Bar -->
   <header class="nav apple-glass">
@@ -330,10 +352,21 @@
       </button>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button onclick="openPackageModal()" class="btn-apple-ghost" style="padding: 6px 14px; font-size: 11px; color: #fbbf24; border-color: rgba(251,191,36,0.3);">
+        <i class="ph-bold ph-crown"></i> Buy Package
+      </button>
+
       <div id="userProfile" class="hidden" style="display: flex; align-items: center; gap: 8px;">
         <img id="userAvatar" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);" src="" alt="Avatar">
-        <a href="/api/auth/logout" title="Logout" style="color: var(--text-sub); font-size: 16px;"><i class="ph-bold ph-sign-out"></i></a>
+        <div style="text-align: left;">
+          <p id="userName" style="font-size: 11px; font-weight: bold; color: #fff;">User</p>
+          <div style="display: flex; gap: 6px; font-size: 9px; font-family: 'JetBrains Mono', monospace;">
+            <span style="color: #34d399;">Daily: <b id="userDailyCredits">0</b></span>
+            <span style="color: #fbbf24;">Pkg: <b id="userPkgCredits">0</b></span>
+          </div>
+        </div>
+        <a href="/api/auth/logout" title="Logout" style="color: #ef4444; margin-left: 4px; font-size: 16px;"><i class="ph-bold ph-sign-out"></i></a>
       </div>
     </div>
   </header>
@@ -426,7 +459,7 @@
       </div>
     </div>
 
-    <!-- 4. Real-time Subtitle Live List (အချိန်ကွက်တိပြသမည်) -->
+    <!-- 4. Real-time Subtitle Live List -->
     <div class="section apple-glass">
       <div class="section-header">
         <div class="section-title"><i class="ph-bold ph-list-dashes"></i> 04 / Script Timeline</div>
@@ -451,9 +484,14 @@
         </p>
         <video id="videoPlayer" controls style="max-height: 440px; width: 100%; border-radius: 16px; border: 1px solid var(--glass-border); margin-bottom: 14px;"></video>
         
-        <a id="downloadBtn" download="recap_video.mp4" class="btn-apple-primary" style="text-decoration: none; width: auto; padding: 12px 28px;">
-          <i class="ph-bold ph-download-simple"></i> Download Full Video
-        </a>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <a id="downloadBtn" download="recap_video.mp4" class="btn-apple-primary" style="text-decoration: none; width: auto; padding: 12px 28px;">
+            <i class="ph-bold ph-download-simple"></i> Download Full Video
+          </a>
+          <button onclick="sendToTelegram()" class="btn-apple-ghost" style="background: #229ed9; color: #fff; border: none; padding: 12px 20px;">
+            <i class="ph-bold ph-telegram-logo"></i> Send to Telegram
+          </button>
+        </div>
       </div>
     </div>
 
@@ -477,6 +515,8 @@
     let currentSegments = [];
     let selectedVideoFile = null;
     let activeRecapMode = "third_person";
+    let selectedPackageType = "10";
+    let currentVideoBlob = null;
 
     function showToast(msg) {
       const c = document.getElementById('toastContainer');
@@ -530,7 +570,75 @@
       document.getElementById('scriptCountDisplay').innerText = "0 segments";
     }
 
-    // ★ SMART SEQUENTIAL RIPPLE SYNC (စာကြောင်းအလွတ်မပါ၊ သဘာဝကျသော ကြာချိန်ဖြင့် တွက်ခြင်း) ★
+    async function openPackageModal() {
+      const grid = document.querySelector('.pkg-grid');
+      try {
+        const res = await fetch("/api/packages");
+        const pkgs = await res.json();
+        if (pkgs && pkgs.length) {
+          grid.innerHTML = pkgs.map((p, idx) => `
+            <div class="pkg-item ${idx === 0 ? 'selected' : ''}" onclick="selectPkg('${p.credits}', ${p.price}, this)">
+              <h4>${p.name}</h4>
+              <p>${p.price.toLocaleString()} Ks</p>
+            </div>
+          `).join("");
+          selectedPackageType = String(pkgs[0].credits);
+        }
+      } catch (e) {}
+      document.getElementById('packageModal').classList.add('active');
+    }
+
+    function closePackageModal() { document.getElementById('packageModal').classList.remove('active'); }
+
+    function selectPkg(type, amount, el) {
+      selectedPackageType = type;
+      document.querySelectorAll('.pkg-item').forEach(item => item.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    async function submitSlip() {
+      const fileInput = document.getElementById('slipFileInput');
+      if (!fileInput.files.length) return showToast("ကျေးဇူးပြု၍ ငွေလွှဲပြေစာ ပုံရွေးချယ်ပေးပါခင်ဗျာ");
+
+      const fd = new FormData();
+      fd.append("package_type", selectedPackageType);
+      fd.append("payment_method", document.getElementById('payMethodSelect').value);
+      fd.append("slip", fileInput.files[0]);
+
+      try {
+        const res = await fetch("/api/payment/submit", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        closePackageModal();
+        showToast(data.message);
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    async function checkUserAuth() {
+      try {
+        const res = await fetch("/api/user/me");
+        const data = await res.json();
+        if (data.logged_in) {
+          document.getElementById('loginGate').classList.add('hidden');
+          document.getElementById('userProfile').classList.remove('hidden');
+          document.getElementById('userAvatar').src = data.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + data.name;
+          document.getElementById('userName').innerText = data.name;
+
+          document.getElementById('userDailyCredits').innerText = data.is_admin ? "∞" : data.daily_credits;
+          document.getElementById('userPkgCredits').innerText = data.is_admin ? "∞" : data.package_credits;
+
+          await initFFmpeg();
+        } else {
+          document.getElementById('loginGate').classList.remove('hidden');
+        }
+      } catch (e) {
+        document.getElementById('loginGate').classList.remove('hidden');
+      }
+    }
+
+    // ★ SMART SEQUENTIAL RIPPLE SYNC ★
     function submitRecapScript() {
       const raw = document.getElementById('scriptTextInput').value.trim();
       if (!raw) return showToast("စာသားများ အရင်ထည့်သွင်းပေးပါခင်ဗျာ!");
@@ -544,7 +652,6 @@
       }
 
       if (!lines || lines.length === 0) {
-        // စာကြောင်းအလွတ်များနှင့် မလိုအပ်သော format များကို သန့်စင်ဖယ်ထုတ်ခြင်း
         lines = raw.split(/\r?\n/)
                    .map(l => l.trim())
                    .filter(l => l.length > 0 && !l.startsWith("[") && !l.match(/^\d+$/));
@@ -556,13 +663,12 @@
 
       if (!lines.length) return showToast("စာကြောင်းများ ခွဲထုတ်၍ မရပါ!");
 
-      // 17.46s ကဲ့သို့ မညီမျှသော ပုံသေအချိန်များ မဟုတ်ဘဲ စာလုံးရေအလိုက် သဘာဝကျသော စက္ကန့်ဖြင့် တွက်ခြင်း
-      let accumulatedTimeMs = 500; // 0.5s မှ စတင်မည်
+      let accumulatedTimeMs = 500;
       currentSegments = lines.map((text, idx) => {
         const estimatedDurationSec = Math.min(5.5, Math.max(2.4, (text.length / 15)));
         const startMs = accumulatedTimeMs;
         const durMs = Math.round(estimatedDurationSec * 1000);
-        accumulatedTimeMs += durMs + 350; // စာကြောင်းကြား 0.35s သဘာဝ pause ပေးခြင်း
+        accumulatedTimeMs += durMs + 350;
 
         return {
           id: idx + 1,
@@ -611,7 +717,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      initFFmpeg();
+      checkUserAuth();
       const dropZone = document.getElementById('dropZone');
       const fileInput = document.getElementById('videoFileInput');
       const videoPrev = document.getElementById('inputVideoPreview');
@@ -632,13 +738,15 @@
       const length = buffer.length * numOfChan * 2 + 44;
       const out = new DataView(new ArrayBuffer(length));
       let channels = [], offset = 0, pos = 0;
-      function setUint16(d) { out.setUint16(pos, d, true); pos += 2; }
       function setUint32(d) { out.setUint32(pos, d, true); pos += 4; }
 
       setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
-      setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+      setUint32(0x20746d66); setUint32(16); out.setUint16(pos, 1, true); pos += 2;
+      out.setUint16(pos, numOfChan, true); pos += 2;
       setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numOfChan);
-      setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
+      out.setUint16(pos, numOfChan * 2, true); pos += 2;
+      out.setUint16(pos, 16, true); pos += 2;
+      setUint32(0x61746164); setUint32(length - pos - 4);
 
       for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
       while (offset < buffer.length) {
@@ -688,12 +796,13 @@
       return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
     }
 
-    // ★ CLIENT-SIDE EXPORT (တကယ့် TTS Duration အတိုင်း အချိန်ကွက်တိ ဆက်တိုက်ကပ်သွားမည့်စနစ်) ★
+    // ★ CLIENT-SIDE EXPORT ★
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const lines = Array.from(inputs).map(i => i.value.trim()).filter(i => i.length > 0);
       if (!lines.length) return showToast("Script စာသားများ အရင်ထည့်သွင်းပေးပါ!");
       if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် ရွေးချယ်ပေးပါ!");
+      if (!isFFmpegReady) await initFFmpeg();
 
       showProgress("Generating Audio...", "အသံဖိုင်များကို ထုတ်ယူနေပါသည်...");
       updateGauge(20);
@@ -725,7 +834,7 @@
         const totalSec = Math.max((vPrev && vPrev.duration) ? vPrev.duration : 10, (totalSpeechMs / 1000) + 3);
         const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(totalSec * 44100), 44100);
 
-        let currentPlayheadSec = 0.5; // အစ 0.5 စက္ကန့်မှ စတင်မည်
+        let currentPlayheadSec = 0.5;
         let srtLines = [];
 
         for (let i = 0; i < ttsData.audios.length; i++) {
@@ -741,18 +850,15 @@
             
             src.start(currentPlayheadSec);
 
-            // Subtitle အချိန်ကို တကယ့်အသံဖိုင် အစ/အဆုံး အတိုင်း ကွက်တိကပ်ပေးခြင်း
             const sMs = Math.round(currentPlayheadSec * 1000);
             const eMs = Math.round((currentPlayheadSec + buf.duration) * 1000);
             srtLines.push(`${i+1}\n${msToSrt(sMs)} --> ${msToSrt(eMs)}\n${lines[i]}\n`);
 
-            // နောက်အသံအတွက် Playhead အား အသံကြာချိန် + 0.35s ရွေ့ပေးခြင်း
             currentPlayheadSec += buf.duration + 0.35;
           } catch (e) {}
         }
         actx.close();
 
-        // BGM Mix
         const bgmType = document.getElementById('bgmLibrarySelect').value;
         const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) || 20) / 100;
         if (bgmType !== 'none') {
@@ -777,14 +883,13 @@
         await ffmpeg.run('-i', 'input.mp4', '-i', 'audio.wav', '-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4');
 
         const outData = ffmpeg.FS('readFile', 'output.mp4');
-        const outBlob = new Blob([outData.buffer], { type: 'video/mp4' });
-        const videoUrl = URL.createObjectURL(outBlob);
+        currentVideoBlob = new Blob([outData.buffer], { type: 'video/mp4' });
+        const videoUrl = URL.createObjectURL(currentVideoBlob);
 
         const player = document.getElementById('videoPlayer');
         player.innerHTML = "";
         player.src = videoUrl;
 
-        // WebVTT Subtitle တပ်ဆင်ခြင်း
         const isSubEnabled = document.getElementById('enableSubCheck').checked;
         if (isSubEnabled && srtLines.length) {
           const vttBlob = new Blob([srtToVtt(srtLines.join("\n"))], { type: 'text/vtt' });
@@ -805,6 +910,11 @@
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
 
+        try {
+          await fetch("/api/credits/consume", { method: "POST" });
+          checkUserAuth();
+        } catch (e) {}
+
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
         setTimeout(hideProgress, 500);
         showToast("ဗီဒီယိုနှင့် အသံ ကွက်တိကိုက်ညီစွာ Export ပြီးပါပြီ!");
@@ -814,7 +924,26 @@
       }
     }
 
-    // AssemblyAI Transcribe (Dialogue Mode only)
+    async function sendToTelegram() {
+      if (!currentVideoBlob) return showToast("ဗီဒီယို မရှိသေးပါ!");
+      showProgress("Telegram သို့ ပို့နေပါသည်", "ချန်နယ်ဆီသို့ တိုက်ရိုက် တင်နေပါသည်...");
+      
+      const fd = new FormData();
+      fd.append("video", currentVideoBlob, "recap_video.mp4");
+      fd.append("caption", "🎬 AI Movie Recap Video");
+
+      try {
+        const res = await fetch("/api/telegram/send-video", { method: "POST", body: fd });
+        const data = await res.json();
+        hideProgress();
+        if (!res.ok) throw new Error(data.error);
+        showToast(data.message);
+      } catch (e) {
+        hideProgress();
+        showToast("Telegram ပို့၍ မရပါ: " + e.message);
+      }
+    }
+
     async function startExtractAndTranscribe() {
       const apiKey = document.getElementById('apiKey').value.trim();
       if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!");
