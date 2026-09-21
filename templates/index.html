@@ -321,7 +321,7 @@
         </div>
       </div>
 
-      <!-- ★ STORYTELLING STYLE SELECTOR (THIRD-PERSON vs FIRST-PERSON POV) ★ -->
+      <!-- STORYTELLING STYLE SELECTOR -->
       <div class="form-group" style="margin-bottom: 12px; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 12px; padding: 10px 12px;">
         <label style="color: #38bdf8; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 6px;">
           <i class="ph-bold ph-film-slate"></i> Narration Style ရွေးချယ်ရန် (ဇာတ်ကြောင်းပြော ပုံစံ)
@@ -953,7 +953,6 @@
       toggleSubSection();
       updateAspectPreview();
 
-      // Style selector hint text updater
       const styleSelect = document.getElementById('storyStyleSelect');
       styleSelect.addEventListener('change', (e) => {
         const hint = document.getElementById('styleHintText');
@@ -1078,7 +1077,6 @@
       }
     }
 
-    // ONE-CLICK DIRECT GEMINI TRANSLATION (PREMIUM ONLY) WITH SELECTED STYLE
     async function directGeminiTranslate() {
       if (!currentSegments.length) return showToast("စာကြောင်းများ Transcribe အရင်လုပ်ပေးပါ!");
       
@@ -1118,29 +1116,33 @@
       if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
       const style = document.getElementById('storyStyleSelect').value;
       
-      let styleText = `STORYTELLING PERSPECTIVE: Third-Person Cinema Narrator (ပြင်ပ ဇာတ်ကြောင်းပြောသူ စတိုင်).
-- Describe events from an observer view ("ဒီရုပ်ရှင်မှာတော့...", "အမျိုးသမီးတစ်ယောက်ဟာ...", "ဆမ်ဟာ...", "ဒီလိုနဲ့ပဲ...").`;
+      let styleText = "";
       if (style === 'first_person') {
         styleText = `STORYTELLING PERSPECTIVE: First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြောပြသည့် စတိုင်).
 - Speak as the protagonist ("ကျွန်တော်/ငါ...", "ရွာထဲက မြေရိုင်းတွေကို ငါးသိန်းနဲ့ ငှားလိုက်တော့...", "ကျွန်တော့်ကို အရူးလို့ ထင်ကြတယ်...").`;
+      } else {
+        styleText = `STORYTELLING PERSPECTIVE: Elite Third-Person Cinema Narrator (အဆင့်မြင့် ရုပ်ရှင်ဇာတ်ကြောင်းပြောစစ်စစ် - Video 1 Style).
+1. THIRD-PERSON OBSERVER: Always narrate from an outside perspective ("ဒီရုပ်ရှင်မှာတော့...", "ကောင်လေးဟာ...", "ဆမ်ဟာ...", "ဒီလိုနဲ့ပဲ..."). Never use raw spoken dialogue.
+2. HOOK & FLOW: Line 1 MUST be a powerful narrative hook to grab attention. Use smooth story transitions ("ဒါပေမဲ့ မထင်မှတ်ထားဘဲ...", "တကယ်တော့ အဖြစ်မှန်က...").
+3. NATURAL SPOKEN BURMESE: Use spoken connectors ("...တယ်", "...ခဲ့ပါတယ်", "...ပေမဲ့"). Do NOT use bookish words ("...သည်", "...၍").
+4. WORD LIMIT: Keep strictly between 5 to 8 spoken Burmese words per line to fit the duration.`;
       }
 
-      const header = `You are a master Burmese Movie Recap Narrator (like viral cinema recap channels).
+      const header = `You are an elite Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
 CRITICAL TASK:
-Do NOT just translate raw conversational dialogues word-by-word. Transform these segments into an engaging Burmese movie recap narrative.
+Transform these video transcript lines into an engaging, cohesive, emotional Burmese movie recap narrative.
 
 ${styleText}
 
-STRICT RULES:
-1. Each line MUST be between 5 to 9 Burmese words only.
-2. It MUST fit the exact duration limit.
-3. Return STRICT JSON only: {"translations": ["...", "..."]}
+STRICT OUTPUT FORMAT:
+- Output STRICT JSON only: {"translations": ["...", "..."]}
+- The array length MUST strictly match the exact number of input segments.
 
-INPUTS:
+INPUT SEGMENTS:
 `;
       const inputs = currentSegments.map(s => `[${s.id}] [Duration: ${s.duration}s] "${s.text}"`).join("\n");
       navigator.clipboard.writeText(header + inputs);
-      showToast("ရွေးချယ်ထားသော စတိုင်အတိုင်း Recap Prompt ကူးယူပြီးပါပြီ!");
+      showToast("Cinema Narrator Prompt အသစ်ကို ကူးယူပြီးပါပြီ!");
     }
 
     function submitJson() {
@@ -1155,7 +1157,6 @@ INPUTS:
       }
     }
 
-    // HYBRID VOICE CLASSIFIER (စကားဆုံးသံ + မူရင်းအသံလှိုင်း)
     function detectVoiceHybrid(seg, text, defaultVoice) {
       if (!seg) return defaultVoice;
 
@@ -1437,7 +1438,6 @@ INPUTS:
       return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
     }
 
-    // CLIENT-SIDE EXPORT (AUDIO PRE-GENERATION & RELIABLE MERGE)
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const voiceSelects = document.querySelectorAll('.sub-voice-select');
@@ -1453,7 +1453,6 @@ INPUTS:
       const isHighlightEnabled = document.getElementById('enableHighlightCheck').checked;
       const isTurboFast = document.getElementById('turboFastCheck').checked;
 
-      // ၁။ ပထမဦးစွာ အသံဖိုင်များကို သီးသန့် အရင်ထုတ်ယူစစ်ဆေးခြင်း
       showProgress("TTS အသံများ အရင်ထုတ်ယူနေပါသည်", "အသံဖိုင်များကို Server မှ အပြည့်အစုံ ဆွဲယူနေပါသည်...");
       updateGauge(15);
 
@@ -1484,7 +1483,6 @@ INPUTS:
         const bgmType = document.getElementById('bgmLibrarySelect').value;
         const bgmVol = parseInt(document.getElementById('bgmVolInput').value) || 25;
         
-        // ၂။ အသံများ အဆင်သင့်ဖြစ်မှ Master Audio Buffer တည်ဆောက်ခြင်း
         const masterWavBytes = await buildMasterAudioBuffer(ttsData, currentSegments, bgmFile, bgmType, bgmVol, isDuckingEnabled, isAutoSpeedEnabled, highlightOffsetSec);
 
         ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
@@ -1582,7 +1580,6 @@ INPUTS:
         player.innerHTML = "";
         player.src = videoUrl;
 
-        // Subtitles via WebVTT Native Track
         if (isSubEnabled) {
           const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
           const track = document.createElement('track');
@@ -1611,7 +1608,6 @@ INPUTS:
         hideProgress();
         showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!");
 
-        // AI Auto Thumbnail Generation Trigger
         player.onloadeddata = () => {
           generateAutoAIThumbnail();
         };
@@ -1621,7 +1617,6 @@ INPUTS:
       }
     }
 
-    // CLIFFHANGER HALF SPLITTER
     async function splitCliffhangerHalf() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.duration) return showToast("ဗီဒီယို အရင် Render လုပ်ပါ!");
@@ -1654,7 +1649,6 @@ INPUTS:
       }
     }
 
-    // AI AUTO-THUMBNAIL ENGINE
     function generateAutoAIThumbnail() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.src) return;
