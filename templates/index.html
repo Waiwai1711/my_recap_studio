@@ -96,20 +96,6 @@
     }
     .brand-title { font-size: 14px; font-weight: 600; }
 
-    .segmented-control {
-      display: flex; background: rgba(0, 0, 0, 0.5);
-      padding: 3px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); gap: 2px;
-    }
-    .segment-btn {
-      border: none; background: transparent; color: var(--text-sub);
-      font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 9px;
-      cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
-    }
-    .segment-btn.active {
-      background: rgba(255, 255, 255, 0.12); color: #ffffff;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-    }
-
     .container {
       max-width: 860px; width: 100%; margin: 0 auto;
       padding: 10px 16px 60px 16px; display: flex; flex-direction: column; gap: 20px; z-index: 1;
@@ -249,15 +235,6 @@
       <span class="brand-title">Recap Studio Pro</span>
     </a>
 
-    <div class="segmented-control">
-      <button id="btnModeThird" class="segment-btn active" onclick="switchRecapMode('third_person')">
-        <i class="ph-bold ph-clapperboard"></i> 🎬 Cinema Recap
-      </button>
-      <button id="btnModeFirst" class="segment-btn" onclick="switchRecapMode('first_person')">
-        <i class="ph-bold ph-chats"></i> 🎭 Dialogue Mode
-      </button>
-    </div>
-
     <div style="display: flex; align-items: center; gap: 10px;">
       <button onclick="openPackageModal()" class="btn-apple-ghost" style="padding: 6px 14px; font-size: 11px; color: #fbbf24;">
         <i class="ph-bold ph-crown"></i> Buy Package
@@ -292,16 +269,9 @@
         <p id="videoFileNameDisplay" style="font-size: 12px; color: var(--text-sub);">ဗီဒီယိုဖိုင်အား ရွေးချယ်ပါ သို့မဟုတ် ဆွဲတင်ပါ</p>
       </div>
       <video id="inputVideoPreview" controls class="hidden" style="max-height: 240px; width: 100%; border-radius: 14px; margin-top: 14px; border: 1px solid var(--glass-border);"></video>
-
-      <div id="assemblyBox" class="hidden" style="margin-top: 14px;">
-        <input type="password" id="apiKey" placeholder="AssemblyAI API Key..." class="glass-input">
-        <button onclick="startExtractAndTranscribe()" class="btn-apple-ghost" style="width: 100%; justify-content: center; margin-top: 8px;">
-          <i class="ph-bold ph-waveform"></i> Transcribe Audio
-        </button>
-      </div>
     </div>
 
-    <!-- 02 / SCRIPT INPUT (GEMINI TIMESTAMPS [00:00 - 00:15] AUTO-PARSER) -->
+    <!-- 02 / SCRIPT INPUT (GEMINI TIMESTAMPS [00:00 - 00:15]) -->
     <div class="section apple-glass">
       <div class="section-header">
         <div class="section-title"><i class="ph-bold ph-text-align-left"></i> 02 / Gemini Script Input</div>
@@ -415,7 +385,6 @@
     let isFFmpegReady = false;
     let currentSegments = [];
     let selectedVideoFile = null;
-    let activeRecapMode = "third_person";
     let selectedPackageType = "10";
 
     function showToast(msg) {
@@ -443,23 +412,6 @@
       document.getElementById('loadingModal').classList.remove('active');
     }
 
-    function switchRecapMode(mode) {
-      activeRecapMode = mode;
-      const btnThird = document.getElementById('btnModeThird');
-      const btnFirst = document.getElementById('btnModeFirst');
-      const assemblyBox = document.getElementById('assemblyBox');
-
-      if (mode === 'third_person') {
-        btnThird.classList.add('active');
-        btnFirst.classList.remove('active');
-        assemblyBox.classList.add('hidden');
-      } else {
-        btnFirst.classList.add('active');
-        btnThird.classList.remove('active');
-        assemblyBox.classList.remove('hidden');
-      }
-    }
-
     function clearScriptInput() {
       document.getElementById('scriptTextInput').value = "";
       currentSegments = [];
@@ -474,7 +426,7 @@
       return 0;
     }
 
-    // ★ GEMINI TIMESTAMPS PARSER [00:00 - 00:15] (စာမဖြတ်ဘဲ အချိန်အတိအကျ ဖတ်ယူခြင်း) ★
+    // ★ GEMINI TIMESTAMPS PARSER [00:00 - 00:15] ★
     function submitRecapScript() {
       const raw = document.getElementById('scriptTextInput').value.trim();
       if (!raw) return showToast("Script စာသားများ ထည့်သွင်းပေးပါခင်ဗျာ!");
@@ -494,7 +446,6 @@
       }
 
       if (matches.length > 0) {
-        // Timestamp ပါဝင်သော format အား အတိအကျ စာကြောင်းရှည်တစ်ခုလုံး ဖတ်ယူခြင်း
         for (let i = 0; i < matches.length; i++) {
           const startPos = matches[i].index + matches[i].length;
           const endPos = (i + 1 < matches.length) ? matches[i + 1].index : raw.length;
@@ -511,7 +462,6 @@
           }
         }
       } else {
-        // Timestamp မပါပါက သာမန်စာကြောင်းအလိုက် ဖတ်ယူခြင်း
         const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
         let curSec = 0.5;
         lines.forEach((t, idx) => {
@@ -644,7 +594,7 @@
       return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
     }
 
-    // ★ CLIENT EXPORT (အသံနှင့် ဗီဒီယို တိကျစွာ ပေါင်းစပ်ထုတ်လုပ်ခြင်း) ★
+    // ★ CLIENT EXPORT ★
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const lines = Array.from(inputs).map(i => i.value.trim()).filter(i => i.length > 0);
@@ -692,7 +642,6 @@
             const src = offlineCtx.createBufferSource();
             src.buffer = buf;
 
-            // ၁၅ စက္ကန့်အတွင်း အသံကွက်တိဝင်အောင် Playback Rate ဖြင့် ညှိခြင်း
             if (buf.duration > targetDurationSec && targetDurationSec > 1.0) {
               src.playbackRate.value = Math.min(1.25, buf.duration / targetDurationSec);
             }
@@ -700,7 +649,6 @@
             src.connect(offlineCtx.destination);
             src.start(startSec);
 
-            // Subtitle Timing
             srtLines.push(`${i+1}\n${msToSrt(seg.start)} --> ${msToSrt(seg.end)}\n${lines[i]}\n`);
           } catch (e) {}
         }
@@ -714,7 +662,6 @@
 
         updateGauge(75, "ဗီဒီယိုနှင့် အသံကို တိုက်ရိုက် ပေါင်းစပ်နေပါသည်...");
 
-        // မူရင်းဗီဒီယိုနှင့် အသံအသစ်ကို ပေါင်းစပ်ပြီး AAC ဖြင့် Output ထုတ်ခြင်း
         await ffmpeg.run(
           '-i', 'input_raw.mp4',
           '-i', 'master_dub.wav',
