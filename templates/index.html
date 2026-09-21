@@ -303,12 +303,12 @@
       </button>
     </div>
 
-    <!-- STEP 2: Source Subtitles & Direct Gemini AI Auto-Translate -->
+    <!-- STEP 2: Source Subtitles, Storytelling Style & Gemini Auto-Translate -->
     <div class="glass-card">
       <div class="card-title">
         <div class="card-title-left">
           <span class="badge-num">2</span>
-          <h2>SOURCE SUBTITLES & TRANSLATION</h2>
+          <h2>RECAP STORYTELLING & TRANSLATION</h2>
         </div>
         
         <div style="display: flex; gap: 6px;">
@@ -321,11 +321,25 @@
         </div>
       </div>
 
+      <!-- ★ STORYTELLING STYLE SELECTOR (THIRD-PERSON vs FIRST-PERSON POV) ★ -->
+      <div class="form-group" style="margin-bottom: 12px; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 12px; padding: 10px 12px;">
+        <label style="color: #38bdf8; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+          <i class="ph-bold ph-film-slate"></i> Narration Style ရွေးချယ်ရန် (ဇာတ်ကြောင်းပြော ပုံစံ)
+        </label>
+        <select id="storyStyleSelect" class="glass-input" style="font-weight: 600; color: #fff; cursor: pointer;">
+          <option value="third_person">🎬 Third-Person Cinema Narrator (ပြင်ပ ဇာတ်ကြောင်းပြော - Video 1 စတိုင်)</option>
+          <option value="first_person">🎭 First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြော - Video 2 စတိုင်)</option>
+        </select>
+        <p id="styleHintText" style="font-size: 10px; color: #a1a1aa; margin-top: 4px;">
+          💡 ရုပ်ရှင်ကားကြီးများအတွက် ပြင်ပမှ အကဲခတ်သူ ရှုထောင့်ဖြင့် အေးအေးဆေးဆေး ဇာတ်ကြောင်းပြန်ပြောင်း ပြောပြပေးမည်။
+        </p>
+      </div>
+
       <textarea id="sourceText" readonly rows="3" class="glass-input" placeholder="Transcribed lines will appear here..." style="margin-bottom: 12px;"></textarea>
 
       <div class="form-group">
         <label>Gemini မှ ရရှိသော Burmese Translations JSON ထည့်ပါ:</label>
-        <textarea id="jsonInput" rows="3" class="glass-input" style="color: #c084fc;" placeholder='{"translations": ["ပထမစာကြောင်း", "ဒုတိယစာကြောင်း"]}'></textarea>
+        <textarea id="jsonInput" rows="3" class="glass-input" style="color: #c084fc;" placeholder='{"translations": ["ဒီလိုနဲ့ပဲ ကောင်မလေးဟာ အိမ်ကနေ ထွက်သွားခဲ့တယ်", "ဒါပေမဲ့ ဆမ်ဟာ သမီးလေးကို လုံးဝ လက်မလွှတ်နိုင်ခဲ့ပါဘူး"]}'></textarea>
       </div>
 
       <button onclick="submitJson()" class="btn btn-purple">
@@ -939,6 +953,17 @@
       toggleSubSection();
       updateAspectPreview();
 
+      // Style selector hint text updater
+      const styleSelect = document.getElementById('storyStyleSelect');
+      styleSelect.addEventListener('change', (e) => {
+        const hint = document.getElementById('styleHintText');
+        if (e.target.value === 'first_person') {
+          hint.innerText = "💡 ဇာတ်လမ်းတိုများအတွက် 'ကျွန်တော်/ငါ...' ဇာတ်လိုက်ရှုထောင့်ဖြင့် ကိုယ်တွေ့ပြောပြပေးမည်။";
+        } else {
+          hint.innerText = "💡 ရုပ်ရှင်ကားကြီးများအတွက် ပြင်ပမှ အကဲခတ်သူ ရှုထောင့်ဖြင့် အေးအေးဆေးဆေး ဇာတ်ကြောင်းပြန်ပြောင်း ပြောပြပေးမည်။";
+        }
+      });
+
       const sizeSlider = document.getElementById('subFontSize');
       sizeSlider.addEventListener('input', (e) => {
         document.getElementById('fontSizeDisplay').innerText = `${e.target.value}px`;
@@ -1053,6 +1078,7 @@
       }
     }
 
+    // ONE-CLICK DIRECT GEMINI TRANSLATION (PREMIUM ONLY) WITH SELECTED STYLE
     async function directGeminiTranslate() {
       if (!currentSegments.length) return showToast("စာကြောင်းများ Transcribe အရင်လုပ်ပေးပါ!");
       
@@ -1061,14 +1087,15 @@
         return showToast("💎 Direct Gemini Auto-Translation သည် Premium User များသာ အသုံးပြုနိုင်ပါသည်ခင်ဗျာ!");
       }
 
-      showProgress("Gemini မှ ဘာသာပြန်ပေးနေပါသည်", "Punchy Recap စတိုင် မြန်မာစာတန်းများ အလိုအလျောက် ထုတ်ယူနေပါသည်...");
+      const style = document.getElementById('storyStyleSelect').value;
+      showProgress("Gemini မှ ဇာတ်ကြောင်းပြော ရေးသားပေးနေပါသည်", "ရွေးချယ်ထားသော စတိုင်အတိုင်း မြန်မာစာတန်းများ ထုတ်ယူနေပါသည်...");
       updateGauge(40);
 
       try {
         const res = await fetch("/api/translate/gemini-direct", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ segments: currentSegments })
+          body: JSON.stringify({ segments: currentSegments, story_style: style })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
@@ -1080,7 +1107,7 @@
 
         updateGauge(100);
         hideProgress();
-        showToast(`Gemini ဘာသာပြန်စာကြောင်း ${trans.length} ခု အလိုအလျောက် ထည့်သွင်းပြီးပါပြီ!`);
+        showToast(`Gemini ဇာတ်ကြောင်းပြော စာကြောင်း ${trans.length} ခု အလိုအလျောက် ထည့်သွင်းပြီးပါပြီ!`);
       } catch (e) {
         hideProgress();
         showToast(e.message);
@@ -1089,18 +1116,31 @@
 
     function copyPrompt() {
       if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
-      const header = `You are a professional movie recap dubber. Translate the following video segments into spoken Burmese.
-CRITICAL RULES:
-1. EXTREMELY SHORT & PUNCHY: Keep each line between 4 to 8 Burmese words only.
-2. DURATION LIMIT: The text MUST fit into the given duration (max 3-4 syllables per second). Never write long sentences.
-3. RECAP TONE: Use exciting, casual Burmese movie recap style.
-4. Output STRICT JSON format only: {"translations": ["...", "..."]}
+      const style = document.getElementById('storyStyleSelect').value;
+      
+      let styleText = `STORYTELLING PERSPECTIVE: Third-Person Cinema Narrator (ပြင်ပ ဇာတ်ကြောင်းပြောသူ စတိုင်).
+- Describe events from an observer view ("ဒီရုပ်ရှင်မှာတော့...", "အမျိုးသမီးတစ်ယောက်ဟာ...", "ဆမ်ဟာ...", "ဒီလိုနဲ့ပဲ...").`;
+      if (style === 'first_person') {
+        styleText = `STORYTELLING PERSPECTIVE: First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြောပြသည့် စတိုင်).
+- Speak as the protagonist ("ကျွန်တော်/ငါ...", "ရွာထဲက မြေရိုင်းတွေကို ငါးသိန်းနဲ့ ငှားလိုက်တော့...", "ကျွန်တော့်ကို အရူးလို့ ထင်ကြတယ်...").`;
+      }
+
+      const header = `You are a master Burmese Movie Recap Narrator (like viral cinema recap channels).
+CRITICAL TASK:
+Do NOT just translate raw conversational dialogues word-by-word. Transform these segments into an engaging Burmese movie recap narrative.
+
+${styleText}
+
+STRICT RULES:
+1. Each line MUST be between 5 to 9 Burmese words only.
+2. It MUST fit the exact duration limit.
+3. Return STRICT JSON only: {"translations": ["...", "..."]}
 
 INPUTS:
 `;
-      const inputs = currentSegments.map(s => `[${s.id}] [Max Limit: ${s.duration}s] "${s.text}"`).join("\n");
+      const inputs = currentSegments.map(s => `[${s.id}] [Duration: ${s.duration}s] "${s.text}"`).join("\n");
       navigator.clipboard.writeText(header + inputs);
-      showToast("တိုတိုတုတ်တုတ် Recap Prompt ကူးယူပြီးပါပြီ!");
+      showToast("ရွေးချယ်ထားသော စတိုင်အတိုင်း Recap Prompt ကူးယူပြီးပါပြီ!");
     }
 
     function submitJson() {
@@ -1115,6 +1155,7 @@ INPUTS:
       }
     }
 
+    // HYBRID VOICE CLASSIFIER (စကားဆုံးသံ + မူရင်းအသံလှိုင်း)
     function detectVoiceHybrid(seg, text, defaultVoice) {
       if (!seg) return defaultVoice;
 
@@ -1396,6 +1437,7 @@ INPUTS:
       return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
     }
 
+    // CLIENT-SIDE EXPORT (AUDIO PRE-GENERATION & RELIABLE MERGE)
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
       const voiceSelects = document.querySelectorAll('.sub-voice-select');
@@ -1411,8 +1453,9 @@ INPUTS:
       const isHighlightEnabled = document.getElementById('enableHighlightCheck').checked;
       const isTurboFast = document.getElementById('turboFastCheck').checked;
 
-      // ၁။ ပထမဦးစွာ အသံများကို သီးသန့် အရင်စမ်းထုတ်ခြင်း (Audio Pre-generation)
-      showProgress("TTS အသံများ အရင်ထုတ်ယူနေပါသည်", "အသံဖိုင်များကို Server မှ တစ်ခုချင်း စုဆောင်းနေပါသည်...");
+      // ၁။ ပထမဦးစွာ အသံဖိုင်များကို သီးသန့် အရင်ထုတ်ယူစစ်ဆေးခြင်း
+      showProgress("TTS အသံများ အရင်ထုတ်ယူနေပါသည်", "အသံဖိုင်များကို Server မှ အပြည့်အစုံ ဆွဲယူနေပါသည်...");
+      updateGauge(15);
 
       try {
         const payloadItems = translations.map((text, idx) => ({
@@ -1432,8 +1475,8 @@ INPUTS:
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error || "TTS အသံထုတ်ယူမှု မအောင်မြင်ပါ");
 
-        showToast("✓ အသံဖိုင်များ အောင်မြင်စွာ ထုတ်ယူပြီးပါပြီ။ ဗီဒီယိုနှင့် ပေါင်းစပ်နေပါသည်...");
-        updateGauge(30, "အသံနှင့် ဗီဒီယိုကို FFmpeg ဖြင့် ပေါင်းစပ်နေပါသည်...");
+        showToast("✓ အသံဖိုင်များ ရရှိပါပြီ။ ဗီဒီယိုနှင့် ပေါင်းစပ်နေပါသည်...");
+        updateGauge(35, "အသံနှင့် ဗီဒီယိုကို FFmpeg ဖြင့် ပေါင်းစပ်နေပါသည်...");
 
         const highlightOffsetSec = isHighlightEnabled ? 4.0 : 0.0;
         const bgmInput = document.getElementById('bgmFile');
@@ -1465,7 +1508,7 @@ INPUTS:
         }
         srtContent = srtLines.join("\n");
 
-        updateGauge(60, "ဗီဒီယို Filter များနှင့် ပုံစံဖော်နေပါသည်...");
+        updateGauge(65, isTurboFast ? "⚡ Turbo Fast Mode ဖြင့် Render ပြုလုပ်နေပါသည်..." : "ဗီဒီယို Render လုပ်နေပါသည်...");
 
         const blurSub = document.getElementById('blurSubCheck').checked;
         const wmPos = document.getElementById('watermarkPosSelect').value;
@@ -1539,6 +1582,7 @@ INPUTS:
         player.innerHTML = "";
         player.src = videoUrl;
 
+        // Subtitles via WebVTT Native Track
         if (isSubEnabled) {
           const vttBlob = new Blob([srtToVtt(srtContent)], { type: 'text/vtt' });
           const track = document.createElement('track');
@@ -1567,6 +1611,7 @@ INPUTS:
         hideProgress();
         showToast("ဗီဒီယို Export အောင်မြင်စွာ ပြီးဆုံးပါပြီ!");
 
+        // AI Auto Thumbnail Generation Trigger
         player.onloadeddata = () => {
           generateAutoAIThumbnail();
         };
@@ -1609,14 +1654,13 @@ INPUTS:
       }
     }
 
-    // ★ AI AUTO-THUMBNAIL ENGINE ★
+    // AI AUTO-THUMBNAIL ENGINE
     function generateAutoAIThumbnail() {
       const player = document.getElementById('videoPlayer');
       if (!player || !player.src) return;
 
       document.getElementById('thumbnailSection').classList.remove('hidden');
 
-      // AI Catchy Title Generator
       const inputs = document.querySelectorAll('.sub-input');
       const sampleLines = Array.from(inputs).map(i => i.value).filter(t => t.trim().length > 3);
       
@@ -1627,7 +1671,6 @@ INPUTS:
       }
       document.getElementById('thumbTitleInput').value = aiTitle;
 
-      // AI Climax Frame Selection (ဗီဒီယို ကြာချိန်၏ ၃၅% ~ ၄၀% အခန်း)
       const seekRatio = 0.35;
       document.getElementById('thumbFrameSlider').value = Math.round(seekRatio * 100);
 
