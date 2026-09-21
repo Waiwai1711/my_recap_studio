@@ -328,7 +328,7 @@
         </label>
         <select id="storyStyleSelect" class="glass-input" style="font-weight: 600; color: #fff; cursor: pointer;">
           <option value="third_person">🎬 Third-Person Cinema Narrator (ပြင်ပ ဇာတ်ကြောင်းပြော - Video 1 စတိုင်)</option>
-          <option value="first_person">🎭 First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြော - Video 2 စတိုင်)</option>
+          <option value="first_person">🎭 First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြော - Short & Punchy)</option>
         </select>
         <p id="styleHintText" style="font-size: 10px; color: #a1a1aa; margin-top: 4px;">
           💡 ရုပ်ရှင်ကားကြီးများအတွက် ပြင်ပမှ အကဲခတ်သူ ရှုထောင့်ဖြင့် အေးအေးဆေးဆေး ဇာတ်ကြောင်းပြန်ပြောင်း ပြောပြပေးမည်။
@@ -957,7 +957,7 @@
       styleSelect.addEventListener('change', (e) => {
         const hint = document.getElementById('styleHintText');
         if (e.target.value === 'first_person') {
-          hint.innerText = "💡 ဇာတ်လမ်းတိုများအတွက် 'ကျွန်တော်/ငါ...' ဇာတ်လိုက်ရှုထောင့်ဖြင့် ကိုယ်တွေ့ပြောပြပေးမည်။";
+          hint.innerText = "💡 တိုတိုတုတ်တုတ်နှင့် စကားပြောစစ်စစ် Recap ပုံစံဖြင့် ဘာသာပြန်ပေးမည်။";
         } else {
           hint.innerText = "💡 ရုပ်ရှင်ကားကြီးများအတွက် ပြင်ပမှ အကဲခတ်သူ ရှုထောင့်ဖြင့် အေးအေးဆေးဆေး ဇာတ်ကြောင်းပြန်ပြောင်း ပြောပြပေးမည်။";
         }
@@ -1105,7 +1105,7 @@
 
         updateGauge(100);
         hideProgress();
-        showToast(`Gemini ဇာတ်ကြောင်းပြော စာကြောင်း ${trans.length} ခု အလိုအလျောက် ထည့်သွင်းပြီးပါပြီ!`);
+        showToast(`Gemini စာကြောင်း ${trans.length} ခု အလိုအလျောက် ထည့်သွင်းပြီးပါပြီ!`);
       } catch (e) {
         hideProgress();
         showToast(e.message);
@@ -1116,23 +1116,27 @@
       if (!currentSegments.length) return showToast("Transcribe အရင်လုပ်ပါ!");
       const style = document.getElementById('storyStyleSelect').value;
       
-      let styleText = "";
+      let header = "";
       if (style === 'first_person') {
-        styleText = `STORYTELLING PERSPECTIVE: First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြောပြသည့် စတိုင်).
-- Speak as the protagonist ("ကျွန်တော်/ငါ...", "ရွာထဲက မြေရိုင်းတွေကို ငါးသိန်းနဲ့ ငှားလိုက်တော့...", "ကျွန်တော့်ကို အရူးလို့ ထင်ကြတယ်...").`;
+        header = `You are a professional movie recap dubber. Translate the following video segments into spoken Burmese.
+CRITICAL RULES:
+1. EXTREMELY SHORT & PUNCHY: Keep each line between 4 to 8 Burmese words only.
+2. DURATION LIMIT: The text MUST fit into the given duration (max 3-4 syllables per second). Never write long sentences.
+3. RECAP TONE: Use exciting, casual Burmese movie recap style.
+4. Output STRICT JSON format only: {"translations": ["...", "..."]}
+
+INPUTS:
+`;
       } else {
-        styleText = `STORYTELLING PERSPECTIVE: Elite Third-Person Cinema Narrator (အဆင့်မြင့် ရုပ်ရှင်ဇာတ်ကြောင်းပြောစစ်စစ် - Video 1 Style).
+        header = `You are an elite Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
+CRITICAL TASK:
+Transform these video transcript lines into an engaging, cohesive, emotional Burmese movie recap narration.
+
+STORYTELLING PERSPECTIVE: Elite Third-Person Cinema Narrator (အဆင့်မြင့် ရုပ်ရှင်ဇာတ်ကြောင်းပြောစစ်စစ် - Video 1 Style).
 1. THIRD-PERSON OBSERVER: Always narrate from an outside perspective ("ဒီရုပ်ရှင်မှာတော့...", "ကောင်လေးဟာ...", "ဆမ်ဟာ...", "ဒီလိုနဲ့ပဲ..."). Never use raw spoken dialogue.
 2. HOOK & FLOW: Line 1 MUST be a powerful narrative hook to grab attention. Use smooth story transitions ("ဒါပေမဲ့ မထင်မှတ်ထားဘဲ...", "တကယ်တော့ အဖြစ်မှန်က...").
 3. NATURAL SPOKEN BURMESE: Use spoken connectors ("...တယ်", "...ခဲ့ပါတယ်", "...ပေမဲ့"). Do NOT use bookish words ("...သည်", "...၍").
-4. WORD LIMIT: Keep strictly between 5 to 8 spoken Burmese words per line to fit the duration.`;
-      }
-
-      const header = `You are an elite Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
-CRITICAL TASK:
-Transform these video transcript lines into an engaging, cohesive, emotional Burmese movie recap narrative.
-
-${styleText}
+4. WORD LIMIT: Keep strictly between 5 to 8 spoken Burmese words per line to fit the duration.
 
 STRICT OUTPUT FORMAT:
 - Output STRICT JSON only: {"translations": ["...", "..."]}
@@ -1140,9 +1144,11 @@ STRICT OUTPUT FORMAT:
 
 INPUT SEGMENTS:
 `;
+      }
+
       const inputs = currentSegments.map(s => `[${s.id}] [Duration: ${s.duration}s] "${s.text}"`).join("\n");
       navigator.clipboard.writeText(header + inputs);
-      showToast("Cinema Narrator Prompt အသစ်ကို ကူးယူပြီးပါပြီ!");
+      showToast(style === 'first_person' ? "Short & Punchy Prompt ကူးယူပြီးပါပြီ!" : "Third-Person Cinema Prompt ကူးယူပြီးပါပြီ!");
     }
 
     function submitJson() {
