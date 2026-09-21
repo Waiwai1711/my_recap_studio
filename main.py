@@ -256,7 +256,7 @@ async def transcribe_audio(api_key: str = Form(...), audio: UploadFile = File(..
 
 class GeminiDirectRequest(BaseModel):
     segments: List[dict]
-    story_style: Optional[str] = "third_person"  # "third_person" သို့မဟုတ် "first_person"
+    story_style: Optional[str] = "third_person"
 
 @app.post("/api/translate/gemini-direct")
 async def translate_gemini_direct(request: Request, payload: GeminiDirectRequest):
@@ -268,37 +268,40 @@ async def translate_gemini_direct(request: Request, payload: GeminiDirectRequest
     db.close()
     if not is_premium: return JSONResponse(status_code=403, content={"error": "💎 Direct Gemini သည် Premium User များသာ သီးသန့်ဖြစ်ပါသည်။"})
 
-    # Dynamic Storytelling Style Prompt
     if payload.story_style == "first_person":
         style_instructions = """STORYTELLING PERSPECTIVE: First-Person POV Storyteller (ဇာတ်လိုက် ကိုယ်တိုင်ပြောပြသည့် စတိုင် - POV Style).
 - Narration perspective: Speak as the protagonist ("ကျွန်တော်/ငါ...").
 - Example recap phrases: "ရွာထဲက မြေရိုင်းတွေကို အကုန်ငှားလိုက်တော့...", "ကျွန်တော့်ကို လူတွေက အရူးလို့ ထင်ကြတယ်...", "ကျွန်တော် အိမ်ပြန်ရောက်တဲ့အခါ...", "ဒီလိုနဲ့ ကျွန်တော် စတင်ပြီး...".
 - Highly engaging, suspenseful, and personal."""
     else:
-        style_instructions = """STORYTELLING PERSPECTIVE: Third-Person Cinema Narrator (ပြင်ပ ဇာတ်ကြောင်းပြန်ပြောပြသူ စတိုင် - Observer Style).
-- Narration perspective: Describe what is happening to the characters from an external observer's view.
-- Example recap phrases: "ဒီရုပ်ရှင်မှာတော့...", "အမျိုးသမီးတစ်ယောက်ဟာ...", "ဆမ်ဟာ သမီးလေးကို...", "ဒါပေမဲ့ မထင်မှတ်ထားတဲ့ အဖြစ်တစ်ခုကြောင့်...", "ဒီလိုနဲ့ပဲ ကောင်မလေးဟာ...".
-- Emotional, calm, cinematic, and deeply narrative."""
+        style_instructions = """STORYTELLING PERSPECTIVE: Elite Third-Person Cinema Narrator (အဆင့်မြင့် ရုပ်ရှင်ဇာတ်ကြောင်းပြောစစ်စစ် - Observer Style).
+CRITICAL RULES FOR THIRD-PERSON CINEMA:
+1. THIRD-PERSON OBSERVER (ပြင်ပ ဇာတ်ကြောင်းပြော):
+   - Always narrate from an outside perspective ("ဒီရုပ်ရှင်မှာတော့...", "ကောင်လေးဟာ...", "ဆမ်ဟာ...", "ဒီလိုနဲ့ပဲ...").
+   - NEVER use direct conversational dialogues ("ငါ သွားမယ်", "မင်း ဘာလဲ"). Describe their actions, situations, and emotions instead.
+2. HOOK & STORYTELLING FLOW:
+   - Line 1 MUST be a powerful narrative hook to grab audience retention immediately (ပထမ ၃ စက္ကန့် အာရုံဖမ်းစားမည့် Hook စာကြောင်းဖြင့် စတင်ပါ).
+   - Use natural Burmese storytelling transitions ("ဒါပေမဲ့ မထင်မှတ်ထားဘဲ...", "တကယ်တော့ အဖြစ်မှန်က...", "ဒီအချိန်မှာပဲ...", "နောက်ဆုံးမှာတော့...").
+3. NATURAL SPOKEN BURMESE (စကားပြောလေသံ စစ်စစ်):
+   - Strictly use casual spoken Burmese connectors ("...တယ်", "...ခဲ့ပါတယ်", "...ပေမဲ့", "...တာကြောင့်"). 
+   - DO NOT use formal bookish words ("...သည်", "...၍", "...သဖြင့်").
+4. DURATION & WORD LIMIT:
+   - Keep each line between 5 to 8 spoken Burmese words to strictly match the duration limit."""
 
-    prompt_text = f"""You are a master Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
+    prompt_text = f"""You are an elite Burmese Movie Recap Narrator (like top-tier viral cinema recap channels).
 CRITICAL TASK:
-Do NOT just translate raw conversational dialogues word-by-word. Transform these segments into an engaging Burmese movie recap narrative.
+Transform these video transcript lines into an engaging, cohesive, emotional Burmese movie recap narration.
 
 {style_instructions}
 
-STRICT RULES:
-1. PUNCHY & FIT DURATION:
-   - Each line MUST be between 5 to 9 Burmese words only.
-   - It MUST strictly match the given line duration limit (pace suitable for voiceover).
-2. NO CHATTER:
-   - Avoid trivial filler words. Deliver the story events clearly.
-3. OUTPUT FORMAT:
-   - Return STRICT JSON format only: {{"translations": ["...", "..."]}}
-   - The total number of translations in the array MUST match the exact number of input segments.
+STRICT JSON OUTPUT FORMAT:
+- Output STRICT JSON only: {{"translations": ["ပထမစာကြောင်း", "ဒုတိယစာကြောင်း", ...]}}
+- The array length MUST strictly match the exact number of input segments.
 
 INPUT SEGMENTS:
 """
-    for seg in payload.segments: prompt_text += f"[{seg.get('id')}] [Duration: {seg.get('duration')}s] \"{seg.get('text')}\"\n"
+    for seg in payload.segments:
+        prompt_text += f"[{seg.get('id')}] [Duration: {seg.get('duration')}s] \"{seg.get('text')}\"\n"
     
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
