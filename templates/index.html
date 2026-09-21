@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Pyidaungsu:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
@@ -29,7 +29,7 @@
     body {
       background-color: var(--bg);
       color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Pyidaungsu', sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -37,15 +37,14 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Ambient Background Glow */
     .ambient-glow {
       position: fixed;
-      top: -200px;
+      top: -180px;
       left: 50%;
       transform: translateX(-50%);
-      width: 700px;
-      height: 450px;
-      background: radial-gradient(circle, rgba(41, 151, 255, 0.12) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 80%);
+      width: 750px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(41, 151, 255, 0.12) 0%, rgba(99, 102, 241, 0.04) 50%, transparent 80%);
       filter: blur(100px);
       pointer-events: none;
       z-index: 0;
@@ -55,18 +54,16 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
 
-    /* Frosted Glass Base */
     .apple-glass {
       background: var(--glass);
-      backdrop-filter: blur(35px) saturate(190%);
-      -webkit-backdrop-filter: blur(35px) saturate(190%);
+      backdrop-filter: blur(40px) saturate(190%);
+      -webkit-backdrop-filter: blur(40px) saturate(190%);
       border: 1px solid var(--glass-border);
       border-radius: var(--radius-apple);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 var(--glass-highlight);
       transition: border-color 0.25s ease, background 0.25s ease;
     }
 
-    /* Apple-Style Navigation Bar */
     .nav {
       position: sticky;
       top: 14px;
@@ -90,9 +87,9 @@
       color: #fff;
     }
     .brand-logo {
-      width: 30px;
-      height: 30px;
-      border-radius: 9px;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
       background: linear-gradient(145deg, #2c2c2e, #1c1c1e);
       display: flex;
       align-items: center;
@@ -106,7 +103,6 @@
       letter-spacing: -0.3px;
     }
 
-    /* Apple Segmented Control */
     .segmented-control {
       display: flex;
       background: rgba(0, 0, 0, 0.5);
@@ -135,7 +131,6 @@
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
     }
 
-    /* Main Container */
     .container {
       max-width: 860px;
       width: 100%;
@@ -147,10 +142,7 @@
       z-index: 1;
     }
 
-    .section {
-      padding: 24px;
-    }
-
+    .section { padding: 24px; }
     .section-header {
       display: flex;
       align-items: center;
@@ -168,7 +160,6 @@
       gap: 8px;
     }
 
-    /* Apple-style Inputs */
     .glass-input {
       width: 100%;
       background: rgba(0, 0, 0, 0.45);
@@ -190,22 +181,14 @@
       line-height: 1.7;
     }
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
     @media (max-width: 650px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
       .nav { flex-direction: column; height: auto; padding: 12px; gap: 10px; }
     }
 
-    /* Minimal Dropzone */
     .dropzone {
       border: 1.5px dashed rgba(255, 255, 255, 0.14);
       border-radius: 16px;
@@ -227,7 +210,6 @@
     .dropzone i { font-size: 28px; color: var(--text-sub); }
     .dropzone p { font-size: 12px; color: var(--text-sub); }
 
-    /* Apple Buttons */
     .btn-apple-primary {
       background: #ffffff;
       color: #000000;
@@ -267,18 +249,16 @@
     }
     .btn-apple-ghost:hover { background: rgba(255, 255, 255, 0.12); }
 
-    /* Subtitle Row Item */
     .sub-item-card {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 12px;
     }
 
-    /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -337,7 +317,7 @@
   <header class="nav apple-glass">
     <a href="#" class="brand">
       <div class="brand-logo"><i class="ph-bold ph-film-strip"></i></div>
-      <span class="brand-title">Recap Studio</span>
+      <span class="brand-title">Recap Studio Pro</span>
     </a>
 
     <!-- Segmented Mode Control -->
@@ -368,7 +348,6 @@
         <span id="modeStatusBadge" style="font-size: 11px; color: var(--accent); font-weight: 500;">Cinema Recap (Gemini Direct)</span>
       </div>
 
-      <!-- Video Drag & Drop -->
       <div id="dropZone" class="dropzone">
         <input type="file" id="videoFileInput" accept="video/*" class="hidden">
         <i class="ph-bold ph-cloud-arrow-up"></i>
@@ -398,7 +377,7 @@
 
       <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
         <button onclick="submitRecapScript()" class="btn-apple-ghost" style="background: rgba(255,255,255,0.12);">
-          <i class="ph-bold ph-sparkle"></i> စာကြောင်းများ စီစဉ်သတ်မှတ်မည်
+          <i class="ph-bold ph-sparkle"></i> စာကြောင်းများ အချိန်ကိုက် စီစဉ်မည်
         </button>
       </div>
     </div>
@@ -447,14 +426,14 @@
       </div>
     </div>
 
-    <!-- 4. Real-time Subtitle Live List -->
+    <!-- 4. Real-time Subtitle Live List (အချိန်ကွက်တိပြသမည်) -->
     <div class="section apple-glass">
       <div class="section-header">
         <div class="section-title"><i class="ph-bold ph-list-dashes"></i> 04 / Script Timeline</div>
         <span id="scriptCountDisplay" style="font-size: 11px; color: var(--text-sub);">0 segments</span>
       </div>
 
-      <div id="linesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+      <div id="linesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
         <p style="text-align: center; color: var(--text-sub); font-size: 12px; padding: 20px;">စာသားများ မရှိသေးပါ။ အပေါ်တွင် Script ထည့်ပေးပါခင်ဗျာ။</p>
       </div>
     </div>
@@ -524,7 +503,6 @@
       document.getElementById('loadingModal').classList.remove('active');
     }
 
-    // Segmented Switcher
     function switchRecapMode(mode) {
       activeRecapMode = mode;
       const btnThird = document.getElementById('btnModeThird');
@@ -552,7 +530,7 @@
       document.getElementById('scriptCountDisplay').innerText = "0 segments";
     }
 
-    // Smart Script Parsing (Plain text -> Time Segments)
+    // ★ SMART SEQUENTIAL RIPPLE SYNC (စာကြောင်းအလွတ်မပါ၊ သဘာဝကျသော ကြာချိန်ဖြင့် တွက်ခြင်း) ★
     function submitRecapScript() {
       const raw = document.getElementById('scriptTextInput').value.trim();
       if (!raw) return showToast("စာသားများ အရင်ထည့်သွင်းပေးပါခင်ဗျာ!");
@@ -566,25 +544,38 @@
       }
 
       if (!lines || lines.length === 0) {
-        const splitLines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-        lines = splitLines.length > 1 ? splitLines : raw.split(/[။\n]/).map(l => l.trim()).filter(l => l.length > 0);
+        // စာကြောင်းအလွတ်များနှင့် မလိုအပ်သော format များကို သန့်စင်ဖယ်ထုတ်ခြင်း
+        lines = raw.split(/\r?\n/)
+                   .map(l => l.trim())
+                   .filter(l => l.length > 0 && !l.startsWith("[") && !l.match(/^\d+$/));
+        
+        if (lines.length <= 1) {
+          lines = raw.split(/[။\n]/).map(l => l.trim()).filter(l => l.length > 2);
+        }
       }
 
-      const vPrev = document.getElementById('inputVideoPreview');
-      const totalDuration = (vPrev && vPrev.duration) ? vPrev.duration : (lines.length * 3.8);
-      const segmentDuration = Math.max(2.8, (totalDuration / lines.length));
+      if (!lines.length) return showToast("စာကြောင်းများ ခွဲထုတ်၍ မရပါ!");
 
-      currentSegments = lines.map((text, idx) => ({
-        id: idx + 1,
-        start: Math.round(idx * segmentDuration * 1000),
-        end: Math.round((idx + 1) * segmentDuration * 1000),
-        duration: parseFloat(segmentDuration.toFixed(2)),
-        text: text
-      }));
+      // 17.46s ကဲ့သို့ မညီမျှသော ပုံသေအချိန်များ မဟုတ်ဘဲ စာလုံးရေအလိုက် သဘာဝကျသော စက္ကန့်ဖြင့် တွက်ခြင်း
+      let accumulatedTimeMs = 500; // 0.5s မှ စတင်မည်
+      currentSegments = lines.map((text, idx) => {
+        const estimatedDurationSec = Math.min(5.5, Math.max(2.4, (text.length / 15)));
+        const startMs = accumulatedTimeMs;
+        const durMs = Math.round(estimatedDurationSec * 1000);
+        accumulatedTimeMs += durMs + 350; // စာကြောင်းကြား 0.35s သဘာဝ pause ပေးခြင်း
+
+        return {
+          id: idx + 1,
+          start: startMs,
+          end: startMs + durMs,
+          duration: parseFloat(estimatedDurationSec.toFixed(1)),
+          text: text
+        };
+      });
 
       renderEditor(lines);
       document.getElementById('scriptCountDisplay').innerText = `${lines.length} segments`;
-      showToast(`စာကြောင်း ${lines.length} ခု အဆင်သင့်ဖြစ်ပါပြီ!`);
+      showToast(`စာကြောင်း ${lines.length} ခု အချိန်ကိုက် စီစဉ်ပြီးပါပြီ!`);
     }
 
     function renderEditor(lines) {
@@ -598,9 +589,15 @@
       currentSegments.forEach((seg, i) => {
         const row = document.createElement('div');
         row.className = 'sub-item-card';
+        const startSecStr = (seg.start / 1000).toFixed(1);
+        const durSecStr = seg.duration.toFixed(1);
+
         row.innerHTML = `
-          <span style="font-size:11px; color:var(--accent); font-weight:600; width:45px;">#${seg.id}</span>
-          <input type="text" class="sub-input" style="flex:1; background:transparent; border:none; color:#fff; font-size:12px; outline:none;" value="${lines[i] || ''}">
+          <span style="font-size:11px; color:var(--accent); font-family:'JetBrains Mono'; font-weight:600; width:85px; flex-shrink:0;">
+            #${seg.id} (${startSecStr}s)
+          </span>
+          <input type="text" class="sub-input" style="flex:1; background:transparent; border:none; color:#fff; font-size:13px; outline:none;" value="${lines[i] || ''}">
+          <span style="font-size:10px; color:var(--text-sub); font-family:'JetBrains Mono';">${durSecStr}s</span>
         `;
         c.appendChild(row);
       });
@@ -655,14 +652,51 @@
       return new Uint8Array(out.buffer);
     }
 
+    function generateSyntheticBGM(type, totalDurationSec, sampleRate = 44100) {
+      const numSamples = Math.ceil(totalDurationSec * sampleRate);
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const buffer = audioCtx.createBuffer(2, numSamples, sampleRate);
+      const left = buffer.getChannelData(0);
+      const right = buffer.getChannelData(1);
+
+      let baseFreq = 220;
+      if (type === 'suspense') baseFreq = 110;
+      if (type === 'action') baseFreq = 164;
+
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        const wave = Math.sin(2 * Math.PI * baseFreq * t) * 0.3 + Math.sin(2 * Math.PI * (baseFreq * 1.5) * t) * 0.15;
+        const lfo = 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.25 * t);
+        left[i] = wave * lfo * 0.2;
+        right[i] = wave * (1 - lfo) * 0.2;
+      }
+      audioCtx.close();
+      return buffer;
+    }
+
+    function msToSrt(ms) {
+      const h = Math.floor(ms / 3600000);
+      ms %= 3600000;
+      const m = Math.floor(ms / 60000);
+      ms %= 60000;
+      const s = Math.floor(ms / 1000);
+      const mil = ms % 1000;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(mil).padStart(3,'0')}`;
+    }
+
+    function srtToVtt(srtText) {
+      return "WEBVTT\n\n" + srtText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+    }
+
+    // ★ CLIENT-SIDE EXPORT (တကယ့် TTS Duration အတိုင်း အချိန်ကွက်တိ ဆက်တိုက်ကပ်သွားမည့်စနစ်) ★
     async function startClientExport() {
       const inputs = document.querySelectorAll('.sub-input');
-      const lines = Array.from(inputs).map(i => i.value);
+      const lines = Array.from(inputs).map(i => i.value.trim()).filter(i => i.length > 0);
       if (!lines.length) return showToast("Script စာသားများ အရင်ထည့်သွင်းပေးပါ!");
       if (!selectedVideoFile) return showToast("ဗီဒီယိုဖိုင် ရွေးချယ်ပေးပါ!");
 
-      showProgress("Generating Audio...", "အသံဖိုင်များကို ဖန်တီးနေပါသည်...");
-      updateGauge(25);
+      showProgress("Generating Audio...", "အသံဖိုင်များကို ထုတ်ယူနေပါသည်...");
+      updateGauge(20);
 
       try {
         const payloadItems = lines.map(text => ({
@@ -678,34 +712,68 @@
         const ttsData = await ttsRes.json();
         if (!ttsRes.ok) throw new Error(ttsData.error || "TTS Error");
 
-        updateGauge(50, "Mixing Master Audio...");
+        updateGauge(50, "အသံနှင့် ဗီဒီယို အချိန်ကွက်တိ ကိုက်ညှိနေပါသည်...");
 
-        // Master Audio Mix
         const actx = new (window.AudioContext || window.webkitAudioContext)();
-        let totalSec = (currentSegments[currentSegments.length - 1].end / 1000) + 2;
+        
+        let totalSpeechMs = 0;
+        ttsData.audios.forEach(item => {
+          totalSpeechMs += (item.duration_ms || 3000) + 350;
+        });
+
+        const vPrev = document.getElementById('inputVideoPreview');
+        const totalSec = Math.max((vPrev && vPrev.duration) ? vPrev.duration : 10, (totalSpeechMs / 1000) + 3);
         const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(totalSec * 44100), 44100);
+
+        let currentPlayheadSec = 0.5; // အစ 0.5 စက္ကန့်မှ စတင်မည်
+        let srtLines = [];
 
         for (let i = 0; i < ttsData.audios.length; i++) {
           const item = ttsData.audios[i];
           if (!item.audio_b64) continue;
-          const startSec = (currentSegments[i].start / 1000);
+
           const bytes = Uint8Array.from(atob(item.audio_b64), c => c.charCodeAt(0));
           try {
             const buf = await actx.decodeAudioData(bytes.buffer.slice(0));
             const src = offlineCtx.createBufferSource();
             src.buffer = buf;
             src.connect(offlineCtx.destination);
-            src.start(startSec);
+            
+            src.start(currentPlayheadSec);
+
+            // Subtitle အချိန်ကို တကယ့်အသံဖိုင် အစ/အဆုံး အတိုင်း ကွက်တိကပ်ပေးခြင်း
+            const sMs = Math.round(currentPlayheadSec * 1000);
+            const eMs = Math.round((currentPlayheadSec + buf.duration) * 1000);
+            srtLines.push(`${i+1}\n${msToSrt(sMs)} --> ${msToSrt(eMs)}\n${lines[i]}\n`);
+
+            // နောက်အသံအတွက် Playhead အား အသံကြာချိန် + 0.35s ရွေ့ပေးခြင်း
+            currentPlayheadSec += buf.duration + 0.35;
           } catch (e) {}
         }
         actx.close();
+
+        // BGM Mix
+        const bgmType = document.getElementById('bgmLibrarySelect').value;
+        const bgmVol = (parseInt(document.getElementById('bgmVolInput').value) || 20) / 100;
+        if (bgmType !== 'none') {
+          const bgmBuf = generateSyntheticBGM(bgmType, totalSec);
+          const bgmSrc = offlineCtx.createBufferSource();
+          bgmSrc.buffer = bgmBuf;
+          bgmSrc.loop = true;
+          const bgmGain = offlineCtx.createGain();
+          bgmGain.gain.setValueAtTime(bgmVol, 0);
+          bgmSrc.connect(bgmGain);
+          bgmGain.connect(offlineCtx.destination);
+          bgmSrc.start(0);
+        }
+
         const rendered = await offlineCtx.startRendering();
         const masterWav = audioBufferToWav(rendered);
 
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(selectedVideoFile));
         ffmpeg.FS('writeFile', 'audio.wav', masterWav);
 
-        updateGauge(75, "Rendering Clean Video...");
+        updateGauge(75, "ဗီဒီယို Render လုပ်နေပါသည်...");
         await ffmpeg.run('-i', 'input.mp4', '-i', 'audio.wav', '-c:v', 'copy', '-c:a', 'aac', '-shortest', 'output.mp4');
 
         const outData = ffmpeg.FS('readFile', 'output.mp4');
@@ -713,16 +781,72 @@
         const videoUrl = URL.createObjectURL(outBlob);
 
         const player = document.getElementById('videoPlayer');
+        player.innerHTML = "";
         player.src = videoUrl;
+
+        // WebVTT Subtitle တပ်ဆင်ခြင်း
+        const isSubEnabled = document.getElementById('enableSubCheck').checked;
+        if (isSubEnabled && srtLines.length) {
+          const vttBlob = new Blob([srtToVtt(srtLines.join("\n"))], { type: 'text/vtt' });
+          const track = document.createElement('track');
+          track.kind = 'subtitles';
+          track.label = 'Burmese';
+          track.srclang = 'my';
+          track.src = URL.createObjectURL(vttBlob);
+          track.default = true;
+          player.appendChild(track);
+          player.onloadedmetadata = () => {
+            if (player.textTracks && player.textTracks[0]) {
+              player.textTracks[0].mode = "showing";
+            }
+          };
+        }
+
         document.getElementById('downloadBtn').href = videoUrl;
         document.getElementById('resultBox').classList.remove('hidden');
 
         updateGauge(100, "ပြီးဆုံးပါပြီ!");
         setTimeout(hideProgress, 500);
-        showToast("ဗီဒီယို ဖန်တီးမှု အောင်မြင်ပါသည်!");
+        showToast("ဗီဒီယိုနှင့် အသံ ကွက်တိကိုက်ညီစွာ Export ပြီးပါပြီ!");
       } catch (err) {
         hideProgress();
         showToast("Error: " + err.message);
+      }
+    }
+
+    // AssemblyAI Transcribe (Dialogue Mode only)
+    async function startExtractAndTranscribe() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!apiKey || !selectedVideoFile) return showToast("API Key နှင့် ဗီဒီယိုဖိုင် ရွေးပါ!");
+      if (!isFFmpegReady) await initFFmpeg();
+
+      try {
+        showProgress("အသံဖိုင် ခွဲထုတ်နေပါသည်", "ဗီဒီယိုမှ MP3 အသံဖိုင် ထုတ်ယူနေပါသည်...");
+        updateGauge(20);
+
+        ffmpeg.FS('writeFile', 'input_orig.mp4', await fetchFile(selectedVideoFile));
+        await ffmpeg.run('-i', 'input_orig.mp4', '-vn', '-acodec', 'libmp3lame', '-b:a', '96k', 'extracted_audio.mp3');
+        
+        const audioData = ffmpeg.FS('readFile', 'extracted_audio.mp3');
+        const audioBlob = new Blob([audioData.buffer], { type: 'audio/mp3' });
+
+        updateGauge(50, "AssemblyAI သို့ ပေးပို့နေပါသည်...");
+        const formData = new FormData();
+        formData.append("api_key", apiKey);
+        formData.append("audio", audioBlob, "extracted.mp3");
+
+        const res = await fetch("/api/transcribe-audio", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const lines = data.segments.map(s => s.text);
+        document.getElementById('scriptTextInput').value = lines.join("\n");
+        submitRecapScript();
+        hideProgress();
+        showToast(`Dialogue စာကြောင်း ${lines.length} ခု ရရှိပါပြီ!`);
+      } catch (err) {
+        hideProgress();
+        showToast(err.message);
       }
     }
   </script>
